@@ -16,3 +16,10 @@
 
 ### Observed error_reason strings
 (to be filled as payloads are captured)
+
+### More API quirks (2026-08-21)
+- PATCH /v1/webhooks/{id} -> "no Route matched with those values".
+  No update endpoint; register a new webhook instead.
+- Payment Links reject contacts with repeated digits:
+  +919999999999 -> "Recurring digits in customer contact are disallowed".
+  Use a varied number, e.g. +919876543210.
