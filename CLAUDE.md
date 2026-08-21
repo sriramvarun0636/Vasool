@@ -33,15 +33,35 @@ If you need a new secret, add it to `.env.example` and tell me.
 - **Tests first for the policy plane.** Guards and the state machine get tests
   written before implementation.
 - **Never invent a Razorpay error string.** Every `error_reason` must come from
-  `data/observed_payloads/` — payloads I captured from live test mode. If a
-  string isn't in there, ask me to capture it. Do not guess, do not infer from
-  documentation, do not "helpfully" add plausible ones.
+  `data/observed_payloads/` (captured live) or `data/stubbed_payloads/`
+  (hand-built, every file marked `_SIMULATED: true`; see docs/VERIFIED.md for
+  why they're necessary). Anything in neither directory does not exist — do not
+  guess, do not infer from documentation, do not "helpfully" add plausible ones.
+  Never move a file between the two directories.
 - **Flag uncertainty in code.** If a regulatory threshold or API behaviour is
   unverified, write `# VERIFY: <what> <why uncertain>` rather than asserting it.
 - **Small commits**, imperative messages, one logical change each.
 - Prefer stdlib and boring solutions. No new dependency without asking.
 - When you disagree with the spec, say so before implementing. The spec is mine
   and it has mistakes in it.
+
+## Known environment constraints
+
+Discovered live on 2026-08-21, recorded in full in `docs/VERIFIED.md`:
+
+- **Only `payment_failed` is reproducible in test mode.** Razorpay's documented
+  "Error Scenario" cards do not produce their documented reasons — every failure
+  returns `payment_failed / BAD_REQUEST_ERROR / gateway / payment_authorization`
+  regardless of card, via both Payment Links and Checkout.js. All other reasons
+  must come from `data/stubbed_payloads/`.
+- **Every webhook is delivered twice** with an identical `x-razorpay-event-id`
+  from two Razorpay IPs. Idempotency on `event_id` is required, not defensive.
+- **`POST /v1/webhooks` needs `events` as an object**, not an array:
+  `{"events": {"payment.failed": 1}}`. An array returns
+  "Invalid event name/names: 1, 2, 3, 4".
+- **There is no `PATCH /v1/webhooks/{id}`.** Register a new webhook to change
+  the event set.
+- **Payment Links reject contacts with repeated digits** (`+919999999999`).
 
 ## Stack
 
@@ -59,6 +79,6 @@ pytest + hypothesis · numpy/scipy · structlog · OpenTelemetry · Jinja2
 
 ## Status
 
-Current stage: 1
-Stages complete: none
+Current stage: 1 (Session 0A complete)
+Stages complete: 0A — live payloads captured, VERIFIED.md written
 Cassettes: not yet — LLM classifier lands in Session 7
