@@ -60,9 +60,9 @@
           "tax": null,
           "error_code": "BAD_REQUEST_ERROR",
           "error_description": "Payment failed",
-          "error_source": "bank",
+          "error_source": "business",
           "error_step": "payment_authorization",
-          "error_reason": "insufficient_fund",
+          "error_reason": "payment_risk_check_failed",
           "acquirer_data": {
             "auth_code": null
           },

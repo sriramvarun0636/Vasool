@@ -62,7 +62,7 @@
           "error_description": "Payment failed",
           "error_source": "bank",
           "error_step": "payment_authorization",
-          "error_reason": "insufficient_fund",
+          "error_reason": "card_expired",
           "acquirer_data": {
             "auth_code": null
           },
