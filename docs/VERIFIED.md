@@ -141,3 +141,19 @@ be exercised and no UPI payload could be captured.
 CONSEQUENCE: the taxonomy is card-shaped by necessity. Any UPI-specific
 error_reason handling would be pure speculation and is deliberately omitted.
 Noted as an open question in docs/taxonomy.md §8.
+
+### FINDING: error_source varies by rail (2026-08-21)
+
+Netbanking failure returned:
+  reason: payment_failed / code: BAD_REQUEST_ERROR / step: payment_authorization
+  source: bank          <- cards return "gateway"
+
+error_source is NOT constant — it reflects where in the stack the failure
+occurred. This supports the inference that the mock bank page overwrites the
+card's encoded reason at the gateway layer.
+
+CONSEQUENCE: even when error_reason is uninformative, (reason, source) carries
+signal. payment_failed/bank implies an issuer decline; payment_failed/gateway
+implies a rail problem. The taxonomy should classify on the pair.
+
+Also: UPI is unavailable pre-activation (Cards/Netbanking/Wallet/PayLater only).
