@@ -157,3 +157,17 @@ signal. payment_failed/bank implies an issuer decline; payment_failed/gateway
 implies a rail problem. The taxonomy should classify on the pair.
 
 Also: UPI is unavailable pre-activation (Cards/Netbanking/Wallet/PayLater only).
+
+### UPDATE: duplicate delivery attribution (2026-08-21, 16:20 IST)
+
+Later captures (TSONnzuJtXefql, TSOPQFb6VsuJ5d) arrived EXACTLY ONCE each,
+unlike the morning's paired deliveries. Since no registration was removed
+(the API has no DELETE), the difference is unexplained — but single delivery
+is clearly possible, which weakens the "Razorpay always double-delivers"
+reading and strengthens the "two overlapping registrations" one.
+
+Attribution remains unresolved and is now recorded as such.
+
+CONCLUSION UNCHANGED: idempotency on event_id is required either way.
+Duplicate registration is arguably the MORE likely production failure mode,
+and the receiver handles both identically.

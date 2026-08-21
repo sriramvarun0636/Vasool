@@ -1,0 +1,76 @@
+{
+  "captured_at": "2026-08-21T16:19:55.736349",
+  "headers": {
+    "host": "outflank-dweller-filling.ngrok-free.dev",
+    "user-agent": "Razorpay-Webhook/v1",
+    "content-length": "1032",
+    "accept-encoding": "gzip",
+    "content-type": "application/json",
+    "request-id": "TSOPQFb6VsuJ5d",
+    "x-forwarded-for": "52.66.75.174",
+    "x-forwarded-host": "outflank-dweller-filling.ngrok-free.dev",
+    "x-forwarded-proto": "https",
+    "x-razorpay-event-id": "TSOPQFb6VsuJ5d",
+    "x-razorpay-signature": "20c205a137c98b1eae74fe943c47189f83511eb51e535b07f509a2b7a605554e"
+  },
+  "body": {
+    "entity": "event",
+    "account_id": "acc_TSJqWjzP2eEdM3",
+    "event": "payment.failed",
+    "contains": [
+      "payment"
+    ],
+    "payload": {
+      "payment": {
+        "entity": {
+          "id": "pay_TSOPJqQGAvaA2K",
+          "entity": "payment",
+          "amount": 50000,
+          "currency": "INR",
+          "status": "failed",
+          "order_id": "order_TSOMc8LICtaYY8",
+          "invoice_id": null,
+          "international": false,
+          "method": "card",
+          "amount_refunded": 0,
+          "refund_status": null,
+          "captured": false,
+          "description": "#TSOMTrBzRnPOyv",
+          "card_id": "card_TSOPK48q6WymGG",
+          "card": {
+            "id": "card_TSOPK48q6WymGG",
+            "entity": "card",
+            "name": "",
+            "last4": "0001",
+            "network": "Visa",
+            "type": "debit",
+            "issuer": "DCBL",
+            "international": false,
+            "emi": false,
+            "sub_type": "consumer",
+            "token_iin": "410028000"
+          },
+          "bank": null,
+          "wallet": null,
+          "vpa": null,
+          "email": "void@razorpay.com",
+          "contact": "+919000988775",
+          "notes": [],
+          "fee": null,
+          "tax": null,
+          "error_code": "BAD_REQUEST_ERROR",
+          "error_description": "Payment failed",
+          "error_source": "gateway",
+          "error_step": "payment_authorization",
+          "error_reason": "payment_failed",
+          "acquirer_data": {
+            "auth_code": null
+          },
+          "created_at": 1787309390,
+          "reward": null
+        }
+      }
+    },
+    "created_at": 1787309395
+  }
+}
