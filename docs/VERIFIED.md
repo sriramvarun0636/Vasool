@@ -32,3 +32,40 @@
   twice at 13:36:39.625 from two Razorpay IPs (52.66.75.174, 52.66.76.63).
   Duplicate webhook delivery is normal operation, not an edge case.
   Idempotency on event_id is REQUIRED, not defensive.
+
+### Error Scenario cards — docs vs observed (2026-08-21)
+| Card (Visa)          | Docs claim         | Observed                          |
+|----------------------|--------------------|-----------------------------------|
+| 4100 2800 0009 0000  | payment_timed_out  | payment_failed / gateway /
+                                              payment_authorization           |
+NOTE: Error Scenario cards did NOT produce the documented specific reason
+via the Payment Links checkout flow. Confirming across more cards.
+
+### FINDING: Error Scenario cards do not work in test mode (2026-08-21)
+
+Razorpay documents 7 "Error Scenario" cards that should each produce a
+specific error_reason. None of them do.
+
+Tested via Payment Links checkout AND standard Checkout.js:
+| Card (Visa)          | Docs claim          | Observed (all flows)  |
+|----------------------|---------------------|-----------------------|
+| 4100 2800 0009 0000  | payment_timed_out   | payment_failed        |
+| 4100 2800 0008 0001  | insufficient_fund   | payment_failed        |
+
+Every failure returns identically:
+  error_reason : payment_failed
+  error_code   : BAD_REQUEST_ERROR
+  error_source : gateway
+  error_step   : payment_authorization
+
+Root cause (inferred): the mock bank page fails the payment at the gateway
+layer, which overwrites the reason the card was meant to encode. `source:
+gateway` rather than `bank` or `customer` is the evidence.
+
+CONSEQUENCE: only ONE failure reason is reproducible live. The remaining
+taxonomy classes must be exercised with hand-built payloads derived from
+the observed schema, kept in data/stubbed_payloads/ and labelled SIMULATED.
+
+Also confirmed across ~8 events: EVERY webhook is delivered twice with an
+identical x-razorpay-event-id, from two Razorpay IPs. Duplicate delivery is
+normal operation. Idempotency is required, not defensive.
