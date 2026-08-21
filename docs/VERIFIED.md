@@ -132,3 +132,12 @@ depends on this round-trip continuing to hold.
 
 Note: both are active, so events currently arrive from both registrations
 **in addition to** Razorpay's own duplicate delivery.
+### FINDING: UPI unavailable pre-activation (2026-08-21)
+
+The Payment Links checkout on an unactivated account offers only Cards,
+Netbanking, Wallet and Pay Later. UPI is absent, so `failure@razorpay` cannot
+be exercised and no UPI payload could be captured.
+
+CONSEQUENCE: the taxonomy is card-shaped by necessity. Any UPI-specific
+error_reason handling would be pure speculation and is deliberately omitted.
+Noted as an open question in docs/taxonomy.md §8.
