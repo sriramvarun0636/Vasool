@@ -100,6 +100,29 @@ Session 0B closed here. Not pursued further.
 
 ---
 
+## NOTE: future captures should store raw_body_b64, not just parsed JSON
+
+`tools/catch.py` stores `await request.json()` (the parsed dict) rather than
+the raw request bytes. HMAC-SHA256 signature verification has to run over the
+exact bytes Razorpay sent — and it turns out `json.dumps(body,
+separators=(",", ":"))` reproduces those bytes exactly for every payload in
+`data/observed_payloads/`, confirmed by recomputing the signature against
+every recorded `x-razorpay-signature` with the real `RAZORPAY_WEBHOOK_SECRET`
+(see `tests/test_receiver.py::test_real_captured_signature_verifies`).
+
+That reconstruction is not a guarantee, though — it works today because
+`json.loads`/`json.dumps` round-trips key order and number formatting
+losslessly for these particular payloads, and because Razorpay's client sends
+compact JSON with no whitespace. A payload shaped differently (non-ASCII
+text, unusual number formatting) could silently break it without any test
+here catching the drift.
+
+A future capture pass should add `raw_body_b64` (base64 of the untouched
+request body) alongside the parsed JSON, so signature verification never
+depends on this round-trip continuing to hold.
+
+---
+
 ## Registered webhooks
 
 | id             | events                                              |
