@@ -1,0 +1,78 @@
+{
+  "captured_at": "2026-08-21T13:39:52.792847",
+  "headers": {
+    "host": "outflank-dweller-filling.ngrok-free.dev",
+    "user-agent": "Razorpay-Webhook/v1",
+    "content-length": "1032",
+    "accept-encoding": "gzip",
+    "content-type": "application/json",
+    "request-id": "TSLgMFByenfDTf",
+    "x-forwarded-for": "52.66.75.174",
+    "x-forwarded-host": "outflank-dweller-filling.ngrok-free.dev",
+    "x-forwarded-proto": "https",
+    "x-razorpay-event-id": "TSLgMFByenfDTf",
+    "x-razorpay-signature": "637d2656f27a52989cb28fb6f7e217a9c3cf8c48e01c5f6f9210405c1de2dd19"
+  },
+  "body": {
+    "entity": "event",
+    "account_id": "acc_TSJqWjzP2eEdM3",
+    "event": "payment.failed",
+    "contains": [
+      "payment"
+    ],
+    "payload": {
+      "payment": {
+        "entity": {
+          "id": "pay_TSLgGeBCNb460J",
+          "entity": "payment",
+          "amount": 50000,
+          "currency": "INR",
+          "status": "failed",
+          "order_id": "order_TSLb6DLEY8sZam",
+          "invoice_id": null,
+          "international": false,
+          "method": "card",
+          "amount_refunded": 0,
+          "refund_status": null,
+          "captured": false,
+          "description": "#TSLTZUirZo8XEu",
+          "card_id": "card_TSLgGrfPs9EDsz",
+          "card": {
+            "id": "card_TSLgGrfPs9EDsz",
+            "entity": "card",
+            "name": "",
+            "last4": "0001",
+            "network": "Visa",
+            "type": "debit",
+            "issuer": "DCBL",
+            "international": false,
+            "emi": false,
+            "sub_type": "consumer",
+            "token_iin": "410028000"
+          },
+          "bank": null,
+          "wallet": null,
+          "vpa": null,
+          "email": "void@razorpay.com",
+          "contact": "+919392284464",
+          "notes": [],
+          "fee": null,
+          "tax": null,
+          "error_code": "GATEWAY_ERROR",
+          "error_description": "Payment failed",
+          "error_source": "gateway",
+          "error_step": "payment_authorization",
+          "error_reason": "gateway_technical_error",
+          "acquirer_data": {
+            "auth_code": null
+          },
+          "created_at": 1787299788,
+          "reward": null
+        }
+      }
+    },
+    "created_at": 1787299792
+  },
+  "_SIMULATED": true,
+  "_source_note": "derived from observed envelope payment_failed__payment_failed.json; error fields hand-set from Razorpay error docs, NOT observed"
+}

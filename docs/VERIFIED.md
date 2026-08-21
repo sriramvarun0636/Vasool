@@ -69,3 +69,20 @@ the observed schema, kept in data/stubbed_payloads/ and labelled SIMULATED.
 Also confirmed across ~8 events: EVERY webhook is delivered twice with an
 identical x-razorpay-event-id, from two Razorpay IPs. Duplicate delivery is
 normal operation. Idempotency is required, not defensive.
+
+### FINDING: subscriptions unavailable pre-activation (2026-08-21)
+
+POST /v1/webhooks rejects every subscription event:
+  subscription.authenticated / activated / charged / pending / halted / cancelled
+  -> "Invalid event name/names: ..."
+
+Consistent with the first webhook registration response, which enumerated
+40+ supported events and included no subscription.* events at all.
+Subscriptions are not enabled on an unactivated merchant account.
+
+CONSEQUENCE: the failed-subscription recovery loop cannot be exercised
+against live test mode. subscription.pending and subscription.halted payloads
+must be hand-built in data/stubbed_payloads/, marked SIMULATED, with the
+4-consecutive-failure halt rule taken from documentation rather than observed.
+
+Session 0B closed here. Not pursued further.
