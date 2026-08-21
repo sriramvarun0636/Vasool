@@ -23,3 +23,12 @@
 - Payment Links reject contacts with repeated digits:
   +919999999999 -> "Recurring digits in customer contact are disallowed".
   Use a varied number, e.g. +919876543210.
+
+### First live capture (2026-08-21, 13:36 IST)
+- x-razorpay-event-id IS present on payment.failed. Dedupe key confirmed.
+- Plain test card yields generic error_reason "payment_failed", not a
+  specific reason. Specific reasons need the Error Scenario cards.
+- DUPLICATE DELIVERY OBSERVED: identical event-id TSLcxIwEqbIaWt delivered
+  twice at 13:36:39.625 from two Razorpay IPs (52.66.75.174, 52.66.76.63).
+  Duplicate webhook delivery is normal operation, not an edge case.
+  Idempotency on event_id is REQUIRED, not defensive.
