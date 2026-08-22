@@ -26,12 +26,14 @@ from vasool.diagnosis.rules import (
     QUIET_HOURS_END_HOUR_IST,
     Diagnosis,
     classify,
+    hold_out_of_quiet_hours,
     in_salary_window,
     next_liquidity_retry,
     next_salary_window,
 )
 from vasool.diagnosis.taxonomy import (
     CONTACT_INTERVENTIONS,
+    lookup,
     RETRY_INTERVENTIONS,
     RULES,
     SOURCE_ANY,
@@ -554,10 +556,20 @@ class TestDocumentedTrajectories:
 # §6: the 00:00-06:00 IST exclusion
 # ---------------------------------------------------------------------------
 class TestQuietHours:
-    def test_an_immediate_action_at_02_00_is_held_to_06_00(self):
+    """§6's 00:00-06:00 hold, which applies to retries and to nothing else.
+
+    The two halves of §6's rule now live in different planes. The retry half is
+    an efficacy claim — issuers running overnight batch maintenance return
+    spurious failures that consume an attempt — and efficacy is this plane's
+    business. The contact half is a claim about disturbing a human, and belongs
+    to ContactWindowGuard, which enforces a wider window (08:00-19:00) at
+    execution time rather than at classification time.
+    """
+
+    def test_a_retry_at_02_00_is_held_to_06_00(self):
         two_am = datetime(2026, 8, 25, 2, 0, tzinfo=IST).astimezone(timezone.utc)
         landed = classify(
-            event_for("card_expired"), clock=VirtualClock(two_am)
+            event_for("gateway_technical_error"), clock=VirtualClock(two_am)
         ).execute_at.astimezone(IST)
         assert landed.hour == QUIET_HOURS_END_HOUR_IST
         assert landed.minute == 0
@@ -574,23 +586,54 @@ class TestQuietHours:
 
     def test_06_00_itself_is_allowed(self):
         six_am = datetime(2026, 8, 25, 6, 0, tzinfo=IST).astimezone(timezone.utc)
-        d = classify(event_for("card_expired"), clock=VirtualClock(six_am))
-        assert d.execute_at == six_am
+        assert hold_out_of_quiet_hours(six_am) == six_am
 
-    def test_the_hold_never_moves_an_action_backwards(self):
+    def test_the_hold_never_moves_a_retry_backwards(self):
         two_am = datetime(2026, 8, 25, 2, 0, tzinfo=IST).astimezone(timezone.utc)
-        assert classify(event_for("card_expired"), clock=VirtualClock(two_am)).execute_at > two_am
+        d = classify(event_for("gateway_technical_error"), clock=VirtualClock(two_am))
+        assert d.execute_at > two_am
+
+    def test_an_outbound_contact_is_not_held_here(self):
+        """It is held by ContactWindowGuard instead, on a window that already
+        contains this one. Holding it in both places moved a 05:00 re-auth link
+        twice for the same reason, and hid the compliance save from the receipt:
+        the classifier now proposes "immediately" and the guard defers it to
+        08:00 citing the clause, which is both more honest and a better demo."""
+        two_am = datetime(2026, 8, 25, 2, 0, tzinfo=IST).astimezone(timezone.utc)
+        d = classify(event_for("card_expired"), clock=VirtualClock(two_am))
+        assert d.intervention in CONTACT_INTERVENTIONS
+        assert d.execute_at == two_am
+
+    def test_a_human_queue_handoff_is_never_held(self):
+        """The bug the split fixed. Nothing is sent to anyone on this path, so
+        no rule applied to it — and a risk-declined payment arriving at 02:00
+        was sitting until 06:00 before an operator could even see it."""
+        two_am = datetime(2026, 8, 25, 2, 0, tzinfo=IST).astimezone(timezone.utc)
+        d = classify(event_for("payment_risk_check_failed"), clock=VirtualClock(two_am))
+        assert d.intervention is I.HUMAN_QUEUE
+        assert d.execute_at == two_am
 
     @settings(max_examples=300)
     @given(utc_datetimes, any_reason, st.integers(min_value=1, max_value=5))
-    def test_nothing_is_ever_scheduled_in_the_quiet_period(self, now, reason, attempt):
-        """The invariant, over every reason and every attempt: no execute_at the
-        diagnosis plane emits falls between 00:00 and 06:00 IST. Applied to
-        outbound contact as well as to retries — a message at 02:00 is
-        harassment whatever it says."""
+    def test_no_retry_is_ever_scheduled_in_the_quiet_period(self, now, reason, attempt):
+        """The invariant, narrowed to what this plane actually owns: no retry
+        the diagnosis plane emits falls between 00:00 and 06:00 IST."""
         d = classify(event_for(reason), clock=VirtualClock(now), attempt=attempt)
-        if d.execute_at is not None:
+        if d.is_retry and d.execute_at is not None:
             assert d.execute_at.astimezone(IST).hour >= QUIET_HOURS_END_HOUR_IST
+
+    @settings(max_examples=300)
+    @given(utc_datetimes, any_reason, st.integers(min_value=1, max_value=5))
+    def test_nothing_but_a_retry_is_ever_moved(self, now, reason, attempt):
+        """The other half of the ownership claim, and the one that keeps this
+        plane out of the policy plane's business: a non-retry executes exactly
+        when §4's row says, and any holding of it happens downstream where the
+        clause can be cited."""
+        event = event_for(reason)
+        d = classify(event, clock=VirtualClock(now), attempt=attempt)
+        if not d.is_retry and d.execute_at is not None:
+            _, rule = lookup(event.error_reason, event.error_source)
+            assert d.execute_at == now + rule.post_retry_delay
 
 
 # ---------------------------------------------------------------------------

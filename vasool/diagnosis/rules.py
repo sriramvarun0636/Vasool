@@ -7,7 +7,14 @@ earns any part of this job — and the measurement is the deliverable, not the
 LLM.
 
 What lives here that isn't in taxonomy.py: §6. Salary-aware retry timing for
-LIQUIDITY, the fixed TRANSIENT ladder, and the 00:00-06:00 IST exclusion.
+LIQUIDITY, the fixed TRANSIENT ladder, and the 00:00-06:00 IST hold on retries.
+
+**What deliberately does not live here: when we are allowed to contact someone.**
+This plane owns when an action would *work*; the policy plane owns when it is
+*permitted*. Salary timing is a claim about a bank balance, so it is ours. The
+contact window is a claim about disturbing a human, so it is
+policy/guards/contact_window.py's, and nothing here holds an outbound message —
+see QUIET_HOURS_END_HOUR_IST.
 
 All time is injected. The wall clock is reachable only through vasool/clock.py
 (CLAUDE.md invariant 2), and scheduling is computed from `clock.now()` rather
@@ -35,28 +42,44 @@ IST = timezone(timedelta(hours=5, minutes=30))
 arithmetic below can use .replace() safely."""
 
 QUIET_HOURS_END_HOUR_IST = 6
-"""§6: nothing is scheduled between 00:00 and 06:00 IST.
+"""§6: no *retry* is scheduled between 00:00 and 06:00 IST.
 
-One boundary, two rules behind it, and §6 keeps them separate because one is far
-better justified than the other:
+§6 says "two rules, not one", and means it — the two halves of the old single
+boundary have different justifications and different force, and they now live in
+different planes:
 
-  - **Outbound contact: absolute.** A message at 2am is harassment whatever it
-    says. Not a tuning parameter, and it does not trade off against recovery
-    rate.
-  - **Silent retries: a cheap hedge.** The reason is that some issuers run batch
+  - **Silent retries: a cheap hedge, and it stays here.** Some issuers run batch
     maintenance overnight and return a spurious technical failure that consumes
-    an attempt for reasons unrelated to the customer. Holding a 5-minute gateway
-    retry until 06:00 costs about four hours of recovery latency and disturbs
-    nobody, since nothing is sent — so it is applied, but it is the first thing
-    to relax if that latency ever matters.
+    an attempt for reasons unrelated to the customer. That is a claim about
+    whether a retry would *work*, which is this plane's business. Holding a
+    5-minute gateway retry until 06:00 costs about four hours of recovery
+    latency and disturbs nobody, since nothing is sent.
+
+  - **Outbound contact: absolute, and it moved.** A message at 2am is harassment
+    whatever it says — a claim about what we may do to a person, which is the
+    policy plane's business. ContactWindowGuard enforces 08:00-19:00 IST, a
+    strict superset of this window, so nothing is given up by removing it here.
+
+Three reasons the split is worth the churn, the third decisive:
+
+  1. Under the merged rule a 05:00 re-auth link was moved twice — to 06:00 by
+     this module, then to 08:00 by the guard. One rule, one owner, one move.
+  2. This module's hold is applied at classify time. A proposal that then waits
+     in a queue is never re-checked, so only the guard is load-bearing; the hold
+     was reassurance rather than enforcement (adversary attack A04).
+  3. When the LLM classifier lands in Session 7 it has to be comparable to this
+     one. A compliance rule baked in here would mean the LLM either reimplements
+     it — an LLM owning compliance, which CLAUDE.md invariant 1 forbids — or the
+     two classifiers are not measuring the same thing.
+
+It also fixed a live bug: HUMAN_QUEUE was being held too, so a risk-declined
+payment arriving at 02:00 IST sat until 06:00 before reaching an operator queue.
+Nothing is sent to anyone on that path, so no rule applied to it at all.
 
 # VERIFY: the batch-maintenance claim is documentation and folklore, never
-# observed on this account (docs/taxonomy.md §9). The contact half needs no such
-# defence and does not depend on it.
-
-Applied at one boundary so the invariant "nothing the diagnosis plane emits
-falls in the quiet period" is a single property test rather than a per-class
-argument.
+# observed on this account (docs/taxonomy.md §9). It is kept because it is
+# nearly free, not because it is proven, and it is the first thing to relax if
+# the latency ever matters. The contact half never depended on it.
 """
 
 SALARY_WINDOW_OPEN_HOUR_IST = QUIET_HOURS_END_HOUR_IST
@@ -269,6 +292,11 @@ def hold_out_of_quiet_hours(when: datetime) -> datetime:
     """Push `when` forward to 06:00 IST if it lands in the quiet period.
 
     Only ever moves forward, so it cannot schedule anything into the past.
+
+    Public because the policy plane needs the same arithmetic: a guard deferring
+    a retry to "tomorrow" must land on the first *legal* moment of tomorrow, not
+    on midnight. Reusing this keeps one implementation of the boundary rather
+    than two that can drift apart.
     """
     local = when.astimezone(IST)
     if local.hour < QUIET_HOURS_END_HOUR_IST:
@@ -282,6 +310,17 @@ def hold_out_of_quiet_hours(when: datetime) -> datetime:
 # ---------------------------------------------------------------------------
 # the classifier
 # ---------------------------------------------------------------------------
+def _scheduled(intervention: InterventionType | None, when: datetime) -> datetime:
+    """Apply §6's 00:00-06:00 hold, to retries and to nothing else.
+
+    A contact is held by ContactWindowGuard, on a wider window and at execution
+    time. A HUMAN_QUEUE handoff is held by neither, and should not be: nothing
+    is sent to anyone, so delaying an operator queue entry by six hours buys
+    nobody anything.
+    """
+    return hold_out_of_quiet_hours(when) if intervention in RETRY_INTERVENTIONS else when
+
+
 def _retry_at(rule: Rule, now: datetime, attempt: int) -> datetime:
     if rule.salary_aware:
         return next_liquidity_retry(now, attempt)
@@ -311,13 +350,11 @@ def classify(event: FailureEvent, *, clock: Clock, attempt: int = 1) -> Diagnosi
 
     if attempt <= rule.retry_budget:
         intervention = rule.retry_intervention
-        execute_at = hold_out_of_quiet_hours(_retry_at(rule, now, attempt))
+        execute_at = _scheduled(intervention, _retry_at(rule, now, attempt))
     else:
         intervention = rule.post_retry
         execute_at = (
-            None
-            if intervention is None
-            else hold_out_of_quiet_hours(now + rule.post_retry_delay)
+            None if intervention is None else _scheduled(intervention, now + rule.post_retry_delay)
         )
 
     return Diagnosis(

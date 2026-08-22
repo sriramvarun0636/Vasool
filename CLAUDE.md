@@ -95,10 +95,16 @@ OpenTelemetry · Jinja2
 
 ## Status
 
-Current stage: 2 (taxonomy)
+Current stage: 3 (policy plane)
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
   - 0B — closed early; subscriptions unavailable pre-activation
-  - 1  — clock + event plane. 37 tests green. HMAC verified against real
-         captured signatures, not just self-signed ones.
+  - 1  — clock + event plane, HMAC verified against real captured signatures
+  - 2  — failure taxonomy + deterministic classifier. 260 tests.
+         Classification keys on (reason, source); payment_failed branches
+         gateway / bank / business.
 Cassettes: not yet — LLM classifier lands in Session 7
+
+- **Never run git commit, git add, git push, git merge, or git checkout.**
+  I commit. You write code; I review the diff and commit it myself. If you
+  think something is ready to commit, say so and stop.
