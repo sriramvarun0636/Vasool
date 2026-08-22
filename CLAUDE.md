@@ -95,14 +95,17 @@ OpenTelemetry · Jinja2
 
 ## Status
 
-Current stage: 3 (policy plane)
+## Status
+
+Current stage: 4 (actions + ledger)
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
   - 0B — closed early; subscriptions unavailable pre-activation
   - 1  — clock + event plane, HMAC verified against real captured signatures
-  - 2  — failure taxonomy + deterministic classifier. 260 tests.
-         Classification keys on (reason, source); payment_failed branches
-         gateway / bank / business.
+  - 2  — failure taxonomy + deterministic classifier
+  - 3  — policy plane: 13 guards, FSM, transition log. 607 tests.
+         Guards evaluate all-then-resolve-by-severity, not short-circuit.
+         Gating happens at execute time, not propose time.
 Cassettes: not yet — LLM classifier lands in Session 7
 
 - **Never run git commit, git add, git push, git merge, or git checkout.**
