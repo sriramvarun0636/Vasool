@@ -40,9 +40,14 @@ is this, and does retrying even have a mechanism by which it could work?"
 |---|---|---|---|
 | `TRANSIENT` | Rail, bank, or gateway hiccup. Nothing is wrong with the customer or the instrument. | **Yes** — backoff | **No** |
 | `LIQUIDITY` | The instrument is fine; the money isn't there *right now*. | **Yes** — time-shifted | Yes, one soft nudge |
-| `INSTRUMENT_DEAD` | The payment method cannot succeed again, ever, in its current state. | **Never** | Yes — must obtain a new instrument |
+| `INSTRUMENT_DEAD` | The payment method cannot succeed again, ever, in its current state. | **Never**, beyond a single soft-decline probe | Yes — must obtain a new instrument |
 | `CUSTOMER_ACTION` | A human has to do something: enter an OTP, fix a typo, complete a step. | **Never** blind-retry | Yes — send a re-attempt link |
 | `RISK_BLOCK` | A fraud or risk engine declined this. | **Never** | **Never** — escalate to a human |
+
+The `INSTRUMENT_DEAD` probe is the single exception in that column, and it is
+narrow: some issuers return a generic decline for a *soft*, recoverable failure
+and others return the same string for a hard one, and exactly one attempt is
+what distinguishes them. One probe, never a ladder — see `card_declined` in §5.
 
 Two of these deserve their reasoning spelled out, because they are where the
 system earns its keep.
@@ -118,10 +123,11 @@ Everything else is exercised through `data/stubbed_payloads/`.
 |---|---|---|---|---|
 | `payment_failed` | `gateway` | `TRANSIENT` → escalate | `SILENT_RETRY` ×1 → `REATTEMPT_LINK` | 15m, then nudge |
 | `payment_failed` | `bank` | `INSTRUMENT_DEAD` | `SILENT_RETRY` ×1 → `REAUTH_LINK` | +6h, then link |
+| `payment_failed` | `business` | `RISK_BLOCK` | `HUMAN_QUEUE` | Never automated |
 | `payment_failed` | *other* | `TRANSIENT` → escalate | `SILENT_RETRY` ×1 → `HUMAN_QUEUE` | 30m, then queue |
-| `gateway_technical_error` | — | `TRANSIENT` | `SILENT_RETRY` ×3 | 5m → 30m → 4h |
+| `gateway_technical_error` | — | `TRANSIENT` → escalate | `SILENT_RETRY` ×3 → `REATTEMPT_LINK` | 5m → 30m → 4h, then nudge |
 | `payment_timed_out` | — | `TRANSIENT` → escalate | `SILENT_RETRY` ×1 → `REATTEMPT_LINK` | 10m, then nudge |
-| `insufficient_fund` | — | `LIQUIDITY` | `TIMED_RETRY` + soft nudge | Salary-aware (§6) |
+| `insufficient_fund` | — | `LIQUIDITY` → escalate | `TIMED_RETRY` ×3 + soft nudge → `REATTEMPT_LINK` | Salary-aware (§6), then link |
 | `payment_cancelled` | — | `CUSTOMER_ACTION` | `REATTEMPT_LINK` ×1 | +2h, in-window |
 | `card_declined` | — | `INSTRUMENT_DEAD` | `SILENT_RETRY` ×1 → `REAUTH_LINK` | +6h, then link |
 | `card_disabled_for_online_payments` | — | `INSTRUMENT_DEAD` | `REAUTH_LINK` + explain | Immediate, in-window |
@@ -161,6 +167,31 @@ entirely: the failure is downstream of us, at the institution holding the money.
 This behaves like `card_declined` and is classified the same way — one retry
 after six hours to cover a soft decline, then treat the instrument as dead.
 
+**`payment_failed` + `business`** — routed to `RISK_BLOCK` and a human queue.
+The argument for this row is precautionary, not evidential, and it matters to
+state it correctly because the obvious version of it is circular.
+
+Our only risk-decline payload carries `error_source: business`. But that value
+was *hand-set* by `tools/make_stubs.py` from Razorpay's documentation — it was
+never observed. So "`business` means a risk decline" is not a finding. It is our
+own stub read back to us, and offering it as evidence would be arguing in a
+circle.
+
+The argument that does hold is about asymmetry, not meaning. Suppose `business`
+merely *might* indicate a risk decline. If we route it to a human and we are
+wrong, the cost is one recoverable failure that waited for an operator. If we
+retry it automatically and we are wrong, the cost is an automated
+re-presentation of a declined authorisation — the exact hazard §2 rules out on
+four independent grounds, one of which is that we would be handing a tool to a
+fraudster. Those two costs are not the same size, and nothing about the
+probability needs to be known to see that.
+
+So the row is correct on expected harm even though our evidence for what
+`business` means is worth nothing. **The asymmetry is the argument; the payload
+is not.** If a live `business`-sourced failure is ever captured and turns out to
+be benign, this row costs us a queue entry — that is the price, and it is the
+cheap side of the trade.
+
 **`payment_failed` + anything else** — an unfamiliar source on an uninformative
 reason. One silent retry (least harmful possible action), then a human. Log the
 source value; an unfamiliar source is itself operational signal.
@@ -169,10 +200,17 @@ source value; an unfamiliar source is itself operational signal.
 
 Explicitly a gateway problem. Nothing about the customer or the instrument is
 implicated. Gateway blips clear in minutes. Three retries on exponential
-backoff, no customer contact — the customer likely never noticed.
+backoff, no customer contact while they run — the customer likely never noticed.
 
 The contrast with `payment_failed/gateway` is deliberate: same class, three
 times the budget, because here we actually know what broke.
+
+**Then a re-attempt link.** Three retries and then nothing is a broken product.
+If four hours of backoff hasn't cleared it, the self-healing-blip hypothesis is
+dead, and someone whose payment keeps failing should be asked to pay another way
+rather than dropped in silence. This is also what §2 already said — a
+`TRANSIENT` escalates to contact once its retries exhaust — so the row now
+agrees with the class table instead of contradicting it.
 
 ### `payment_timed_out` — ambiguous by construction
 
@@ -201,6 +239,13 @@ the work rather than persistence — see §6.
 
 One soft nudge is warranted, unlike other transients, because the customer can
 act (move money, use another account) and probably wants to.
+
+After three timed attempts, a re-attempt link — same reasoning as
+`gateway_technical_error`. Three failures spanning two paydays means the timing
+hypothesis has been tested and lost, and the customer should be offered another
+method rather than left waiting on a fourth attempt that isn't coming. That is
+two contacts in the episode, the nudge and the link, which is exactly the
+per-episode cap in §7 rather than a step past it.
 
 ### `payment_cancelled` — the customer said no
 
@@ -308,17 +353,63 @@ least likely to cover it.
 ```
 attempt 1:  now + 48h                 # cheap, covers short-term timing
 attempt 2:  next salary window        # unless >12 days out, then +5 days
-attempt 3:  next salary window + 6h   # let the credit settle
+attempt 3:  next salary window + 6h   # unless >20 days out, then +5 days
 ```
 
-**Never retry between 00:00 and 06:00 IST.** Some issuers run batch maintenance
-overnight, producing a spurious technical failure that consumes an attempt for
-reasons unrelated to the customer.
+**Attempt 3 is capped too, and the bound is asymmetric because the attempts
+are.** Attempt 2 has a third attempt behind it, so waiting for payday is cheap
+and twelve days is the right amount of patience. Attempt 3 is the last one —
+landing it near money matters more than landing it soon — so it gets twenty days
+before falling back.
+
+Uncapped, attempt 3 produces a month-long gap, and not hypothetically. A failure
+on 25 August schedules attempt 2 for the 31st, the last working day, correctly.
+Attempt 2 fails there, and from the 31st the next salary window is 30 September
+— so attempt 3 would land *thirty days* after attempt 2. A subscription customer
+who hears nothing for a month has already churned; there is no balance to catch
+on day 30, because the relationship ended around day 6.
+
+Twenty days rather than twelve, because twelve removes that gap by flattening
+the ladder instead. The two trajectories the bound has to satisfy:
+
+```
+failure 25 Aug (late month):  27 Aug → 31 Aug →  5 Sep
+failure  8 Sep (mid month) :  10 Sep → 15 Sep → 30 Sep
+```
+
+The late-month episode loses its month-long gap: attempt 3 moves off 30
+September onto the 5th, which is still inside the 1st–7th window, so nothing is
+given up to gain it. The mid-month episode keeps its payday landing: attempt 2
+falls back to the 15th because payday is twenty days out, and attempt 3 — now
+only fifteen days from the window — waits for it. Under a twelve-day bound that
+last attempt would fire on the 20th instead and the episode would never touch a
+salary window at all, which is the one thing this section exists to prevent.
 
 ### Backoff for `TRANSIENT`
 
 `5m → 30m → 4h`. Gateway problems usually clear in minutes; if four hours hasn't
 fixed it, more retries won't either.
+
+### The quiet period — two rules, not one
+
+00:00–06:00 IST is excluded, but the two things we schedule are excluded for
+different reasons and with different force. Writing it as a single rule hides
+that one half is far better justified than the other.
+
+**Outbound contact: never, absolutely.** A message at 2am is harassment whatever
+it says. This is not a tuning parameter, it does not trade off against recovery
+rate, and it holds for every class and every attempt. It is the half that would
+survive an RBI Fair Practices Code argument on its own terms.
+
+**Silent retries: also held, but for a weaker reason.** The justification is that
+some issuers run batch maintenance overnight and return a spurious technical
+failure that consumes an attempt for reasons unrelated to the customer. That is
+a claim about issuer behaviour we have not verified (§9). We apply it anyway
+because the cost is small and one-sided: holding a 5-minute gateway retry until
+06:00 costs about four hours of recovery latency and disturbs nobody, since
+nothing is sent. So it stands as a cheap hedge against an unverified claim
+rather than as a principle — and it is the first thing to relax if that latency
+ever turns out to matter.
 
 ---
 
@@ -371,7 +462,8 @@ Listing these is more useful than pretending otherwise.
    merchant with real decline data could tune it; we can't.
 2. **`error_source` is noisy.** One netbanking failure returned `bank`, a later
    one returned `gateway`. The source-based branch narrows the hypothesis space
-   rather than determining the answer.
+   rather than determining the answer. Only `gateway` and `bank` have ever been
+   observed on a `payment_failed`; the `business` branch is inferred, not seen.
 3. **Contact-window timezone.** Currently merchant TZ, not customer TZ. This is
    adversary attack A05 and is a known open failure.
 4. **The 4-retry halt is documented, never observed** on this account.
@@ -381,6 +473,17 @@ Listing these is more useful than pretending otherwise.
 6. **Nine of ten reasons are documentation-derived**, not captured. The
    envelopes are real; the four error fields are set from Razorpay's error-code
    docs. `tools/make_stubs.py` records which is which.
+7. **The `payment_failed`/`business` → `RISK_BLOCK` row is precautionary, not
+   evidence-backed.** The `business` value on our risk stub was hand-set from
+   documentation and has never been observed live. The row is justified by the
+   cost asymmetry in §5, not by knowing what `business` means. If it turns out
+   to be benign, this row sends recoverable failures to a human queue. One
+   captured live payload would settle it either way.
+8. **The overnight batch-maintenance claim is unverified.** The retry half of
+   the quiet-period rule (§6) rests on issuers running maintenance windows that
+   produce spurious failures. We have never observed one. It is kept because it
+   is nearly free, not because it is proven. The contact half needs no such
+   defence and does not depend on it.
 
 ---
 
@@ -394,7 +497,9 @@ If someone remembers nothing else about this file:
    fraud, and messaging the customer is indistinguishable from phishing.
 3. When the reason is uninformative, `error_source` is the only signal left:
    `payment_failed/gateway` is our rail, `payment_failed/bank` is the issuer,
-   and they deserve different interventions.
+   and `payment_failed/business` might be a risk engine — that last one goes to
+   a human not because we know what it means, but because being wrong about it
+   is far more expensive in one direction than the other.
 4. Insufficient funds is a timing problem, not a persistence problem — retry on
    payday, not on backoff.
 5. Unknown reasons fail safe to one silent retry and a human, logged loudly,
