@@ -105,7 +105,7 @@
 [10] receipt
     outcome      : executed
     receipt_id   : rcpt_aa8ce1313a1ceab9
-    hash         : 22b29af6600e9be3dc48732c38cf546b5e596bbbe273426f856a0766d734cf59
+    hash         : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -126,13 +126,13 @@
 [12] receipt
     outcome      : recovered
     receipt_id   : rcpt_061c7746be1932c6
-    hash         : a265f66d1e1c97d4257c0c71bb89c986a0adec301a502523260107f9183fa366
-    prev_hash    : 22b29af6600e9be3dc48732c38cf546b5e596bbbe273426f856a0766d734cf59
+    hash         : 2429aeeb93dfa664fb2fc6ae3243b00bd05220f3a76ba76b8dafa3332f8dfe45
+    prev_hash    : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
     recovered    : ₹500.00 (50000 paise)
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then RECOVERED -- ₹500.00 (50000 paise) recovered.
-Receipt: a265f66d1e1c97d4257c0c71bb89c986a0adec301a502523260107f9183fa366
+Receipt: 2429aeeb93dfa664fb2fc6ae3243b00bd05220f3a76ba76b8dafa3332f8dfe45
 ==============================================================================

@@ -105,12 +105,12 @@
 [10] receipt
     outcome      : executed
     receipt_id   : rcpt_aa8ce1313a1ceab9
-    hash         : 22b29af6600e9be3dc48732c38cf546b5e596bbbe273426f856a0766d734cf59
+    hash         : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then EXECUTED.
-Receipt: 22b29af6600e9be3dc48732c38cf546b5e596bbbe273426f856a0766d734cf59
+Receipt: 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
 ==============================================================================

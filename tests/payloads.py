@@ -10,8 +10,10 @@ cannot reach.
 """
 from __future__ import annotations
 
+import copy
 import json
 import pathlib
+from typing import Any
 
 from vasool.events.schemas import FailureEvent, from_webhook
 
@@ -49,6 +51,21 @@ def event_for(reason: str, source: str | None = None) -> FailureEvent:
     for event in all_events():
         if event.error_reason == reason:
             return event if source is None else event.model_copy(update={"error_source": source})
+    raise LookupError(f"no payload on disk for {reason!r}")
+
+
+def body_for(reason: str) -> dict[str, Any]:
+    """The raw webhook body behind `event_for(reason)`, as a fresh copy.
+
+    For the tests that need the envelope rather than the decoded event —
+    anything exercising `from_webhook` itself, which is where a failed
+    retry's payment id is correlated back to its episode. A copy, so stamping
+    an id onto it cannot leak into another test's fixture.
+    """
+    for path in _paths():
+        fixture = json.loads(path.read_text())
+        if fixture["body"]["payload"]["payment"]["entity"]["error_reason"] == reason:
+            return copy.deepcopy(fixture["body"])
     raise LookupError(f"no payload on disk for {reason!r}")
 
 

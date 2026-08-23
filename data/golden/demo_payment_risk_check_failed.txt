@@ -70,7 +70,7 @@
 [8] receipt
     outcome      : escalated
     receipt_id   : rcpt_19abe5843d52f01b
-    hash         : 491853ad285b879d3490decc53151738609dcc124dbc839c35e410d879d4502f
+    hash         : 71297b3b3642d778bfe7545a69e218935967cb466089bf20d84de61fc1eb39a0
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -78,5 +78,5 @@
 SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms
 on retrying declined authorisations, and stayed with a human, executor never
 called.
-Receipt: 491853ad285b879d3490decc53151738609dcc124dbc839c35e410d879d4502f
+Receipt: 71297b3b3642d778bfe7545a69e218935967cb466089bf20d84de61fc1eb39a0
 ==============================================================================

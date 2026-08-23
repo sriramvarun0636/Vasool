@@ -324,3 +324,168 @@ class TestReceiptIdUniqueness:
         if entity_id_a == entity_id_b:
             return
         assert _receipt_id(entity_id_a, proposal_id, to_state) != _receipt_id(entity_id_b, proposal_id, to_state)
+
+
+class TestClosuresNobodyProposed:
+    """Two paths close an episode into a receiptable state with no Proposal,
+    and until Session 5.5 `build_from_transitions` raised on both.
+
+    `receipt_from_transition` said "every EXECUTING/BLOCKED/ESCALATED
+    transition vasool/policy/machine.py emits" carries a proposal and a
+    chain. That was true of everything `_gate` emits, and false of two things
+    the machine emits elsewhere:
+
+      - `consent_withdrawn()` closes every open episode for a customer into
+        BLOCKED via `_stop`, passing no proposal. There is none to pass: a
+        withdrawal is a statement about a person, not a ruling on an action,
+        and it closes episodes that had nothing queued at all.
+      - `observe()` escalates an event whose timestamp is beyond
+        MAX_CLOCK_SKEW into ESCALATED before any proposal is built (A18).
+
+    Both are reachable in production — a real DPDP withdrawal, a real skewed
+    webhook — and the 500-customer simulator contains roughly ten withdrawals
+    per seed, so it hit this on essentially every seed.
+
+    The resolution is the one RECOVERED already had: a Transition that closes
+    an episode names its own `Closure`, and `receipt_from_transition` builds
+    the no-proposal shape from it rather than requiring a ruling that never
+    happened. What these assert is that the closure reaches the ledger *as a
+    statement* — a distinct Outcome, not a BLOCKED that happens to have no
+    proposal — because EVALUATION.md §2a scans for it.
+    """
+
+    def test_a_ledger_can_be_built_over_a_consent_withdrawal(self):
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(event)
+        machine.consent_withdrawn(event.customer_id)
+
+        chain = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))
+
+        assert [r.outcome for r in chain] == [Outcome.CONSENT_WITHDRAWN]
+        assert verify_chain(chain)
+
+    def test_the_withdrawal_receipt_rules_on_nothing_and_says_so(self):
+        """The shape, field by field. An empty-verdicts BLOCKED would be
+        indistinguishable from a guard chain that returned nothing; the
+        Outcome is what makes it a statement instead."""
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(event)
+        machine.consent_withdrawn(event.customer_id)
+
+        receipt = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))[0]
+
+        assert receipt.outcome is Outcome.CONSENT_WITHDRAWN
+        assert receipt.proposal is None
+        assert receipt.verdicts == ()
+        assert receipt.event_id is None
+        assert receipt.executed is False
+        assert receipt.razorpay_request_id is None
+        assert receipt.razorpay_response is None
+        assert receipt.amount_recovered_paise == 0
+        assert receipt.entity_id == event.entity_id
+
+    def test_the_withdrawal_receipt_names_the_customer_who_withdrew(self):
+        """EVALUATION.md §2a's "no action after consent withdrawal" is a
+        *per-customer* claim scanned from a *per-entity* ledger. An episode
+        closed by a withdrawal with nothing ever gated carries no Proposal to
+        borrow a customer_id from — and that is the common case, not the edge
+        one — so without this the scan cannot connect the withdrawal to the
+        customer's other episodes at all."""
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(event)
+        machine.consent_withdrawn(event.customer_id)
+
+        receipt = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))[0]
+
+        assert receipt.customer_id == event.customer_id
+
+    def test_every_receipt_carries_a_customer_id_not_only_the_closures(self):
+        machine, clock, executor = make_machine()
+        event = event_for("gateway_technical_error")
+        machine.observe(event)
+        clock.advance_by(timedelta(minutes=6))
+        machine.tick()
+
+        chain = receipts_for(machine, executor)
+        assert chain and all(r.customer_id == event.customer_id for r in chain)
+
+    def test_a_ledger_can_be_built_over_a_clock_skew_escalation(self):
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        skewed = event.model_copy(update={"occurred_at": NOON + timedelta(hours=1)})
+        machine.observe(skewed)
+
+        chain = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))
+
+        assert [r.outcome for r in chain] == [Outcome.CLOCK_SKEW]
+        assert chain[0].proposal is None
+        assert chain[0].verdicts == ()
+        assert verify_chain(chain)
+
+    def test_a_settlement_receipt_is_the_same_kind_of_closure(self):
+        """RECOVERED was always this shape — it is what the other two now
+        follow, rather than a third special case beside them."""
+        machine, _clock, _executor = make_machine()
+        event = event_for("insufficient_fund")
+        machine.observe(event)
+        machine.settled(event.entity_id, reason="out-of-band", amount_paise=event.amount_paise)
+
+        chain = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))
+        recovered = [r for r in chain if r.outcome is Outcome.RECOVERED]
+        assert len(recovered) == 1
+        assert recovered[0].proposal is None
+        assert recovered[0].customer_id == event.customer_id
+
+
+class TestASkewedEventForATerminalEpisodeIsAbsorbed:
+    """The A18 skew check used to run *before* `observe()`'s terminal check,
+    so two skewed webhooks for one payment wrote two ESCALATED transitions —
+    and a proposal-less receipt is keyed on (entity_id, None, to_state), so
+    both would claim the same receipt_id. EVALUATION.md §2a requires every
+    receipt id to be unique across the run, so that is a safety-predicate
+    failure, not an untidiness.
+
+    Unreachable in windtunnel (nothing there generates skew) and entirely
+    reachable in production. Fixed by making a terminal episode absorb a
+    skewed event the way it already absorbs every other kind.
+    """
+
+    def _skewed(self, event, *, hours: int, event_id: str):
+        return event.model_copy(
+            update={"occurred_at": NOON + timedelta(hours=hours), "event_id": event_id}
+        )
+
+    def test_two_skewed_events_for_one_payment_produce_one_receipt(self):
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(self._skewed(event, hours=1, event_id="evt_skew_1"))
+        machine.observe(self._skewed(event, hours=2, event_id="evt_skew_2"))
+
+        chain = list(build_from_transitions(machine.transitions, trace_id_of=trace_id_for))
+
+        assert len(chain) == 1
+        assert chain[0].outcome is Outcome.CLOCK_SKEW
+        assert len({r.receipt_id for r in chain}) == len(chain)
+        assert verify_chain(chain)
+
+    def test_the_second_skewed_event_writes_no_transition_at_all(self):
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(self._skewed(event, hours=1, event_id="evt_skew_1"))
+        after_first = len(list(machine.transitions))
+        machine.observe(self._skewed(event, hours=2, event_id="evt_skew_2"))
+
+        assert len(list(machine.transitions)) == after_first
+        assert machine.state_of(event.entity_id) is State.ESCALATED
+
+    def test_a_skewed_event_still_escalates_an_episode_that_is_not_terminal(self):
+        """The check moved, the behaviour it guards did not: A18 still refuses
+        to schedule from a clock it does not believe."""
+        machine, _clock, _executor = make_machine()
+        event = event_for("card_expired")
+        machine.observe(self._skewed(event, hours=1, event_id="evt_skew_1"))
+
+        assert machine.state_of(event.entity_id) is State.ESCALATED

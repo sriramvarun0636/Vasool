@@ -53,7 +53,7 @@ from vasool.policy.episode import (
 from vasool.policy.facts import FactStore, GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.registry import GUARD_CHAIN, evaluate_all
-from vasool.policy.transitions import InMemoryTransitionLog, Transition, TransitionLog
+from vasool.policy.transitions import Closure, InMemoryTransitionLog, Transition, TransitionLog
 from vasool.policy.verdict import ChainResult, Decision, ObligationKind, Verdict
 
 log = logging.getLogger(__name__)
@@ -170,24 +170,31 @@ class PolicyMachine:
     def observe(self, event: FailureEvent) -> None:
         """A failure arrived. Classify it, and schedule what it implies."""
         now = self._clock.now()
+        episode = self.episodes.open(event, now=now)
+
+        if episode.is_terminal:
+            # Before the skew check, not after it. A terminal episode absorbs
+            # every other kind of further failure, and a skewed one is not
+            # special: escalating it again would write a second ESCALATED
+            # transition for the same episode, and a closure receipt is keyed
+            # on (entity_id, None, to_state) — so two skewed webhooks for one
+            # payment would claim one receipt_id, which is EVALUATION.md §2a's
+            # "every receipt id unique across the run" failing.
+            log.info(
+                "episode %s is %s; absorbing further failure",
+                episode.entity_id,
+                episode.state,
+            )
+            return
 
         if event.occurred_at > now + MAX_CLOCK_SKEW:
-            episode = self.episodes.open(event, now=now)
             self._to(
                 episode,
                 State.ESCALATED,
                 f"event timestamped {event.occurred_at.isoformat()}, more than "
                 f"{MAX_CLOCK_SKEW} ahead of now — refusing to schedule from a "
                 "clock we do not believe",
-            )
-            return
-
-        episode = self.episodes.open(event, now=now)
-        if episode.is_terminal:
-            log.info(
-                "episode %s is %s; absorbing further failure",
-                episode.entity_id,
-                episode.state,
+                closure=Closure.CLOCK_SKEW,
             )
             return
 
@@ -233,6 +240,7 @@ class PolicyMachine:
             matches=lambda item: item.proposal.customer_id == customer_id,
             state=State.BLOCKED,
             note="consent withdrawn — queue purged and the episode closed",
+            closure=Closure.CONSENT_WITHDRAWN,
         )
 
     def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None:
@@ -265,6 +273,7 @@ class PolicyMachine:
             matches=lambda item: item.proposal.entity_id == entity_id,
             state=State.RECOVERED,
             note=f"stopped: {reason}",
+            closure=Closure.SETTLED,
             settled_amount_paise=amount_paise,
         )
 
@@ -484,9 +493,10 @@ class PolicyMachine:
         because the episode that most needs closing is the one with nothing
         queued.
 
-        `**extra` reaches `_to`/`_log` and so lands on the Transition itself —
-        `settled()` uses it to carry `settled_amount_paise`;
-        `consent_withdrawn()` passes none.
+        `**extra` reaches `_to`/`_log` and so lands on the Transition itself.
+        Both callers name their `closure`, because neither of these closes an
+        episode by ruling on anything — see transitions.py::Closure;
+        `settled()` additionally carries `settled_amount_paise`.
         """
         for item in [item for item in self._queue if matches(item)]:
             self._queue.remove(item)
@@ -505,6 +515,10 @@ class PolicyMachine:
             Transition(
                 at=self._clock.now(),
                 entity_id=episode.entity_id,
+                # From the episode rather than from whatever proposal happens
+                # to be in flight, because the transitions that most need it
+                # have no proposal at all — see Transition.customer_id.
+                customer_id=episode.customer_id,
                 from_state=previous,
                 to_state=state,
                 note=note,

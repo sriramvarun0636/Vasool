@@ -62,10 +62,26 @@ order_id problem as `payment.captured` without even a payment id to fall
 back on — nothing about it is more attributable than payment.captured, so
 there is no path where wiring it adds anything the other two don't already
 cover.
+
+**Where the dispatch lives, and why it moved here.** `settle_from_webhook`
+below — which event name is wired to which correlation — used to sit inline
+in vasool/events/receiver.py's route closure. It was lifted out so that
+windtunnel/ can drive the *same* dispatch production does. The simulator
+feeds settlement back through these paths rather than calling
+`PolicyMachine.settled()` itself, and the whole value of doing that is that
+the code being exercised is the real one; a copy of the route's ten lines
+would be a second implementation, and the first time it drifted the
+evaluation would be measuring behaviour the receiver does not have. The
+route still owns everything around the call — signature verification,
+dedupe, HTTP — so `tests/test_receiver.py` still covers all of that end to
+end.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Protocol
+
+log = logging.getLogger(__name__)
 
 
 def entity_id_from_payment_link_paid(body: dict[str, Any]) -> str | None:
@@ -124,3 +140,77 @@ def amount_paise_from_payment_captured(body: dict[str, Any]) -> int:
     """What was actually captured, off the same payment entity the id came
     from — never assumed equal to the amount that originally failed."""
     return body["payload"]["payment"]["entity"]["amount"]
+
+
+class SettlementTarget(Protocol):
+    """What vasool/policy/machine.py::PolicyMachine looks like from here — a
+    structural shape, not an import, so the events plane never has to depend
+    on the policy plane to type its own seam (the same pattern
+    vasool/ledger/receipts.py's CallJournal already uses for the same
+    reason). Defined here rather than in receiver.py because the dispatch
+    that needs it lives here now; receiver.py re-exports it so its own
+    callers are unaffected."""
+
+    def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None: ...
+
+
+def settle_from_webhook(
+    *,
+    event_name: str,
+    body: dict[str, Any],
+    machine: SettlementTarget,
+    retry_index: RetryIndex | None = None,
+) -> str | None:
+    """Close whichever recovery episode this webhook settles, and say which.
+
+    Returns the entity_id settled, or None when the event settles nothing —
+    which is the common case, not an error. Three distinct situations all
+    land there and the caller cannot tell them apart from the payload alone:
+    an event name that is not a settlement at all, a settlement that carries
+    no attributable field (`order.paid`, always — see this module's
+    docstring), and a settlement whose correlation simply misses, such as a
+    `payment.captured` for a payment this agent never dispatched.
+
+    That last one is worth naming because it is not a gap in this function.
+    A customer who pays out of band, through any channel other than a link
+    this agent sent, carries no `vasool_entity_id` and appears in no
+    RetryIndex — they are indistinguishable from any other payment on the
+    account (docs/taxonomy.md §9.9). The episode stays open and the agent
+    keeps chasing money it already has. Correlating it anyway would mean
+    guessing a join key, which is the one thing this module exists not to do.
+
+    `retry_index` is optional independently of `machine`: omitting it just
+    means `payment.captured` correlation is skipped entirely.
+
+    Deduplication is deliberately *not* handled here. Razorpay delivers every
+    webhook at least twice (docs/VERIFIED.md) and the caller is the one
+    holding the store whose insert decides which delivery is the first —
+    vasool/events/receiver.py gates this call on exactly that.
+    """
+    if event_name == "payment_link.paid":
+        entity_id = entity_id_from_payment_link_paid(body)
+        if entity_id is None:
+            log.info(
+                "payment_link.paid carries no vasool_entity_id — not one of "
+                "ours, or predates the notes tag; nothing to settle"
+            )
+            return None
+        machine.settled(
+            entity_id,
+            reason="payment_link.paid",
+            amount_paise=amount_paise_from_payment_link_paid(body),
+        )
+        return entity_id
+
+    if event_name == "payment.captured" and retry_index is not None:
+        entity_id = entity_id_from_payment_captured(body, retry_index=retry_index)
+        if entity_id is None:
+            return None
+        machine.settled(
+            entity_id,
+            reason="payment.captured",
+            amount_paise=amount_paise_from_payment_captured(body),
+        )
+        return entity_id
+
+    return None

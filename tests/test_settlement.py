@@ -16,6 +16,7 @@ from vasool.events.settlement import (
     amount_paise_from_payment_link_paid,
     entity_id_from_payment_captured,
     entity_id_from_payment_link_paid,
+    settle_from_webhook,
 )
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -133,3 +134,109 @@ class TestCapturedAmount:
         body = _captured_body()
         body["payload"]["payment"]["entity"]["amount"] = 12345
         assert amount_paise_from_payment_captured(body) == 12345
+
+
+class FakeMachine:
+    """Stands in for PolicyMachine at settlement.py's SettlementTarget seam."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, int]] = []
+
+    def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None:
+        self.calls.append((entity_id, reason, amount_paise))
+
+
+class TestSettleFromWebhook:
+    """The dispatch itself — which event name is wired to which correlation.
+
+    Extracted out of vasool/events/receiver.py's route so that windtunnel/
+    drives the *same* dispatch production does rather than a second copy of
+    it. A copy would drift, and the first time it drifted the evaluation
+    would be measuring behaviour the receiver does not have. The route still
+    owns everything around this call — signature, dedupe, HTTP — and
+    tests/test_receiver.py still exercises all of it end to end.
+    """
+
+    def test_a_link_carrying_our_notes_tag_settles_the_episode(self):
+        machine = FakeMachine()
+        body = _body()
+        body["payload"]["payment_link"]["entity"]["notes"] = {"vasool_entity_id": "pay_x"}
+
+        settled = settle_from_webhook(event_name="payment_link.paid", body=body, machine=machine)
+
+        assert settled == "pay_x"
+        assert machine.calls == [("pay_x", "payment_link.paid", 50000)]
+
+    def test_a_link_with_no_notes_tag_settles_nothing(self):
+        machine = FakeMachine()
+
+        settled = settle_from_webhook(
+            event_name="payment_link.paid", body=_body(), machine=machine
+        )
+
+        assert settled is None
+        assert machine.calls == []
+
+    def test_a_capture_matching_our_retry_index_settles_the_episode(self):
+        machine = FakeMachine()
+        body = _captured_body()
+        payment_id = body["payload"]["payment"]["entity"]["id"]
+
+        settled = settle_from_webhook(
+            event_name="payment.captured",
+            body=body,
+            machine=machine,
+            retry_index=FakeRetryIndex(**{payment_id: "pay_x"}),
+        )
+
+        assert settled == "pay_x"
+        assert machine.calls == [("pay_x", "payment.captured", 50000)]
+
+    def test_a_capture_with_no_retry_index_wired_settles_nothing(self):
+        machine = FakeMachine()
+
+        settled = settle_from_webhook(
+            event_name="payment.captured", body=_captured_body(), machine=machine
+        )
+
+        assert settled is None
+        assert machine.calls == []
+
+    def test_a_capture_this_agent_never_dispatched_settles_nothing(self):
+        """The out-of-band case windtunnel models, and the ordinary-checkout
+        case production sees constantly: a real capture whose payment id is
+        in nobody's RetryIndex correlates to nothing (docs/taxonomy.md §9.9).
+        """
+        machine = FakeMachine()
+
+        settled = settle_from_webhook(
+            event_name="payment.captured",
+            body=_captured_body(),
+            machine=machine,
+            retry_index=FakeRetryIndex(pay_someone_elses_retry="pay_unrelated"),
+        )
+
+        assert settled is None
+        assert machine.calls == []
+
+    def test_order_paid_settles_nothing_ever(self):
+        """docs/VERIFIED.md: order.paid carries no attributable field at all
+        and is deliberately never wired, however truthful a signal it is."""
+        machine = FakeMachine()
+        body = json.loads((OBSERVED / "order_paid__none__b90866.json").read_text())["body"]
+
+        settled = settle_from_webhook(event_name="order.paid", body=body, machine=machine)
+
+        assert settled is None
+        assert machine.calls == []
+
+    def test_a_payment_failed_settles_nothing(self):
+        machine = FakeMachine()
+        body = json.loads(
+            (OBSERVED / "payment_failed__payment_failed__firstcapture.json").read_text()
+        )["body"]
+
+        settled = settle_from_webhook(event_name="payment.failed", body=body, machine=machine)
+
+        assert settled is None
+        assert machine.calls == []

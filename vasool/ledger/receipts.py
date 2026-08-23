@@ -9,12 +9,14 @@ hand at each call site.
 at four kinds of transition: GATED->EXECUTING (executed), GATED->BLOCKED,
 GATED->ESCALATED, and *->RECOVERED (settled — see below) — see `_RECEIPTABLE`
 below for why executed is keyed on EXECUTING and not the AWAITING state that
-follows it. Every other transition — SCHEDULED, DIAGNOSED, DEFERRED — is
-already a complete record in the transition log itself and represents no
-decision about money; wrapping every one of them in a Receipt would bury the
-four that matter under the rest. taxonomy.md §5's argument that restraint has
-to be as visible as action is about BLOCKED and ESCALATED specifically, not
-about every intermediate state a proposal passes through on its way there.
+follows it. Two of those four also arrive by a second route, closing an
+episode with nothing proposed at all — see "closures" below. Every other
+transition — SCHEDULED, DIAGNOSED, DEFERRED — is already a complete record in
+the transition log itself and represents no decision about money; wrapping
+every one of them in a Receipt would bury the four that matter under the rest.
+taxonomy.md §5's argument that restraint has to be as visible as action is
+about BLOCKED and ESCALATED specifically, not about every intermediate state a
+proposal passes through on its way there.
 
 **On design spec §3's Literal outcome field.** It reads
 `Literal["recovered", "failed", "pending", "blocked", "deferred"]`, and two
@@ -56,6 +58,35 @@ argued for "recovered"/"failed" above — and RECOVERED is a fourth entry in
 into it. See `receipt_from_transition` for the shape that receipt takes: it
 is not gated on a Proposal the way the other three are, because nothing
 proposes a settlement.
+
+**Closures: the same shape, for the same reason, twice more.** RECOVERED
+turned out not to be one exception but the first of three. Two other
+transitions close an episode with no Proposal ever having been gated —
+`consent_withdrawn()`'s BLOCKED, because a withdrawal is a statement about a
+person rather than a ruling on an action, and `observe()`'s ESCALATED for an
+event past MAX_CLOCK_SKEW (A18), which fires before any proposal is built.
+Both are ordinary production paths — a real DPDP withdrawal, a real skewed
+webhook — and both used to raise here, so no ledger could be built for a
+windtunnel seed containing a withdrawal, which is essentially every seed.
+
+So the branch is not "RECOVERED plus two special cases" but the distinction
+those three share: **is this receipt a ruling on a proposed action, or a
+record of something that happened to the episode?** The policy plane names
+which by setting `Transition.closure`, and a closure gets its own `Outcome`
+rather than a BLOCKED that merely happens to carry no verdicts — an
+empty-verdicts BLOCKED is otherwise indistinguishable from a guard chain that
+returned nothing, and EVALUATION.md §2a scans the ledger for withdrawals by
+name. The verdicts stay empty: synthesising one would put a guard ruling in
+the ledger that no guard ever produced, which is a worse lie than saying
+nothing.
+
+Skipping these transitions was the other option and it is wrong twice over.
+§2a's "no action after consent withdrawal" is specified as a ledger scan, and
+a scan needs the withdrawal in the ledger to anchor "after". And the ledger
+would stop being a complete account of how episodes terminated — an episode
+would end in BLOCKED with the ledger silent about it, which is exactly the
+"correct behaviour indistinguishable from a broken agent" taxonomy.md §5
+argues the receipt exists to prevent.
 """
 from __future__ import annotations
 
@@ -69,7 +100,7 @@ from typing import Protocol
 
 from vasool.diagnosis.proposal import Proposal
 from vasool.policy.episode import State
-from vasool.policy.transitions import Transition
+from vasool.policy.transitions import Closure, Transition
 from vasool.policy.verdict import Verdict
 
 GENESIS_HASH = "0" * 64
@@ -110,6 +141,35 @@ class Outcome(StrEnum):
     PolicyMachine.settled() closes the episode; carries the real
     amount_recovered_paise no other Outcome can."""
 
+    CONSENT_WITHDRAWN = "consent_withdrawn"
+    """The episode was closed by a withdrawal, not by a ruling. Distinct from
+    BLOCKED on purpose: BLOCKED is a compliance decision about one action and
+    carries the verdicts that made it, this carries none, and EVALUATION.md
+    §2a scans for withdrawals as a stated fact rather than as "a BLOCKED that
+    happens to have no proposal"."""
+
+    CLOCK_SKEW = "clock_skew"
+    """A18: the episode was escalated because the event's timestamp was too
+    far ahead to believe, before any proposal existed. Distinct from
+    ESCALATED for the same reason CONSENT_WITHDRAWN is distinct from
+    BLOCKED — an ESCALATED receipt names the guards that escalated, and no
+    guard ran here."""
+
+
+_CLOSURE_OUTCOME: dict[Closure, Outcome] = {
+    Closure.CONSENT_WITHDRAWN: Outcome.CONSENT_WITHDRAWN,
+    Closure.SETTLED: Outcome.RECOVERED,
+    Closure.CLOCK_SKEW: Outcome.CLOCK_SKEW,
+}
+"""What a closure is called in the ledger.
+
+Total over `Closure` by construction, and deliberately a lookup that raises
+rather than a `.get` with a fallback: a Closure member added upstream without
+a name here is a KeyError at the first receipt it reaches, which is the
+failure this mapping exists to force. A default would silently file the new
+closure under an outcome that means something else.
+"""
+
 
 _RECEIPTABLE: dict[State, Outcome] = {
     State.EXECUTING: Outcome.EXECUTED,
@@ -131,15 +191,15 @@ the verdicts, and it happens exactly once per execution, so it is both
 correct and sufficient. This is also the more precise thing to receipt
 anyway: it is the transition that recorded *why* execution was allowed.
 
-RECOVERED is different in kind from the other three, not just a fourth item
-on the list: EXECUTING/BLOCKED/ESCALATED all record a *compliance decision*
-about one Proposal, made by the guard chain, and `receipt_from_transition`
-requires a proposal and a chain for exactly that reason. RECOVERED records
-that money arrived, which vasool/policy/machine.py::settled() can learn with
-no proposal in play at all (an out-of-band payment can close an episode
-before anything was ever gated — tests/test_machine.py's A07 case). So it is
-handled separately below rather than folded into the same "requires
-proposal/chain" branch as the other three."""
+This maps only the *state*. Whether a given transition is a compliance
+decision or a closure is not knowable from its to_state — BLOCKED and
+ESCALATED arrive by both routes — so `receipt_from_transition` reads
+`Transition.closure` and overrides the outcome above via `_CLOSURE_OUTCOME`
+when one is set. RECOVERED is the case where the two agree: every transition
+to it is a closure (`Closure.SETTLED`), because nothing proposes a
+settlement — vasool/policy/machine.py::settled() can close an episode with no
+proposal in play at all, since an out-of-band payment can arrive before
+anything was ever gated (tests/test_machine.py's A07 case)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,13 +212,30 @@ class Receipt:
     hash: str
 
     entity_id: str
+    customer_id: str | None
+    """Who the episode belongs to.
+
+    EVALUATION.md §2a's claims are per *customer* and the ledger is per
+    *entity*, so the join has to be in the receipt. A receipt with a Proposal
+    could borrow it from there — a closure receipt cannot, and an episode
+    closed by a withdrawal with nothing ever gated is the common case. Without
+    it, a withdrawal in the ledger names an entity and nothing else, and the
+    scan cannot reach that customer's other episodes to check whether any of
+    them were acted on afterwards.
+
+    Optional in the type because a hand-built Transition may carry none;
+    PolicyMachine sets it on every transition it logs."""
+
     event_id: str | None
-    """None only on a RECOVERED receipt — see `proposal` below."""
+    """None on a closure receipt — see `proposal` below."""
     proposal: Proposal | None
-    """None only on a RECOVERED receipt: settled() closes an episode, not a
-    Proposal, and (A07) can do it with no Proposal ever having been gated."""
+    """None on a closure receipt: a withdrawal, a settlement or a disbelieved
+    clock closes an *episode*, not a Proposal, and each can do it with no
+    Proposal ever having been gated."""
     verdicts: tuple[Verdict, ...]
-    """Empty on a RECOVERED receipt — no guard chain runs over a settlement."""
+    """Empty on a closure receipt — no guard chain runs over one, and
+    synthesising a Verdict to fill this would record a ruling that never
+    happened."""
 
     executed: bool
     razorpay_request_id: str | None
@@ -200,6 +277,7 @@ def _compute_hash(
     prev_hash: str,
     receipt_id: str,
     entity_id: str,
+    customer_id: str | None,
     event_id: str | None,
     proposal: Proposal | None,
     verdicts: Sequence[Verdict],
@@ -215,6 +293,7 @@ def _compute_hash(
         "prev_hash": prev_hash,
         "receipt_id": receipt_id,
         "entity_id": entity_id,
+        "customer_id": customer_id,
         "event_id": event_id,
         "proposal": proposal.model_dump(mode="json") if proposal is not None else None,
         "verdicts": [v.model_dump(mode="json") for v in verdicts],
@@ -234,11 +313,16 @@ def _receipt_id(entity_id: str, proposal_id: str | None, to_state: State) -> str
     vasool/diagnosis/proposal.py::_derive_id) — not uuid4, so replay produces
     the same receipt_id from the same inputs (CLAUDE.md invariant 5).
 
-    `proposal_id` is None only for a RECOVERED receipt. That's still
-    deterministic and still unique: an episode can reach RECOVERED at most
-    once (`_stop` only transitions a non-terminal episode, and RECOVERED is
-    terminal), so `entity_id` alone already picks out the one receipt this
-    will ever be.
+    `proposal_id` is None on a closure receipt. That's still deterministic
+    and still unique: every closure lands on a terminal state, and an episode
+    reaches at most one of those. `_stop` only transitions a non-terminal
+    episode, and `observe()` checks `is_terminal` before its own skew
+    escalation for exactly this reason — two skewed webhooks for one payment
+    would otherwise write two ESCALATED transitions, and both would land on
+    this same basis string. So `entity_id` and `to_state` together already
+    pick out the one receipt this will ever be, and a closure cannot collide
+    with the gated BLOCKED/ESCALATED for the same episode either, since those
+    carry a real `proposal_id` in the basis.
 
     **The uniqueness guarantee, and where it actually comes from.** Session
     4.7 found two receipts sharing an id — card_expired and
@@ -293,28 +377,29 @@ def receipt_from_transition(
     """Build the Receipt this Transition owes the ledger, or None if its
     to_state isn't one of the four that owes one (see module docstring).
 
-    RECOVERED is handled on its own branch: it is not a compliance decision
-    about a Proposal, so it does not require one, and `amount_recovered_paise`
-    comes from `transition.settled_amount_paise` rather than the constant 0
-    every other Outcome still gets (nothing else confirms money landed —
-    dispatching a retry or a link is not the same fact).
+    A transition that names a `closure` is handled on its own branch: it is
+    not a compliance decision about a Proposal, so it does not require one,
+    and `amount_recovered_paise` comes from `transition.settled_amount_paise`
+    rather than the constant 0 every other Outcome still gets (nothing else
+    confirms money landed — dispatching a retry or a link is not the same
+    fact, and only `Closure.SETTLED` ever sets it).
     """
     outcome = _RECEIPTABLE.get(transition.to_state)
     if outcome is None:
         return None
 
-    if outcome is Outcome.RECOVERED:
-        proposal_id = None
+    if transition.closure is not None:
         fields = dict(
-            receipt_id=_receipt_id(transition.entity_id, proposal_id, transition.to_state),
+            receipt_id=_receipt_id(transition.entity_id, None, transition.to_state),
             entity_id=transition.entity_id,
+            customer_id=transition.customer_id,
             event_id=None,
             proposal=None,
             verdicts=(),
             executed=False,
             razorpay_request_id=None,
             razorpay_response=None,
-            outcome=outcome,
+            outcome=_CLOSURE_OUTCOME[transition.closure],
             amount_recovered_paise=transition.settled_amount_paise or 0,
             at=transition.at,
             trace_id=trace_id,
@@ -325,9 +410,10 @@ def receipt_from_transition(
     if transition.proposal is None or transition.chain is None:
         raise ValueError(
             f"{transition.to_state} transition for {transition.entity_id} carries "
-            "no proposal/chain — every EXECUTING/BLOCKED/ESCALATED transition "
-            "vasool/policy/machine.py emits does, so this means something "
-            "upstream changed without this module being updated"
+            "no proposal/chain and names no closure — every EXECUTING/BLOCKED/"
+            "ESCALATED transition vasool/policy/machine.py emits does one or "
+            "the other, so this means something upstream changed without this "
+            "module being updated"
         )
 
     executed = outcome is Outcome.EXECUTED
@@ -341,6 +427,7 @@ def receipt_from_transition(
     fields = dict(
         receipt_id=receipt_id,
         entity_id=transition.entity_id,
+        customer_id=transition.customer_id,
         event_id=transition.proposal.event_id,
         proposal=transition.proposal,
         verdicts=transition.chain.verdicts,
@@ -419,6 +506,7 @@ def verify_chain(receipts: Sequence[Receipt]) -> bool:
             prev_hash=r.prev_hash,
             receipt_id=r.receipt_id,
             entity_id=r.entity_id,
+            customer_id=r.customer_id,
             event_id=r.event_id,
             proposal=r.proposal,
             verdicts=r.verdicts,

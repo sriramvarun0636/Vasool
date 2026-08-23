@@ -52,7 +52,7 @@ successful recovery has ever been observed on this account. **Any number
 below describing recovery is a statement about a model, not about India's
 payment rails,** and will be labelled that way in the report card and said
 aloud in the video.
-
+ 
 ---
 
 ## 2. Two kinds of claim
@@ -453,6 +453,12 @@ the report card.
 - That `pass^k` over simulated worlds predicts production reliability. It
   bounds the *implementation* against the worlds this simulator can generate,
   which is not the same set as the worlds that exist.
+- That time-to-recovery is the time a real customer would take. It measures
+  the agent's own scheduling and excludes customer response latency, which is
+  not modelled: a settlement lands in the same tick as the action that earned
+  it. No click-delay parameter is registered in §4, and inventing one would be
+  a parameter this protocol never agreed to — so the metric is a statement
+  about when the agent acted, not about when money would really arrive.
 
 ---
 

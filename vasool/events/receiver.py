@@ -13,11 +13,25 @@ operation, not a read followed by a write.
 a REAUTH_LINK/REATTEMPT_LINK, and `payment.captured` for a
 SILENT_RETRY/TIMED_RETRY that this agent's own executor dispatched.
 vasool/events/settlement.py explains why each is attributable and
-`order.paid` never is. `machine` is optional so every existing caller/test
-that only cares about signature and dedupe is unaffected; production wiring
-passes a real PolicyMachine. `retry_index` is optional independently of
-`machine` — omitting it just means `payment.captured` correlation is
-skipped, the same as before this session.
+`order.paid` never is, and now owns the dispatch itself
+(`settle_from_webhook`) so that windtunnel/ can drive the same code path
+rather than a second copy of it. What stays here is what is genuinely the
+receiver's: the signature, the dedupe, and the decision that only the first
+delivery of an event may settle anything. `machine` is optional so every
+existing caller/test that only cares about signature and dedupe is
+unaffected; production wiring passes a real PolicyMachine. `retry_index` is
+optional independently of `machine` — omitting it just means both
+correlations are skipped.
+
+**`retry_index` is read in two directions, not one.** A `payment.captured`
+whose payment id it knows is one of our own retries succeeding, and settles
+the episode. A `payment.failed` whose payment id it knows is that same retry
+*failing*, and is the next attempt of that episode rather than a new one —
+`createRecurring` creates a new payment either way, so both webhooks arrive
+carrying an id the policy plane has never seen. The failed direction is
+applied where the FailureEvent is minted
+(vasool/events/schemas.py::from_webhook), because that is the seam
+windtunnel/ crosses too and a second copy here would drift from it.
 """
 from __future__ import annotations
 
@@ -25,22 +39,20 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Protocol
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
 from vasool.clock import Clock, RealClock
 from vasool.events.schemas import from_webhook
-from vasool.events.settlement import (
-    RetryIndex,
-    amount_paise_from_payment_captured,
-    amount_paise_from_payment_link_paid,
-    entity_id_from_payment_captured,
-    entity_id_from_payment_link_paid,
-)
+from vasool.events.settlement import RetryIndex, SettlementTarget, settle_from_webhook
 from vasool.events.store import EventStore
 
 log = logging.getLogger(__name__)
+
+__all__ = ["SettlementTarget", "create_app", "verify_signature"]
+"""SettlementTarget moved to vasool/events/settlement.py alongside the
+dispatch that uses it, and is re-exported here so `receiver.SettlementTarget`
+keeps resolving for anything that already refers to it."""
 
 
 def verify_signature(raw_body: bytes, signature: str, secret: str) -> bool:
@@ -50,15 +62,6 @@ def verify_signature(raw_body: bytes, signature: str, secret: str) -> bool:
     verification."""
     expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
-
-
-class SettlementTarget(Protocol):
-    """What vasool/policy/machine.py::PolicyMachine looks like from here — a
-    structural shape, not an import, so the events plane never has to depend
-    on the policy plane to type its own seam (the same pattern
-    vasool/ledger/receipts.py uses for CallJournal)."""
-
-    def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None: ...
 
 
 def create_app(
@@ -87,7 +90,16 @@ def create_app(
         event_name = body.get("event", "unknown")
 
         failure_event = (
-            from_webhook(event_id=x_razorpay_event_id, body=body, pepper=pepper)
+            from_webhook(
+                event_id=x_razorpay_event_id,
+                body=body,
+                pepper=pepper,
+                # A payment.failed whose payment id is in the index is a
+                # failed retry of a known episode, not a new failure — see
+                # vasool/events/schemas.py::from_webhook. The same index the
+                # settlement path below reads, used in the other direction.
+                retry_index=retry_index,
+            )
             if event_name == "payment.failed"
             else None
         )
@@ -100,29 +112,17 @@ def create_app(
             failure_event=failure_event,
         )
 
+        # Gated on `inserted`: only the first delivery of an event may settle
+        # anything. Razorpay delivers every webhook at least twice
+        # (docs/VERIFIED.md), and while PolicyMachine.settled() is
+        # independently idempotent there is no reason to lean on that here.
         if inserted and machine is not None:
-            if event_name == "payment_link.paid":
-                entity_id = entity_id_from_payment_link_paid(body)
-                if entity_id is not None:
-                    machine.settled(
-                        entity_id,
-                        reason="payment_link.paid",
-                        amount_paise=amount_paise_from_payment_link_paid(body),
-                    )
-                else:
-                    log.info(
-                        "payment_link.paid %s carries no vasool_entity_id — not "
-                        "one of ours, or predates the notes tag; nothing to settle",
-                        x_razorpay_event_id,
-                    )
-            elif event_name == "payment.captured" and retry_index is not None:
-                entity_id = entity_id_from_payment_captured(body, retry_index=retry_index)
-                if entity_id is not None:
-                    machine.settled(
-                        entity_id,
-                        reason="payment.captured",
-                        amount_paise=amount_paise_from_payment_captured(body),
-                    )
+            settle_from_webhook(
+                event_name=event_name,
+                body=body,
+                machine=machine,
+                retry_index=retry_index,
+            )
 
         return {"ok": True, "duplicate": not inserted}
 

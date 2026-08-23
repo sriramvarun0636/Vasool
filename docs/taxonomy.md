@@ -503,6 +503,55 @@ Listing these is more useful than pretending otherwise.
    at all (docs/VERIFIED.md). See VERIFIED.md's two DECISION entries on
    settlement for the mechanism behind each wired path.
 
+10. **§7's "hard stop on out-of-band success" can never fire for a genuinely
+    out-of-band payment.** The rule is right and the state machine honours it
+    the instant `settled()` is called — but for the case the rule is named
+    after, nothing ever calls it. A customer who pays through some other
+    channel produces a `payment.captured` carrying no `vasool_entity_id` and
+    no RetryIndex entry, indistinguishable from any other payment on the
+    account (§9.9), so the receiver correctly declines to attribute it and the
+    episode stays open. What §7 actually stops is the *attributable* cases: a
+    link we sent being paid, our own retry capturing, a refund. Those are
+    worth stopping, and they are not the case the row's name evokes.
+
+    The consequence is not a missed recovery. It is that the agent goes on
+    chasing money the merchant already has — a double-collection hazard rather
+    than a lost-revenue one, which is the more expensive direction to be wrong
+    in. This is also why `EVALUATION.md` §4's out-of-band parameter produces no
+    recovery in the evaluation: `windtunnel/` measures the exposure directly,
+    as how often an action is taken on an episode after its money had already
+    arrived, and reports it as a safety number. Out-of-band money is never
+    counted as recovered in any arm, so every arm is undercounted by the same
+    mechanism and the paired comparisons are unaffected.
+
+    Closing this needs an attributable signal that does not exist today. The
+    honest options are a merchant-side reconciliation feed, or correlating on
+    the original `order_id` — which §9.9 rules out as a guessed join key, and
+    which would miss a payment made against a new order anyway. Recorded as an
+    open failure rather than designed around.
+
+    **The window is wide rather than narrow, and that is measurable.** Every
+    row above escalates to a link, and a link nobody clicks produces no
+    signal at all — so an episode that runs its ladder out rests in AWAITING
+    indefinitely rather than terminating. On seed 0 that is 304 of 888
+    episodes, the single largest resting state, every one of them having
+    executed exactly the retries §4 permits and then sent §4's link. An
+    episode still open is an episode still exposed, so the double-collection
+    hazard above is not a brief window between an out-of-band payment and a
+    terminal state; for a link-intervention episode it runs to the horizon.
+
+11. **`EXHAUSTED` is unreachable through the rules classifier, and that is a
+    structural fact rather than a finding.** The state exists for the case §4
+    contemplates in its last column — the retry budget is spent and the row
+    names no escalation — and no row is actually like that: every one of them
+    escalates, to a link or to a human. So `proposals_from` never returns
+    empty for a rules-classified diagnosis, and the report card will show 0
+    beside `EXHAUSTED` on every seed. Worth stating because a reader is
+    entitled to know whether a zero means "never happened" or "cannot
+    happen", and here it is the second. It becomes reachable the day a row
+    ends without an escalation, or the day an LLM classifier (§8) proposes
+    one that does.
+
 ---
 
 ## 10. The five sentences

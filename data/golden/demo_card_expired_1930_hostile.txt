@@ -77,12 +77,12 @@
 [8] receipt
     outcome      : blocked
     receipt_id   : rcpt_08d2f2859e51f6c7
-    hash         : f0678dd619f3612e4807edad1557a6f1caf6b0925f6f87e6b9cf0e0ee625d6cc
+    hash         : d68942c9613aa34594d2aa2130a01b535a19355ac95dcf149e8cda0149f11d56
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- BLOCKED by DPDP Act 2023 s.6 +
 DPDP Rules 2025, and stayed BLOCKED.
-Receipt: f0678dd619f3612e4807edad1557a6f1caf6b0925f6f87e6b9cf0e0ee625d6cc
+Receipt: d68942c9613aa34594d2aa2130a01b535a19355ac95dcf149e8cda0149f11d56
 ==============================================================================

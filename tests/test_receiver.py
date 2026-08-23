@@ -383,3 +383,71 @@ def test_real_captured_signature_verifies():
     )
     assert resp.status_code == 200
     assert resp.json()["duplicate"] is False
+
+
+class TestAFailedRetryIsRecognisedAtTheBoundary:
+    """The receiver mints the FailureEvent, so it is where a failed retry
+    either is or is not recognised as a continuation of its episode.
+
+    `RetryIndex` is read in both directions here: a `payment.captured` it
+    knows is our retry succeeding (above), a `payment.failed` it knows is
+    that same retry failing. The correlation itself lives in
+    vasool/events/schemas.py::from_webhook — the seam windtunnel/ crosses
+    too — and these check the receiver actually hands it the index.
+    """
+
+    def _post_failure(self, client: TestClient, payment_id: str, event_id: str):
+        fixture = _load("payment_failed__payment_failed__firstcapture.json")
+        body = fixture["body"]
+        body["payload"]["payment"]["entity"]["id"] = payment_id
+        raw = json.dumps(body).encode()
+        return client.post(
+            "/webhook",
+            content=raw,
+            headers={
+                "content-type": "application/json",
+                "x-razorpay-signature": _sign(raw),
+                "x-razorpay-event-id": event_id,
+            },
+        )
+
+    def test_a_failure_for_a_payment_our_retry_created_names_the_original_episode(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        app = create_app(
+            store=store,
+            webhook_secret=TEST_SECRET,
+            pepper=TEST_PEPPER,
+            clock=clock,
+            retry_index=FakeRetryIndex(pay_our_retry="pay_original_fail"),
+        )
+        self._post_failure(TestClient(app), "pay_our_retry", "evt-retry-failed")
+
+        event = store.get("evt-retry-failed")["failure_event"]
+        assert event.entity_id == "pay_original_fail"
+        assert event.retried_payment_id == "pay_our_retry"
+
+    def test_an_ordinary_failure_is_left_exactly_as_it_was(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        app = create_app(
+            store=store,
+            webhook_secret=TEST_SECRET,
+            pepper=TEST_PEPPER,
+            clock=clock,
+            retry_index=FakeRetryIndex(pay_some_other_retry="pay_unrelated"),
+        )
+        self._post_failure(TestClient(app), "pay_a_customers_own_failure", "evt-ordinary")
+
+        event = store.get("evt-ordinary")["failure_event"]
+        assert event.entity_id == "pay_a_customers_own_failure"
+        assert event.retried_payment_id is None
+
+    def test_with_no_index_wired_the_receiver_behaves_as_before(
+        self, client: TestClient, store: EventStore
+    ):
+        self._post_failure(client, "pay_our_retry", "evt-no-index")
+
+        event = store.get("evt-no-index")["failure_event"]
+        assert event.entity_id == "pay_our_retry"
+        assert event.retried_payment_id is None
