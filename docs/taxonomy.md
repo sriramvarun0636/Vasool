@@ -484,6 +484,24 @@ Listing these is more useful than pretending otherwise.
    produce spurious failures. We have never observed one. It is kept because it
    is nearly free, not because it is proven. The contact half needs no such
    defence and does not depend on it.
+9. **Out-of-band settlement detection is attribution-limited, not
+   architecture-limited.** The state machine's own A07 handling (§7's hard
+   stop) is unconditionally correct once `PolicyMachine.settled()` is called —
+   the gap, such as it is, sits entirely upstream of that call, in which real
+   settlement events the receiver can actually recognise. Two paths are
+   wired: a REAUTH_LINK/REATTEMPT_LINK paid through the link this agent sent
+   (`payment_link.paid`, correlated via the `notes.vasool_entity_id` it
+   tagged), and a SILENT_RETRY/TIMED_RETRY captured as the same payment
+   `createRecurring` created (`payment.captured`, correlated via the
+   executor's own RetryIndex — process-local, so a restart between the retry
+   firing and its capture arriving loses that particular join). **Not
+   caught:** a link-intervention episode paid out-of-band through any *other*
+   channel — a customer who pays directly rather than through the link we
+   sent carries no `vasool_entity_id` anywhere and is invisible to us,
+   indistinguishable from any other payment on the account. Also not caught,
+   ever: `order.paid`, which stays unwired for want of any attributable field
+   at all (docs/VERIFIED.md). See VERIFIED.md's two DECISION entries on
+   settlement for the mechanism behind each wired path.
 
 ---
 
