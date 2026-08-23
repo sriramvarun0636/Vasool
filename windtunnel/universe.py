@@ -42,6 +42,12 @@ from windtunnel.parameters import (
 )
 from windtunnel.rng import bernoulli, choose, exponential, integer, lognormal, poisson, uniform
 
+Mix = tuple[tuple[str, float], ...]
+r"""The shape of a registered share table: (option, share) pairs summing to
+1.0 exactly. windtunnel/rng.py::choose refuses anything else, which is why
+§7's mix sweep has to renormalise the remainder rather than scale one share
+in place."""
+
 CUSTOMER_COUNT = 500
 """§3d, registered: "500 customers, seeded"."""
 
@@ -212,7 +218,12 @@ def _customer(
     )
 
 
-def _reason_and_source(seed: int, entity_id: str) -> tuple[str, str]:
+def _reason_and_source(
+    seed: int,
+    entity_id: str,
+    reason_mix: Mix = REASON_MIX,
+    source_mix: Mix = PAYMENT_FAILED_SOURCE_MIX,
+) -> tuple[str, str]:
     """§3d's registered mix, drawn in two stages.
 
     The generic reason branches on source because taxonomy §3 says it is the
@@ -220,10 +231,15 @@ def _reason_and_source(seed: int, entity_id: str) -> tuple[str, str]:
     makes one registered reason exercise three different failure classes.
     Every other reason takes the source its own payload on disk carries, which
     is why this returns a pair rather than picking a source independently.
+
+    Both tables are arguments so §7 can sweep them (windtunnel/sweeps.py).
+    They default to the registered ones, so every existing caller and the
+    whole base protocol are unaffected — a swept mix is something a caller has
+    to ask for.
     """
-    reason = choose(REASON_MIX, seed, entity_id, "reason")
+    reason = choose(reason_mix, seed, entity_id, "reason")
     if reason == "payment_failed":
-        return reason, choose(PAYMENT_FAILED_SOURCE_MIX, seed, entity_id, "source")
+        return reason, choose(source_mix, seed, entity_id, "source")
     source = next(s for r, s in payloads.available_pairs() if r == reason)
     return reason, source
 
@@ -234,6 +250,8 @@ def build_universe(
     pepper: str,
     outcome: OutcomeModel,
     parameters: dict[str, Parameter] = WORLD_PARAMETERS,
+    reason_mix: Mix = REASON_MIX,
+    source_mix: Mix = PAYMENT_FAILED_SOURCE_MIX,
 ) -> Universe:
     """One world, from one seed. Pure: no clock, no I/O beyond reading the
     payload envelopes off disk.
@@ -280,7 +298,7 @@ def build_universe(
                 break
 
             entity_id = _entity_id(seed, index, episode_index)
-            reason, source = _reason_and_source(seed, entity_id)
+            reason, source = _reason_and_source(seed, entity_id, reason_mix, source_mix)
             amount_rupees = lognormal(
                 value("amount_median_rupees"), value("amount_sigma_log"), seed, entity_id, "amount"
             )

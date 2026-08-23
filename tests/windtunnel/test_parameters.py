@@ -55,11 +55,25 @@ def _rows(section: str, next_section: str) -> list[list[str]]:
 def _section_4_table() -> dict[str, tuple[float, str]]:
     """§4's registered parameters: label -> (value, provenance tag)."""
     registered = {}
-    for label, value, provenance in _rows("## 4. The outcome model", "**Seven of eight"):
+    for label, value, provenance in _rows("## 4. The outcome model", "**Eight of the nine"):
         number = float(re.search(r"\*\*([\d.]+)", value).group(1))
         tag = re.search(r"\[(\w+)\]", provenance).group(1)
         registered[label] = (number, tag)
     return registered
+
+
+def _registered_guess_fraction() -> tuple[int, int]:
+    """The guess fraction §4 states in its own prose.
+
+    Parsed rather than trusted, for the same reason as everything else here:
+    §4 calls this number a headline result and the report card prints it, so
+    it must not be possible to change the tags in the code without the
+    document's claim about them failing.
+    """
+    text = EVALUATION.read_text()
+    match = re.search(r"fraction in the outcome model — (\d+)/(\d+) —", text)
+    assert match, "§4 no longer states a guess fraction"
+    return int(match.group(1)), int(match.group(2))
 
 
 def _section_3d_table() -> dict[str, float]:
@@ -90,13 +104,31 @@ class TestSection4Correspondence:
         assert parameter.value == value
         assert parameter.provenance.value == tag
 
-    def test_the_guess_fraction_is_what_the_document_says_it_is(self):
-        """§4 calls 7/8 "itself a headline result". If the code drifts to a
-        different mix of tags, the report card's most prominent honesty claim
-        becomes false."""
+    def test_the_registered_table_is_still_seven_guesses_in_eight_rows(self):
+        """What §4 registered, before the §10 addition: seven guesses and one
+        definitional zero. §4's prose states this alongside the fraction, and
+        a drift in either direction would make that sentence false."""
         registered = [p for p in OUTCOME_PARAMETERS.values() if p.registered_as]
         guesses = [p for p in registered if p.provenance is Provenance.GUESS]
         assert (len(guesses), len(registered)) == (7, 8)
+
+    def test_the_guess_fraction_is_what_the_document_says_it_is(self):
+        """§4 calls the outcome model's guess fraction "itself a headline
+        result" and the report card prints it as prominently as the recovery
+        rate. It counts the whole outcome model — the eight registered rows
+        plus retry_success_unpriced_class, added under §10 — so adding a
+        parameter by amendment moves it, and a parameter added without moving
+        it fails here rather than quietly making the claim false."""
+        guesses = [p for p in OUTCOME_PARAMETERS.values() if p.provenance is Provenance.GUESS]
+        assert (len(guesses), len(OUTCOME_PARAMETERS)) == _registered_guess_fraction()
+
+    def test_the_world_parameters_are_not_inside_that_fraction(self):
+        """§10's world-shape parameters are guesses too, and there are twelve
+        of them. The document scopes its headline fraction to the outcome
+        model in as many words; if the report card ever prints 8/9 over the
+        full registry it will be printing 20/21 and calling it 8/9."""
+        _, total = _registered_guess_fraction()
+        assert total == len(OUTCOME_PARAMETERS) < len(OUTCOME_PARAMETERS) + len(WORLD_PARAMETERS)
 
 
 class TestSection3dCorrespondence:

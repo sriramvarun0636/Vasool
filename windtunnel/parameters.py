@@ -9,7 +9,8 @@ pre-registered document actually registers, parsed out of the markdown in both
 directions. Editing either side alone fails.
 
 **Two registries, because two things are registered.** `OUTCOME_PARAMETERS`
-holds §4's eight, which decide whether money arrives. `WORLD_PARAMETERS` holds
+holds §4's eight plus the ninth added under §10, which decide whether money
+arrives. `WORLD_PARAMETERS` holds
 the world-shape numbers §3d does not register — how many episodes a customer
 has, when they arrive, how large they are, who consented. §3d fixes the
 failure-reason mix and the customer count and stops there, but §3a's whole
@@ -22,14 +23,15 @@ would be exactly the drift §3c exists to prevent. They are registered under
 **On `[derived]`.** §4 defines it as "computed from a `[cited]` figure by
 stated arithmetic". This project has no cited figures — §4 says so at length —
 so anything computed from a guess is itself a guess, and is tagged that way.
-Letting `[derived]` launder a number would make the 7/8 guess fraction, which
+Letting `[derived]` launder a number would make the 8/9 guess fraction, which
 §4 calls a headline result in its own right, quietly false. The one
 `[derived]` below is §4's own registered INSTRUMENT_DEAD zero, kept as the
 document tags it: re-tagging it here would be editing code to make a
 pre-registered document look consistent, which is backwards.
 
 **What is deliberately not a parameter.** Several application rules follow
-from the registered eight without adding a ninth, and windtunnel/outcome.py
+from the registered parameters without adding one of their own, and
+windtunnel/outcome.py
 documents each at its use site rather than inventing a knob for it: a
 TRANSIENT retry uses the same rate at every attempt; an out-of-window
 REAUTH_LINK uses the registered in-window rate; a LIQUIDITY retry that lands

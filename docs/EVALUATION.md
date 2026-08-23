@@ -206,13 +206,16 @@ with no tag fails a test.
 | P(out-of-band settlement, per episode-day) | **0.02** | `[guess]` |
 | Salary-window balance uplift multiplier | **2.0×** | `[guess]` |
 
-**Seven of eight parameters are `[guess]`.** Conditional retry-success
-probabilities at this granularity are not published by anyone — not by NPCI,
-not by the PA/PGs, not in any paper I could find — and inventing a citation
-for them would be the first dishonest sentence in this repository. So they
-are my judgement, labelled as my judgement, everywhere they appear. The one
-non-guess is definitional rather than measured: an expired card authorising
-is not a low-probability event, it is not an event.
+**Eight of the nine parameters are `[guess]`.** The eight rows above are
+seven guesses and one definitional zero; the ninth,
+`retry_success_unpriced_class`, was added under §10 after this table was
+registered and is a guess as well. Conditional retry-success probabilities at
+this granularity are not published by anyone — not by NPCI, not by the
+PA/PGs, not in any paper I could find — and inventing a citation for them
+would be the first dishonest sentence in this repository. So they are my
+judgement, labelled as my judgement, everywhere they appear. The one non-guess
+is definitional rather than measured: an expired card authorising is not a
+low-probability event, it is not an event.
 
 **The reasoning behind each guess**, so a reader can attack the reasoning
 rather than the number:
@@ -238,18 +241,10 @@ rather than the number:
 - **2.0× uplift** — a round number, chosen because it is arguable in both
   directions rather than because anything supports it.
 
-**I expect most of these to end up `[guess]`.** Conditional retry-success
-probabilities at this granularity are not published by anyone, and pretending
-otherwise would be the first dishonest sentence in the repository. That is
-precisely why §7's sensitivity sweep, not the point estimates, carries the
-evidentiary weight here — a conclusion that holds across ±50% on a guessed
-parameter is worth something; a point estimate from a guessed parameter is
-worth nothing.
-
-**The `[guess]` fraction — 7/8 — is itself a headline result** and appears in
-the report card as prominently as the recovery rate. The recovery numbers
-substantially describe my priors, and a reader is entitled to know that
-without opening the source.
+**The `[guess]` fraction in the outcome model — 8/9 — is itself a headline
+result** and appears in the report card as prominently as the recovery rate.
+The recovery numbers substantially describe my priors, and a reader is
+entitled to know that without opening the source.
 
 **One asymmetry I am committing to now:** where a parameter choice would
 plausibly favour Vasool over a baseline that does *not* share it, I take the
@@ -438,6 +433,12 @@ the report card.
 
 | Date | Change | Reason | Post-hoc? |
 |---|---|---|---|
+| 2026-08-23 | §7 sweeps run on seeds `0..199` (200 seeds), not `0..999`. Survival is judged against an unswept reference recomputed on the same 200 seeds. | §7 registers no seed count of its own — §6a's `0..999` is scoped to the primary inference — so this registers something §7 left open rather than amending §6a. The full grid at 1000 seeds is 24 knobs × 4 points plus 3 mix composites, × 9 arms: roughly 82 hours measured, against ~40 minutes for the base protocol. 200 seeds brings it to one overnight run. The mitigation is not optional: a 200-seed bootstrap interval is about 2.24× wider, so a conclusion could cross zero from lost power rather than from the parameter, and F6 fires on flips. An equally-powered reference makes "flips" a statement about the parameter again. | No |
+| 2026-08-23 | `retry_success_instrument_dead` is **not swept**. Its four §7 configurations are not run; the report card states it as inert-by-construction and shows the arithmetic. | The registered value is 0.0 and every §7 factor is multiplicative: 0.0 × 0.5 = 0.0 × 1.5 = 0.0. Four runs identical to the unswept run would be theatre, and counting them as passed sweeps would overstate how much of the outcome model has actually been tested. §4's one non-guess is definitional, and a definition does not have a sensitivity. | No |
+| 2026-08-23 | §3d's mix is swept as **three registered composite configurations**, not as 13 per-share knobs. Each names one or more reasons, scales their registered shares by a §7 factor, and scales every unnamed share by a single common factor so the table sums to 1.0 exactly. **M1 `recoverable_heavy`**: `insufficient_fund` ×1.5; `card_declined`, `card_expired`, `card_disabled_for_online_payments`, `payment_risk_check_failed` ×0.5. **M2 `recoverable_light`**: the mirror — `insufficient_fund` ×0.5, those four ×1.5. **M3 `generic_skews_dead`**: `PAYMENT_FAILED_SOURCE_MIX`'s `bank` ×1.5, with `gateway` and `business` renormalised. | §3d's own sentence is singular — "the mix is swept under §7 like any other registered parameter" — and a per-share sweep has no defined meaning anyway: `windtunnel/rng.py::choose` raises unless shares sum to 1.0 exactly, and §7 registers no renormalisation rule, so "scale by ±50%" is undefined on a simplex without one. Three composites test what §3d says is actually at risk — "weight LIQUIDITY up and every arm improves" — in both directions, plus the source split that makes the single largest reason, 0.30 of all episodes, resolve to three different failure classes. The factors are §7's own ±50%, so no new magnitude enters. | No |
+| 2026-08-23 | §8's three under-specified ablations get registered values. **A1** treats every failure as `payment_failed`/`gateway`'s row — one silent retry, then a re-attempt link — rather than `gateway_technical_error`'s three. **A2** uses `TRANSIENT_BACKOFF` (5m → 30m → 4h) for `LIQUIDITY`. **A3** gives each `INSTRUMENT_DEAD` row the retry budget its class would otherwise get: `card_expired` and `card_disabled_for_online_payments` take `payment_failed`/`gateway`'s single probe, and `card_declined` keeps the one it already has. | A1 is "no taxonomy", and an agent with no classification has no basis for knowing a gateway problem is a gateway problem — handing it the informed row's three-retry budget would give it knowledge the ablation is supposed to remove. A2's backoff is already registered and is the one §5.1 names, so no new number enters. A3 removes the zero-retry *rule*, not the budget discipline: three retries on a dead card would test a strawman, while the claim under test is that **one** futile retry costs an attempt the re-auth link needed. | No |
+| 2026-08-23 | §9's F5 threshold reads as **20 absolute percentage points** of recovery rate, not 20% relative. | A relative figure inflates as the base rate falls, which would make the guards look most expensive exactly where there was least to lose. Absolute points are what a merchant experiences, and what F5 asks is what compliance costs. **Disclosure:** figures were visible when this reading was fixed — seed 0, 35.7% gated against 52.3% ungated, which is 16.6pp absolute and 46.5% relative, so the two readings gave opposite verdicts on that seed. They were whole-universe figures, not development-set ones, because the §3c split did not exist when that feasibility probe ran; one aggregate recovery rate on one seed is not a holdout evaluation, but it was not holdout-excluded either. The reading registered here is the one that makes F5 **harder** to fire. | No |
+| 2026-08-23 | §4 prose: "seven of eight" → "eight of the nine", and the headline `[guess]` fraction 7/8 → 8/9, scoped to the outcome model. Cut a paragraph duplicating the one above it. No registered value or tag changed; the §4 table still has eight rows. | The fraction is the report card's most prominent honesty claim and `retry_success_unpriced_class` made it understate the guessing by one parameter. §10's twelve world-shape parameters are guesses too and are outside this fraction, which is why it now names its scope. | No |
 | 2026-08-23 | §11: time-to-recovery excludes customer response latency | Settlement lands in the same tick as the action that earned it. No click-delay parameter is registered in §4 and inventing one would be a parameter this protocol never agreed to. | No |
 | 2026-08-23 | §4 add: `retry_success_unpriced_class` = 0.35 `[guess]`. Swept. | §4 prices no retry against CUSTOMER_ACTION or RISK_BLOCK because Vasool never retries either; `naive_retry` and A1 do. Set to the highest registered retry rate — generous is the anti-Vasool direction, and zero would flatter Vasool by construction. | No |
 | 2026-08-23 | `episodes_per_customer_lambda` = 1.0 `[guess]` (episodes = 1 + Poisson(λ), truncated at 6). Swept. | ~63% of customers get more than one episode. §3a's randomisation argument is that customers share a frequency-cap budget; a one-episode-each universe makes that decoration and `FrequencyCapGuard` unreachable. | No |

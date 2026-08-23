@@ -42,7 +42,7 @@ from typing import Protocol
 from vasool.clock import Clock
 from vasool.diagnosis.proposal import Proposal, notice_proposal_from, proposals_from
 from vasool.diagnosis.rules import classify
-from vasool.diagnosis.taxonomy import InterventionType
+from vasool.diagnosis.taxonomy import RULES, InterventionType, Rule
 from vasool.events.schemas import FailureEvent
 from vasool.policy.episode import (
     Episode,
@@ -149,13 +149,39 @@ class PolicyMachine:
         episodes: EpisodeStore | None = None,
         transitions: TransitionLog | None = None,
         chain: tuple[Guard, ...] = GUARD_CHAIN,
+        rules: dict[tuple[str, str], Rule] = RULES,
+        resolve: Callable[[GuardContext, tuple[Guard, ...]], ChainResult] = evaluate_all,
     ) -> None:
+        """`rules` and `resolve` exist for one caller: the wind tunnel's
+        evaluator (EVALUATION.md §5 and §8).
+
+        Both default to what production runs, so nothing about the agent
+        changes by their existence. What they buy is that an arm can be a
+        *configuration* of this machine rather than a copy of it — every
+        baseline and every ablation runs the same FSM, the same guards, the
+        same executor and the same ledger, and differs only in the §4 table it
+        classifies against and how the chain's verdicts resolve. Expressing an
+        arm any other way would put a copy of `observe()` — including its A18
+        clock-skew closure, which §2a scans for — inside windtunnel/, and full
+        Vasool would then be measured through that copy rather than through
+        production's own path.
+
+        `resolve` is what ablation A4 needs: the design spec short-circuits the
+        chain on the first refusal and `registry.py` argues at length for
+        running all thirteen instead. A4 measures whether that correction
+        mattered. Faking it by wrapping the guards was the alternative and it
+        is worse — a suppressed guard would have to report NOT_APPLICABLE,
+        which means "no jurisdiction" and not "never consulted", putting a
+        false verdict in the artefact §2a scans.
+        """
         self._clock = clock
         self.facts = facts
         self.executor = executor
         self.episodes = episodes if episodes is not None else InMemoryEpisodeStore()
         self.transitions = transitions if transitions is not None else InMemoryTransitionLog()
         self._chain = chain
+        self._rules = rules
+        self._resolve = resolve
         self._queue: list[ScheduledItem] = []
 
     # -- inspection -------------------------------------------------------
@@ -199,7 +225,7 @@ class PolicyMachine:
             return
 
         attempt = episode.attempts_used + 1
-        diagnosis = classify(event, clock=self._clock, attempt=attempt)
+        diagnosis = classify(event, clock=self._clock, attempt=attempt, rules=self._rules)
         episode = self._to(episode, State.DIAGNOSED, diagnosis.rationale)
 
         proposals = proposals_from(diagnosis, event, now=now)
@@ -301,7 +327,7 @@ class PolicyMachine:
             return
 
         self._queue.remove(item)
-        result = evaluate_all(ctx, self._chain)
+        result = self._resolve(ctx, self._chain)
         episode = self._to(
             episode,
             State.GATED,

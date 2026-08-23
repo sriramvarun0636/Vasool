@@ -42,11 +42,13 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from vasool.actions.comms import CommsSender
 from vasool.actions.executor import RazorpayExecutor
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, template_ids
+from vasool.diagnosis.taxonomy import RULES, Rule, lookup
 from vasool.events.settlement import settle_from_webhook
 from vasool.ledger.receipts import CallJournal, Receipt, build_from_transitions
 from vasool.ledger.tracing import trace_id_for
@@ -54,9 +56,12 @@ from vasool.policy.episode import State
 from vasool.policy.machine import ExecutionResult, PolicyMachine
 from vasool.policy.transitions import Transition
 from windtunnel import payloads
-from windtunnel.outcome import Attempt, OutcomeModel, SettlementChannel
+from windtunnel.outcome import Attempt, OutcomeModel, Ruling, SettlementChannel
 from windtunnel.universe import PlannedEpisode, Universe
 from windtunnel.world import WorldFactStore
+
+if TYPE_CHECKING:
+    from windtunnel.arms import Arm
 
 MAX_STEPS = 200_000
 """Upper bound on the event loop, so a scheduling bug fails loudly rather than
@@ -114,6 +119,17 @@ class ExecutedAction:
     is_contact: bool
     is_retry: bool
     ok: bool
+    true_failure_class: str = ""
+    """What the episode's registered (reason, source) actually is, per the
+    registered §4 table — not what this arm believed it to be.
+
+    Only ever differs from `Proposal.failure_class` for an arm that
+    misclassifies on purpose (EVALUATION.md §5's baselines, §8's A1). Recorded
+    so the report card can state the design spec's headline guardrail — retries
+    spent on an instrument that could never authorise — for arms whose own
+    label would hide it. A world number, and labelled as one wherever it is
+    reported: it is not a ledger scan and is not part of §2a.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,6 +158,7 @@ class RunResult:
     6); this is the raw material they are computed from."""
 
     seed: int
+    arm: str
     universe: Universe
     transitions: tuple[Transition, ...]
     executed: tuple[ExecutedAction, ...]
@@ -150,6 +167,19 @@ class RunResult:
     """(entity_id, channel) for every settlement the agent actually saw."""
 
     final_states: dict[str, State]
+
+    rulings: tuple[Ruling, ...] = ()
+    """Every ruling the outcome model handed down, in the order it made them.
+
+    Kept for one reason: EVALUATION.md §7 sweeps each parameter independently
+    and has to say which conclusions that parameter could have touched.
+    `Ruling.depends_on` names the registered parameters that fed each decision,
+    so the attribution is a union over what actually happened rather than a
+    re-derivation of which rule *would* have applied — see
+    windtunnel/sweeps.py::parameters_touched. A parameter no ruling in either
+    arm consulted cannot have moved that comparison, and saying so from the
+    record is stronger than saying it from the code.
+    """
 
     _journal: CallJournal | None = None
     """The executor's own record, kept so `ledger()` can attach a Razorpay
@@ -276,7 +306,12 @@ class ObservingExecutor:
     world: WorldFactStore
     outcome: OutcomeModel
     clock: VirtualClock
+    rules: dict[tuple[str, str], Rule] = field(default_factory=lambda: RULES)
+    """The §4 table this arm classifies against. Read for one thing only —
+    whether this arm's row for the episode aims its retry at a salary window —
+    and never to decide whether money arrives."""
     executed: list[ExecutedAction] = field(default_factory=list)
+    rulings: list[Ruling] = field(default_factory=list)
     pending_settlements: list[tuple[Proposal, SettlementChannel]] = field(default_factory=list)
     pending_failures: list[Proposal] = field(default_factory=list)
     """Retries the world declined. Each owes the agent another
@@ -284,6 +319,7 @@ class ObservingExecutor:
 
     def execute(self, proposal: Proposal) -> ExecutionResult:
         at = self.clock.now()
+        plan = self.world.episode_for(proposal.entity_id)
         result = self.inner.execute(proposal)
         self.world.record_execution(proposal, at=at)
         self.executed.append(
@@ -299,6 +335,7 @@ class ObservingExecutor:
                 is_contact=proposal.is_contact,
                 is_retry=proposal.is_retry,
                 ok=result.ok,
+                true_failure_class=plan.failure_class.value,
             )
         )
 
@@ -306,21 +343,40 @@ class ObservingExecutor:
             ruling = self.outcome.rule_on(
                 Attempt(
                     episode_id=proposal.entity_id,
-                    failure_class=proposal.failure_class,
+                    # **The world's class, never the agent's.** This used to
+                    # read `proposal.failure_class`, which is what this arm
+                    # *believes* the failure is. That was invisible while
+                    # Vasool was the only arm — its taxonomy is the
+                    # simulator's ground truth, so belief and truth were the
+                    # same object. They are not the same for an arm that
+                    # misclassifies on purpose, and reading the belief would
+                    # invert the experiment: A1 labels an expired card
+                    # TRANSIENT, so the outcome model would price its retry at
+                    # the transient rate and the card would authorise. The
+                    # ablation would then earn recoveries by being wrong, and
+                    # "no taxonomy" would beat the taxonomy. An expired card
+                    # not authorising is a fact about the world (taxonomy §5),
+                    # so the world is what decides it — resolved through the
+                    # registered table by `PlannedEpisode.failure_class`.
+                    failure_class=plan.failure_class,
                     intervention=proposal.intervention,
                     role=proposal.role,
                     attempt=proposal.attempt,
                     amount_paise=proposal.amount_paise,
                     effective_at=at,
-                    # Vasool's own arm: a TIMED_RETRY is by definition the
-                    # intervention whose timing IS the intervention
-                    # (vasool/diagnosis/taxonomy.py). Ablation A2 keeps the
-                    # intervention and removes the timing, and sets this
-                    # False — which is why Attempt carries it as a field
-                    # rather than inferring it.
-                    salary_timed=proposal.intervention.value == "TIMED_RETRY",
+                    # Whether this arm *aimed* the retry at a salary window,
+                    # read off the arm's own §4 row rather than off the
+                    # intervention. Ablation A2 keeps LIQUIDITY's TIMED_RETRY
+                    # and removes its salary timing, so inferring this from
+                    # the intervention would leave A2 unable to express
+                    # itself — which is why `Attempt` carries it as a field
+                    # (windtunnel/outcome.py).
+                    salary_timed=lookup(plan.reason, plan.source, rules=self.rules)[
+                        1
+                    ].salary_aware,
                 )
             )
+            self.rulings.append(ruling)
             if ruling.money_arrives and ruling.channel is not None:
                 self.pending_settlements.append((proposal, ruling.channel))
             elif proposal.is_retry:
@@ -336,7 +392,26 @@ class ObservingExecutor:
 class Runner:
     """One arm, one seed, one universe."""
 
-    def __init__(self, universe: Universe, *, outcome: OutcomeModel, pepper: str) -> None:
+    def __init__(
+        self,
+        universe: Universe,
+        *,
+        outcome: OutcomeModel,
+        pepper: str,
+        arm: "Arm | None" = None,
+    ) -> None:
+        """`arm` is EVALUATION.md §5's baseline or §8's ablation to run, and
+        defaults to full Vasool.
+
+        An arm is a configuration of the real `PolicyMachine` — a §4 table, a
+        guard chain and a chain-resolution rule — never a second agent. The
+        FSM, the thirteen guards, the executor and the ledger are the same
+        objects in every arm, which is what makes the comparison a comparison
+        of two policies rather than of two codebases.
+        """
+        from windtunnel.arms import VASOOL
+
+        self.arm = arm if arm is not None else VASOOL
         self.universe = universe
         self._pepper = pepper
         self.outcome = outcome
@@ -352,10 +427,19 @@ class Runner:
             registered_templates=template_ids(),
         )
         self.executor = ObservingExecutor(
-            inner=self._inner, world=self.world, outcome=outcome, clock=self.clock
+            inner=self._inner,
+            world=self.world,
+            outcome=outcome,
+            clock=self.clock,
+            rules=self.arm.rules,
         )
         self.machine = PolicyMachine(
-            clock=self.clock, facts=self.world, executor=self.executor
+            clock=self.clock,
+            facts=self.world,
+            executor=self.executor,
+            chain=self.arm.chain,
+            rules=self.arm.rules,
+            resolve=self.arm.resolve,
         )
         self._out_of_band: list[OutOfBandOccurrence] = []
         self._settled: list[tuple[str, str]] = []
@@ -598,11 +682,13 @@ class Runner:
         transitions = tuple(self.machine.transitions)
         return RunResult(
             seed=self.universe.seed,
+            arm=self.arm.name,
             universe=self.universe,
             transitions=transitions,
             executed=tuple(self.executor.executed),
             out_of_band=tuple(self._out_of_band),
             settled=tuple(self._settled),
+            rulings=tuple(self.executor.rulings),
             final_states={
                 episode.entity_id: state
                 for episode in self.universe.episodes
@@ -626,7 +712,14 @@ def _earliest(*moments: datetime | None) -> datetime | None:
     return min(real) if real else None
 
 
-def run_seed(seed: int, *, pepper: str, outcome: OutcomeModel | None = None, **universe_kwargs) -> RunResult:
+def run_seed(
+    seed: int,
+    *,
+    pepper: str,
+    outcome: OutcomeModel | None = None,
+    arm: "Arm | None" = None,
+    **universe_kwargs,
+) -> RunResult:
     """Build one universe and run the full agent against it.
 
     The convenience entry point. EVALUATION.md §6a fixes the seed range at
@@ -639,4 +732,4 @@ def run_seed(seed: int, *, pepper: str, outcome: OutcomeModel | None = None, **u
 
     outcome = outcome or OutcomeModel(parameters=OUTCOME_PARAMETERS, seed=seed)
     universe = build_universe(seed, pepper=pepper, outcome=outcome, **universe_kwargs)
-    return Runner(universe, outcome=outcome, pepper=pepper).run()
+    return Runner(universe, outcome=outcome, pepper=pepper, arm=arm).run()

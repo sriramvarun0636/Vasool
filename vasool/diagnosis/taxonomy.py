@@ -455,7 +455,9 @@ def normalise(reason: str) -> str:
     return canonical
 
 
-def lookup(reason: str, source: str) -> tuple[str, Rule]:
+def lookup(
+    reason: str, source: str, *, rules: dict[tuple[str, str], Rule] = RULES
+) -> tuple[str, Rule]:
     """Resolve (error_reason, error_source) to its §4 row.
 
     Returns the normalised reason alongside the rule so that callers get both
@@ -465,12 +467,24 @@ def lookup(reason: str, source: str) -> tuple[str, Rule]:
     §3: the lookup is keyed on the pair, but only `payment_failed` has
     source-specific rows. For every other reason the source-specific key is
     absent by construction, so the SOURCE_ANY row is the only one reachable.
+
+    **`rules` exists so the wind tunnel can measure this table against
+    alternatives** — EVALUATION.md §5's baselines and §8's ablations are each a
+    different §4, and expressing them any other way would compare two
+    codebases rather than two policies. It defaults to the registered table, so
+    production and every existing caller are unchanged.
+
+    What an alternative table may *not* change is which reasons exist:
+    `normalise` still resolves against `known_reasons()`, which reads the
+    registered table. A baseline is a different policy for a reason, never a
+    claim that a different set of reasons is real — CLAUDE.md's rule against
+    inventing error strings holds for the baselines exactly as it holds here.
     """
     canonical = normalise(reason)
     if canonical == UNKNOWN_REASON:
         return canonical, UNMAPPED_RULE
 
-    specific = RULES.get((canonical, source))
+    specific = rules.get((canonical, source))
     if specific is not None:
         return canonical, specific
 
@@ -484,4 +498,4 @@ def lookup(reason: str, source: str) -> tuple[str, Rule]:
             canonical,
         )
 
-    return canonical, RULES[(canonical, SOURCE_ANY)]
+    return canonical, rules[(canonical, SOURCE_ANY)]

@@ -30,6 +30,7 @@ from datetime import date, datetime, timedelta, timezone
 from vasool.clock import Clock
 from vasool.diagnosis.taxonomy import (
     RETRY_INTERVENTIONS,
+    RULES,
     FailureClass,
     InterventionType,
     Rule,
@@ -329,7 +330,13 @@ def _retry_at(rule: Rule, now: datetime, attempt: int) -> datetime:
     return now + rule.retry_delays[attempt - 1]
 
 
-def classify(event: FailureEvent, *, clock: Clock, attempt: int = 1) -> Diagnosis:
+def classify(
+    event: FailureEvent,
+    *,
+    clock: Clock,
+    attempt: int = 1,
+    rules: dict[tuple[str, str], Rule] = RULES,
+) -> Diagnosis:
     """Classify a failed payment and say what to do about it, and when.
 
     `attempt` is the attempt being scheduled: 1 is the response to the original
@@ -341,12 +348,19 @@ def classify(event: FailureEvent, *, clock: Clock, attempt: int = 1) -> Diagnosi
 
     Nothing here reaches Razorpay, the customer, or the database. It returns a
     description of an action; only actions/executor.py may perform one.
+
+    `rules` is the §4 table to classify against, defaulting to the registered
+    one. It is threaded through so the wind tunnel can run EVALUATION.md §5's
+    baselines and §8's ablations against *this* classifier — same timing
+    arithmetic, same quiet-hours hold, same budget logic, same nudge cap — with
+    only the table differing. An arm that reimplemented any of that would make
+    the comparison measure two codebases rather than two policies.
     """
     if attempt < 1:
         raise ValueError(f"attempt must be >= 1, got {attempt}")
 
     now = clock.now()
-    reason, rule = lookup(event.error_reason, event.error_source)
+    reason, rule = lookup(event.error_reason, event.error_source, rules=rules)
 
     if attempt <= rule.retry_budget:
         intervention = rule.retry_intervention
