@@ -146,15 +146,38 @@ reason. A silent re-run is the failure mode this rule exists to prevent.
 
 ### 3d. Universe
 
-500 customers, seeded, with failure reasons drawn from a fixed distribution.
+500 customers, seeded, with failure reasons drawn from a fixed distribution
+registered here.
 
-> `# VERIFY:` the reason-mix should be traced to a citable source (NPCI
-> monthly technical-decline / business-decline statistics, or a published
-> PA/PG report). If a proportion cannot be sourced by the time the simulator
-> runs, it is registered as `[guess]` and labelled so everywhere it appears —
-> **not quietly filled in from memory.** An uncited number presented as
-> cited converts this whole document into theatre. A `[guess]` mix is
-> acceptable; a fabricated citation is not.
+No source publishes an Indian card-decline mix at the `error_reason`
+granularity `docs/taxonomy.md` uses. Rather than fabricate a citation or
+default to a uniform mix that no real merchant has ever seen, the
+distribution below is registered as **`[guess]`**, shaped so that every one
+of the five failure classes is exercised and the generic case dominates —
+which is the one thing `docs/VERIFIED.md` does establish, since generic
+`payment_failed` is the only reason live test mode ever produced.
+
+| `error_reason` | Share | Class |
+|---|---|---|
+| `payment_failed` (gateway / bank / business split 70/25/5) | **0.30** | TRANSIENT / INSTRUMENT_DEAD / RISK_BLOCK |
+| `insufficient_fund` | **0.22** | LIQUIDITY |
+| `card_declined` | **0.12** | INSTRUMENT_DEAD |
+| `gateway_technical_error` | **0.10** | TRANSIENT |
+| `payment_timed_out` | **0.08** | TRANSIENT |
+| `payment_cancelled` | **0.07** | CUSTOMER_ACTION |
+| `card_expired` | **0.05** | INSTRUMENT_DEAD |
+| `card_disabled_for_online_payments` | **0.03** | INSTRUMENT_DEAD |
+| `card_number_invalid` | **0.02** | CUSTOMER_ACTION |
+| `payment_risk_check_failed` | **0.01** | RISK_BLOCK |
+
+Two consequences a reader should hold onto. **The mix decides the headline
+recovery rate**, because the classes differ enormously in recoverability —
+weight `LIQUIDITY` up and every arm improves. And `card_expired` at 0.05
+means the flagship claim rests on roughly one episode in twenty, so F2's
+interval will be wider than the others; that is a property of the registered
+mix, not a weakness discovered afterwards.
+
+The mix is swept under §7 like any other registered parameter.
 
 ---
 
@@ -172,16 +195,48 @@ with no tag fails a test.
 - `[derived]` — computed from a `[cited]` figure by stated arithmetic
 - `[guess]` — my judgement, with no external support
 
-| Parameter | Value | Provenance |
+| Parameter | Registered value | Provenance |
 |---|---|---|
-| P(success \| `SILENT_RETRY` on `TRANSIENT`, attempt 1) | `# VERIFY:` | expect `[guess]` |
-| P(success \| `TIMED_RETRY` on `LIQUIDITY`, in salary window) | `# VERIFY:` | expect `[guess]` |
-| P(success \| `TIMED_RETRY` on `LIQUIDITY`, outside window) | `# VERIFY:` | expect `[guess]` |
+| P(success \| `SILENT_RETRY` on `TRANSIENT`, attempt 1) | **0.35** | `[guess]` |
+| P(success \| `TIMED_RETRY` on `LIQUIDITY`, in salary window) | **0.55** | `[guess]` |
+| P(success \| `TIMED_RETRY` on `LIQUIDITY`, outside window) | **0.15** | `[guess]` |
 | P(success \| retry on `INSTRUMENT_DEAD`) | **0.0** | `[derived]` — definitional; taxonomy §5 |
-| P(customer completes `REAUTH_LINK` \| delivered, in-window) | `# VERIFY:` | expect `[guess]` |
-| P(customer completes `REATTEMPT_LINK` \| delivered) | `# VERIFY:` | expect `[guess]` |
-| P(out-of-band settlement per episode-day) | `# VERIFY:` | expect `[guess]` |
-| Salary-window balance uplift multiplier | `# VERIFY:` | expect `[guess]` |
+| P(customer completes `REAUTH_LINK` \| delivered, in-window) | **0.25** | `[guess]` |
+| P(customer completes `REATTEMPT_LINK` \| delivered) | **0.35** | `[guess]` |
+| P(out-of-band settlement, per episode-day) | **0.02** | `[guess]` |
+| Salary-window balance uplift multiplier | **2.0×** | `[guess]` |
+
+**Seven of eight parameters are `[guess]`.** Conditional retry-success
+probabilities at this granularity are not published by anyone — not by NPCI,
+not by the PA/PGs, not in any paper I could find — and inventing a citation
+for them would be the first dishonest sentence in this repository. So they
+are my judgement, labelled as my judgement, everywhere they appear. The one
+non-guess is definitional rather than measured: an expired card authorising
+is not a low-probability event, it is not an event.
+
+**The reasoning behind each guess**, so a reader can attack the reasoning
+rather than the number:
+
+- **0.35 on a transient retry** — gateway blips clear on their own; roughly a
+  third clearing within one backoff step is defensible and deliberately not
+  generous.
+- **0.55 in-window vs 0.15 outside** — this pair is the most consequential
+  guess in the file, because the gap between them *is* taxonomy §6's
+  salary-timing hypothesis expressed as a parameter. A2's result is largely
+  determined by it. If the true gap is smaller, §6 is a smaller effect than
+  the point estimate will suggest, which is precisely what the ±50% sweep
+  exists to expose. **Treat A2's headline number as untrustworthy until §7
+  reports on it.**
+- **0.25 on a re-auth link** — completion requires re-entering full card
+  details on a page arriving unprompted; friction is high and trust is low.
+- **0.35 on a re-attempt link** — same flow, less friction: the instrument
+  already works, so this is a retry the customer chose rather than a new
+  instrument they must supply.
+- **0.02 out-of-band per episode-day** — rare but non-zero. This is the
+  parameter that drives A07 (out-of-band settlement) into the run at all; set
+  it to zero and the attack never fires in evaluation.
+- **2.0× uplift** — a round number, chosen because it is arguable in both
+  directions rather than because anything supports it.
 
 **I expect most of these to end up `[guess]`.** Conditional retry-success
 probabilities at this granularity are not published by anyone, and pretending
@@ -191,10 +246,10 @@ evidentiary weight here — a conclusion that holds across ±50% on a guessed
 parameter is worth something; a point estimate from a guessed parameter is
 worth nothing.
 
-**The count of `[guess]` parameters is itself a headline result** and appears
-in the report card, stated as a fraction. If eight of eight are guesses, the
-recovery numbers describe my priors, and the reader is entitled to know that
-without reading the source.
+**The `[guess]` fraction — 7/8 — is itself a headline result** and appears in
+the report card as prominently as the recovery rate. The recovery numbers
+substantially describe my priors, and a reader is entitled to know that
+without opening the source.
 
 **One asymmetry I am committing to now:** where a parameter choice would
 plausibly favour Vasool over a baseline that does *not* share it, I take the
