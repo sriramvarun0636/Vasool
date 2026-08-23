@@ -171,3 +171,93 @@ Attribution remains unresolved and is now recorded as such.
 CONCLUSION UNCHANGED: idempotency on event_id is required either way.
 Duplicate registration is arguably the MORE likely production failure mode,
 and the receiver handles both identically.
+
+---
+
+## DECISION: two events are wired to settle a recovery episode; `order.paid` never is
+
+`vasool/events/receiver.py` calls `PolicyMachine.settled()` on two webhooks,
+via `vasool/events/settlement.py`: `payment_link.paid`, for a
+REAUTH_LINK/REATTEMPT_LINK, and `payment.captured`, for a
+SILENT_RETRY/TIMED_RETRY this agent's own executor dispatched. All three
+events named in the "successful Payment Links checkout" sequence above
+(`payment.captured` -> `order.paid` -> `payment_link.paid`) are equally
+truthful signals that money landed, but each can only be wired where
+something actually on disk lets it be attributed to *which* recovery episode
+it closes.
+
+`payment.captured` and `order.paid` fire for every successful payment on the
+account, including a customer's first-ever, never-failed checkout. Neither
+payload carries a field marking it as closing a recovery on its own. The
+only lead either offers is `order_id`, and it does not hold here: a
+REAUTH_LINK/REATTEMPT_LINK this agent sends opens a brand-new Payment Link
+with Razorpay's own newly allocated order, never the original failed
+payment's `order_id`. Attempting to correlate by `order_id`, amount, or
+customer would mean guessing a join key — exactly what CLAUDE.md's working
+agreement says not to do.
+
+`order.paid` stays unwired for exactly that reason: it has no attributable
+field of its own, ever — nothing about it is more traceable than
+`payment.captured`, so wiring it would add nothing the other two paths don't
+already cover. **`order.paid` is received and stored (EventStore does this
+for every event name) but never calls `settled()`.** This is recorded as an
+honest gap rather than papered over.
+
+`payment.captured` used to be unwired for the same reason. It no longer is,
+for the SILENT_RETRY/TIMED_RETRY case specifically — see the RetryIndex
+entry below — but the gap still stands for every `payment.captured` that
+isn't one of our own retries: an ordinary checkout, or a Payment Links
+payment (whose payment id `_link` never hands to RetryIndex — see
+`vasool/actions/executor.py`), correlates to nothing, exactly as before.
+
+`payment_link.paid` is different because the `notes` field on a Payment Link
+is merchant-supplied metadata, not something Razorpay decides.
+`vasool/actions/executor.py::RazorpayExecutor._link` sets
+`notes={"vasool_proposal_id": ..., "vasool_entity_id": ...}` on every link it
+creates, so a `payment_link.paid` webhook for a link this agent made carries
+its own entity_id back with no join key to guess — see
+`vasool/events/settlement.py`.
+
+# VERIFY: whether Razorpay actually echoes `notes` back unmodified on the
+`payment_link.paid` webhook has never been observed live. The only
+`payment_link.paid` capture on this account (`payment_link_paid__none__12b6f2.json`)
+predates the `vasool_entity_id` tag entirely — that link was created by hand
+during Session 0A, so its own `notes` is `null`. The Payment Links API
+documents `notes` as pass-through metadata and echoes it on create/fetch
+responses, so the assumption that a webhook echoes it too is reasonable, but
+it remains documentation until a link created with `vasool_entity_id` in its
+notes is observed coming back with it on a real webhook.
+
+## DECISION: `payment.captured` settles a retry episode via RetryIndex, not a notes tag
+
+`createRecurring` (`RazorpayClient.retry_payment`) has no `notes` parameter
+Session 0A ever observed, so a SILENT_RETRY/TIMED_RETRY has nothing to tag
+the way `_link` tags a Payment Link. What it does have is Razorpay's own
+response to the call: `retry_payment` returns the id of the payment it just
+created, and `vasool/actions/executor.py::RazorpayExecutor._retry` now
+records that id against the entity_id that asked for it, in its own
+in-memory `RetryIndex`. `vasool/events/settlement.py::entity_id_from_payment_captured`
+reads a later `payment.captured`'s payment id back through that index — our
+own record coming back, not a guessed join key.
+
+**RetryIndex is process-local, on purpose and stated plainly, not silently.**
+Nothing in this codebase durably stores the action plane's own call history
+yet: `ExecutionJournal` beside it has exactly the same property, `EventStore`
+is scoped to *received* webhooks only, and the transition log deliberately
+never carries Razorpay-shaped data (see `vasool/ledger/receipts.py`'s
+docstring on why). So a process restart between a retry firing and its
+`payment.captured` arriving loses the mapping — that capture won't be
+recognised as ours, and the episode stays in AWAITING rather than reaching
+RECOVERED through this path. Not silently wrong; a real, accepted gap.
+
+# VERIFY: whether `createRecurring`'s synchronous response id is the same id
+that later appears on `payload.payment.entity.id` of a `payment.captured`
+webhook has never been observed live. `RazorpayClient.retry_payment`'s own
+VERIFY note already flags that this call was never exercised at all — Session
+0A never activated the merchant account, so the token-based recharge path it
+wraps (subscriptions / e-mandates) was never reachable to test. A payment
+entity's id being stable across its own lifecycle is standard Razorpay
+behaviour, and it's the same shape `tests/test_executor.py`'s fake client
+already assumes, but it remains a documented assumption, not an observed
+fact, until a real `createRecurring` response is captured and matched
+against a subsequent `payment.captured`.

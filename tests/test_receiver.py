@@ -146,6 +146,204 @@ def test_missing_signature_header_is_rejected(client: TestClient):
     assert resp.status_code in (400, 422)
 
 
+class FakeMachine:
+    """Stands in for PolicyMachine at receiver.py's SettlementTarget seam —
+    no policy plane involved, this session only wires the receiver."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, int]] = []
+
+    def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None:
+        self.calls.append((entity_id, reason, amount_paise))
+
+
+class FakeRetryIndex:
+    """Stands in for vasool/actions/executor.py::RetryIndex at its own
+    public interface — no executor, no real retry ever dispatched."""
+
+    def __init__(self, **known: str) -> None:
+        self._known = known
+
+    def entity_id_for(self, payment_id: str) -> str | None:
+        return self._known.get(payment_id)
+
+
+class TestSettlementWiring:
+    """docs/VERIFIED.md: only payment_link.paid can be attributed to an
+    episode with what's on disk, via the vasool_entity_id this agent's own
+    executor.py stamps into the link's notes."""
+
+    def test_a_payment_link_paid_with_our_own_notes_settles_the_episode(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        machine = FakeMachine()
+        app = create_app(
+            store=store, webhook_secret=TEST_SECRET, pepper=TEST_PEPPER, clock=clock, machine=machine
+        )
+        client = TestClient(app)
+
+        fixture = _load("payment_link_paid__none__12b6f2.json")
+        body = fixture["body"]
+        body["payload"]["payment_link"]["entity"]["notes"] = {"vasool_entity_id": "pay_original_fail"}
+        raw = json.dumps(body).encode()
+
+        resp = client.post(
+            "/webhook",
+            content=raw,
+            headers={
+                "content-type": "application/json",
+                "x-razorpay-signature": _sign(raw),
+                "x-razorpay-event-id": "evt-settle",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert machine.calls == [("pay_original_fail", "payment_link.paid", 50000)]
+
+    def test_a_payment_link_paid_with_no_vasool_notes_settles_nothing(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """The real Session 0A capture: created by hand, notes is null. Must
+        not guess a correlation — see settlement.py's module docstring."""
+        machine = FakeMachine()
+        app = create_app(
+            store=store, webhook_secret=TEST_SECRET, pepper=TEST_PEPPER, clock=clock, machine=machine
+        )
+        client = TestClient(app)
+
+        _post_fixture(client, "payment_link_paid__none__12b6f2.json", event_id="evt-no-correlation")
+
+        assert machine.calls == []
+
+    def test_payment_captured_with_no_retry_index_wired_settles_nothing(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """payment.captured fires for every successful payment, recovery or
+        not, and carries no episode identifier on its own -- without a
+        RetryIndex there's nothing to correlate it against, so it must be a
+        no-op exactly as it always was."""
+        machine = FakeMachine()
+        app = create_app(
+            store=store, webhook_secret=TEST_SECRET, pepper=TEST_PEPPER, clock=clock, machine=machine
+        )
+        client = TestClient(app)
+
+        _post_fixture(client, "payment_captured__none__0ced11.json", event_id="evt-captured-2")
+
+        assert machine.calls == []
+
+    def test_payment_captured_not_matching_our_retry_index_settles_nothing(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """item 2: a RetryIndex is wired, but this particular payment id
+        isn't in it -- a customer's ordinary checkout, or a Payment Links
+        payment, must still correlate to nothing."""
+        machine = FakeMachine()
+        retry_index = FakeRetryIndex(pay_some_other_retry="pay_unrelated")
+        app = create_app(
+            store=store,
+            webhook_secret=TEST_SECRET,
+            pepper=TEST_PEPPER,
+            clock=clock,
+            machine=machine,
+            retry_index=retry_index,
+        )
+        client = TestClient(app)
+
+        _post_fixture(client, "payment_captured__none__0ced11.json", event_id="evt-captured-3")
+
+        assert machine.calls == []
+
+    def test_payment_captured_matching_our_retry_index_settles_the_episode(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """item 2: the id our own retry_payment call got back, now arriving
+        on a payment.captured webhook, closes the episode it was a retry
+        for -- via RetryIndex, never a guessed join key."""
+        machine = FakeMachine()
+        fixture = _load("payment_captured__none__0ced11.json")
+        body = fixture["body"]
+        captured_payment_id = body["payload"]["payment"]["entity"]["id"]
+        retry_index = FakeRetryIndex(**{captured_payment_id: "pay_original_fail"})
+        app = create_app(
+            store=store,
+            webhook_secret=TEST_SECRET,
+            pepper=TEST_PEPPER,
+            clock=clock,
+            machine=machine,
+            retry_index=retry_index,
+        )
+        client = TestClient(app)
+
+        _post_fixture(client, "payment_captured__none__0ced11.json", event_id="evt-captured-4")
+
+        assert machine.calls == [("pay_original_fail", "payment.captured", 50000)]
+
+    def test_a_duplicate_captured_delivery_settles_only_once(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        machine = FakeMachine()
+        fixture = _load("payment_captured__none__0ced11.json")
+        body = fixture["body"]
+        captured_payment_id = body["payload"]["payment"]["entity"]["id"]
+        retry_index = FakeRetryIndex(**{captured_payment_id: "pay_original_fail"})
+        app = create_app(
+            store=store,
+            webhook_secret=TEST_SECRET,
+            pepper=TEST_PEPPER,
+            clock=clock,
+            machine=machine,
+            retry_index=retry_index,
+        )
+        client = TestClient(app)
+
+        _post_fixture(client, "payment_captured__none__0ced11.json", event_id="evt-captured-dup")
+        _post_fixture(client, "payment_captured__none__0ced11.json", event_id="evt-captured-dup")
+
+        assert len(machine.calls) == 1
+
+    def test_a_duplicate_settlement_delivery_settles_only_once(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """VERIFIED.md: every webhook is delivered at least twice. Gating on
+        the store's own dedupe result means the machine only ever hears
+        about the first delivery — PolicyMachine.settled() is independently
+        idempotent too, but there is no reason to rely on that here."""
+        machine = FakeMachine()
+        app = create_app(
+            store=store, webhook_secret=TEST_SECRET, pepper=TEST_PEPPER, clock=clock, machine=machine
+        )
+        client = TestClient(app)
+
+        fixture = _load("payment_link_paid__none__12b6f2.json")
+        body = fixture["body"]
+        body["payload"]["payment_link"]["entity"]["notes"] = {"vasool_entity_id": "pay_original_fail"}
+        raw = json.dumps(body).encode()
+        headers = {
+            "content-type": "application/json",
+            "x-razorpay-signature": _sign(raw),
+            "x-razorpay-event-id": "evt-settle-dup",
+        }
+
+        client.post("/webhook", content=raw, headers=headers)
+        client.post("/webhook", content=raw, headers=headers)
+
+        assert len(machine.calls) == 1
+
+    def test_no_machine_wired_is_still_a_valid_configuration(
+        self, store: EventStore, clock: VirtualClock
+    ):
+        """create_app's existing callers (and every other test in this file)
+        never pass machine= at all — that must keep working exactly as
+        before."""
+        app = create_app(store=store, webhook_secret=TEST_SECRET, pepper=TEST_PEPPER, clock=clock)
+        client = TestClient(app)
+
+        resp = _post_fixture(client, "payment_link_paid__none__12b6f2.json", event_id="evt-no-machine")
+
+        assert resp.status_code == 200
+
+
 @pytest.mark.skipif(
     not REAL_WEBHOOK_SECRET, reason="RAZORPAY_WEBHOOK_SECRET not set in the environment/.env"
 )
