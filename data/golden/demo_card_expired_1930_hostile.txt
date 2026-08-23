@@ -1,0 +1,88 @@
+==============================================================================
+  VASOOL -- recovery episode demo
+==============================================================================
+    scenario     : card_expired
+    world        : hostile
+    clock        : 2026-08-21 19:30 IST  [--time 19:30]
+    provenance   : SIMULATED stub payload
+    mode         : replay — deterministic, no network calls
+
+[1] webhook received
+    event        : payment.failed
+    event_id     : TSOPQFb6VsuJ5d
+    entity_id    : pay_TSOPJqQGAvaA2K
+    reason       : card_expired / source: bank
+    amount       : ₹500.00 (50000 paise)
+
+[2] signature
+    skipped -- _SIMULATED payload; its signature was copied from the real
+    envelope it was derived from and does not cover this body (see
+    docs/VERIFIED.md). Nothing here was ever sent by Razorpay, so there is
+    nothing to authenticate.
+
+[3] deduped
+    1st delivery : stored
+    2nd delivery : duplicate, ignored
+    Razorpay delivers every webhook at least twice (docs/VERIFIED.md);
+    dedupe on x-razorpay-event-id is required, not defensive.
+
+[4] classified
+    failure_class: INSTRUMENT_DEAD
+    rationale    : Zero percent chance of succeeding — not low, zero. There is
+                   no state of the world in which the same expired card
+                   authorises on the third attempt. A retry has exactly zero
+                   expected value while consuming one of the four attempts the
+                   re-auth link needed.
+
+[5] proposal
+    intervention : REAUTH_LINK (PRIMARY)
+    execute_at   : 2026-08-21 19:30 IST
+    channel      : SMS -> VASOOL_REAUTH
+
+[6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
+    proposal     : REAUTH_LINK (PRIMARY)
+
+    IdempotencyGuard    ALLOW
+    RiskBlockGuard      NOT_APPLICABLE
+    ConsentGuard        BLOCK
+                                       DPDP Act 2023 s.6 + DPDP Rules 2025
+                                       cannot judge: consent unavailable. A
+                                       fact we have not established is not the
+                                       same as one we have established to be
+                                       harmless, so this fails closed.
+    RetryCapGuard       NOT_APPLICABLE
+    PromiseToPayGuard   ALLOW
+                                       RBI Fair Practices Code (fair dealing)
+    DNDGuard            NOT_APPLICABLE
+    FrequencyCapGuard   ALLOW
+                                       RBI Fair Practices Code (anti-
+                                       harassment)
+    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
+                                       RBI Fair Practices Code ¶55
+                                       19:30 IST is outside the 08:00-19:00
+                                       contact window
+    PreDebitNoticeGuard NOT_APPLICABLE
+    AFAThresholdGuard   NOT_APPLICABLE
+    DLTTemplateGuard    ALLOW
+                                       TRAI TCCCPR — DLT template registration
+                                       (Feb 2025 amendment)
+    SpendCapGuard       NOT_APPLICABLE
+    HumanApprovalGuard  ALLOW
+
+[7] decision -- cycle 1
+    resolved     : BLOCK
+    clause       : DPDP Act 2023 s.6 + DPDP Rules 2025
+    blocked -- no action will be taken
+
+[8] receipt
+    outcome      : blocked
+    receipt_id   : rcpt_08d2f2859e51f6c7
+    hash         : f0678dd619f3612e4807edad1557a6f1caf6b0925f6f87e6b9cf0e0ee625d6cc
+    prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
+
+
+==============================================================================
+SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- BLOCKED by DPDP Act 2023 s.6 +
+DPDP Rules 2025, and stayed BLOCKED.
+Receipt: f0678dd619f3612e4807edad1557a6f1caf6b0925f6f87e6b9cf0e0ee625d6cc
+==============================================================================

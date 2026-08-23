@@ -1,0 +1,176 @@
+==============================================================================
+  VASOOL -- recovery episode demo
+==============================================================================
+    scenario     : insufficient_fund
+    world        : permissive
+    clock        : 2026-08-21 19:30 IST  [--time 19:30]
+    provenance   : SIMULATED stub payload
+    mode         : replay — deterministic, no network calls
+
+[1] webhook received
+    event        : payment.failed
+    event_id     : TSOPQFb6VsuJ5d
+    entity_id    : pay_TSOPJqQGAvaA2K
+    reason       : insufficient_fund / source: bank
+    amount       : ₹500.00 (50000 paise)
+
+[2] signature
+    skipped -- _SIMULATED payload; its signature was copied from the real
+    envelope it was derived from and does not cover this body (see
+    docs/VERIFIED.md). Nothing here was ever sent by Razorpay, so there is
+    nothing to authenticate.
+
+[3] deduped
+    1st delivery : stored
+    2nd delivery : duplicate, ignored
+    Razorpay delivers every webhook at least twice (docs/VERIFIED.md);
+    dedupe on x-razorpay-event-id is required, not defensive.
+
+[4] classified
+    failure_class: LIQUIDITY
+    rationale    : The instrument works and the customer intends to pay; the
+                   money isn't there today. The most recoverable failure in
+                   the taxonomy, and timing does the work rather than
+                   persistence — retry on payday, not on backoff. One soft
+                   nudge, because the customer can act. Then a link: three
+                   failures spanning two paydays means the timing hypothesis
+                   has been tested and lost. Nudge plus link is two contacts,
+                   which is exactly §7's per-episode cap.
+
+[5] proposals
+    intervention : TIMED_RETRY (PRIMARY)
+    execute_at   : 2026-08-23 19:30 IST
+
+    intervention : TIMED_RETRY (NUDGE)
+    execute_at   : 2026-08-21 19:30 IST
+    channel      : SMS -> VASOOL_LIQUIDITY_NUDGE
+
+[6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
+    proposal     : TIMED_RETRY (NUDGE)
+
+    IdempotencyGuard    ALLOW
+    RiskBlockGuard      NOT_APPLICABLE
+    ConsentGuard        ALLOW
+                                       DPDP Act 2023 s.6 + DPDP Rules 2025
+    RetryCapGuard       NOT_APPLICABLE
+    PromiseToPayGuard   ALLOW
+                                       RBI Fair Practices Code (fair dealing)
+    DNDGuard            NOT_APPLICABLE
+    FrequencyCapGuard   ALLOW
+                                       RBI Fair Practices Code (anti-
+                                       harassment)
+    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
+                                       RBI Fair Practices Code ¶55
+                                       19:30 IST is outside the 08:00-19:00
+                                       contact window
+    PreDebitNoticeGuard NOT_APPLICABLE
+    AFAThresholdGuard   NOT_APPLICABLE
+    DLTTemplateGuard    ALLOW
+                                       TRAI TCCCPR — DLT template registration
+                                       (Feb 2025 amendment)
+    SpendCapGuard       NOT_APPLICABLE
+    HumanApprovalGuard  ALLOW
+
+[7] decision -- cycle 1
+    resolved     : DEFER -> 2026-08-22 08:09 IST
+    clause       : RBI Fair Practices Code ¶55
+    re-queued for 2026-08-22 08:09 IST
+
+    -- clock fast-forwarded to 2026-08-22 08:09 IST --
+
+[8] guard chain -- cycle 2 (2026-08-22 08:09 IST)
+    proposal     : TIMED_RETRY (NUDGE)
+
+    IdempotencyGuard    ALLOW
+    RiskBlockGuard      NOT_APPLICABLE
+    ConsentGuard        ALLOW
+                                       DPDP Act 2023 s.6 + DPDP Rules 2025
+    RetryCapGuard       NOT_APPLICABLE
+    PromiseToPayGuard   ALLOW
+                                       RBI Fair Practices Code (fair dealing)
+    DNDGuard            NOT_APPLICABLE
+    FrequencyCapGuard   ALLOW
+                                       RBI Fair Practices Code (anti-
+                                       harassment)
+    ContactWindowGuard  ALLOW
+                                       RBI Fair Practices Code ¶55
+    PreDebitNoticeGuard NOT_APPLICABLE
+    AFAThresholdGuard   NOT_APPLICABLE
+    DLTTemplateGuard    ALLOW
+                                       TRAI TCCCPR — DLT template registration
+                                       (Feb 2025 amendment)
+    SpendCapGuard       NOT_APPLICABLE
+    HumanApprovalGuard  ALLOW
+
+[9] decision -- cycle 2
+    resolved     : ALLOW
+    clause       : all 13 guards evaluated; none blocked, deferred, or
+                   escalated it -- no statute bars this action
+    executing TIMED_RETRY...
+
+    -- clock fast-forwarded to 2026-08-23 19:30 IST --
+
+[10] guard chain -- cycle 3 (2026-08-23 19:30 IST)
+    proposal     : TIMED_RETRY (PRIMARY)
+
+    IdempotencyGuard    ALLOW
+    RiskBlockGuard      NOT_APPLICABLE
+    ConsentGuard        ALLOW
+                                       DPDP Act 2023 s.6 + DPDP Rules 2025
+    RetryCapGuard       ALLOW
+    PromiseToPayGuard   ALLOW
+                                       RBI Fair Practices Code (fair dealing)
+    DNDGuard            NOT_APPLICABLE
+    FrequencyCapGuard   NOT_APPLICABLE
+    ContactWindowGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard NOT_APPLICABLE
+    AFAThresholdGuard   NOT_APPLICABLE
+    DLTTemplateGuard    NOT_APPLICABLE
+    SpendCapGuard       ALLOW
+    HumanApprovalGuard  ALLOW
+
+[11] decision -- cycle 3
+    resolved     : ALLOW
+    clause       : all 13 guards evaluated; none blocked, deferred, or
+                   escalated it -- no statute bars this action
+    executing TIMED_RETRY...
+
+[12] receipts
+    outcome      : executed
+    receipt_id   : rcpt_62f710a65c96d7b4
+    hash         : d2a49a842a8916132dd315b0f3dd23c22b45c121b8b6f6b8a981d3f19771130b
+    prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
+
+    outcome      : executed
+    receipt_id   : rcpt_38d88650746866e7
+    hash         : 5293a97a952b34ca39c60ff4105870fc1a0f924ee863af81803065a6fa67719a
+    prev_hash    : d2a49a842a8916132dd315b0f3dd23c22b45c121b8b6f6b8a981d3f19771130b
+
+
+[13] settlement webhook received
+    event        : payment.captured
+    entity_id    : pay_TSOPJqQGAvaA2K
+    provenance   : constructed
+    note         : never sent by Razorpay -- the one payment.captured envelope
+                   this account has ever captured live, with the payment id
+                   retry_payment actually returned this run stamped into
+                   payload.payment.entity.id. Whether createRecurring's
+                   returned id is the id that later appears captured has never
+                   been observed live (docs/VERIFIED.md).
+    correlation  : RetryIndex -- executor.py's own record of the id
+                   retry_payment returned for this entity_id
+    amount       : ₹500.00 (50000 paise)
+
+[14] receipt
+    outcome      : recovered
+    receipt_id   : rcpt_061c7746be1932c6
+    hash         : a090ff38ff7eb7a44fe64aad54ab667cad8fa081693ebbbff461e9ce8f9b69e6
+    prev_hash    : 5293a97a952b34ca39c60ff4105870fc1a0f924ee863af81803065a6fa67719a
+    recovered    : ₹500.00 (50000 paise)
+
+
+==============================================================================
+SUMMARY: TIMED_RETRY for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
+Code ¶55, then RECOVERED -- ₹500.00 (50000 paise) recovered.
+Receipt: a090ff38ff7eb7a44fe64aad54ab667cad8fa081693ebbbff461e9ce8f9b69e6
+==============================================================================

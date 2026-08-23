@@ -50,6 +50,10 @@ brute-forcible from a phone number (~10^9 candidates for an Indian mobile).
 - Prefer stdlib and boring solutions. No new dependency without asking.
 - When you disagree with the spec, say so before implementing. The spec is mine
   and it has mistakes in it.
+- **Never print the contents of `.env`, and never echo a secret's value.**
+  `cat .env`, `echo $RAZORPAY_KEY_SECRET`, printing `os.environ`, or any
+  equivalent is forbidden — including inside a debugging detour. To check
+  whether a variable is set, test for presence and print only the boolean.
 
 ## Known environment constraints
 
