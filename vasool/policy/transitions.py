@@ -36,6 +36,16 @@ class Transition:
     causes: tuple[Verdict, ...] = ()
     """The accumulated deferral history, on a transition that ends one."""
 
+    settled_amount_paise: int | None = None
+    """Set only on a transition to State.RECOVERED — what
+    PolicyMachine.settled() was told the customer actually paid. None on every
+    other transition, including EXECUTING: dispatching a retry or a link is
+    not confirmation money moved, only settled() is (see receipts.py's module
+    docstring on why amount_recovered_paise lives here rather than on
+    whatever proposal happened to be executing when the money arrived — often
+    none, since an out-of-band payment can settle an episode nothing was ever
+    proposed for yet)."""
+
 
 class TransitionLog(Protocol):
     def append(self, transition: Transition) -> None: ...

@@ -291,7 +291,11 @@ class TestAdversary:
         not waiting for. Double collection."""
         m, clock = machine()
         m.observe(event_for("insufficient_fund"))
-        m.settled(event_for("insufficient_fund").entity_id, reason="out-of-band payment")
+        m.settled(
+            event_for("insufficient_fund").entity_id,
+            reason="out-of-band payment",
+            amount_paise=event_for("insufficient_fund").amount_paise,
+        )
         clock.advance_by(timedelta(days=30))
         m.tick()
         assert m.executor.executed == []
@@ -327,10 +331,42 @@ class TestAdversary:
         clock.advance_by(timedelta(minutes=6))
         m.tick()
 
-        m.settled(event.entity_id, reason="out-of-band payment")
+        m.settled(event.entity_id, reason="out-of-band payment", amount_paise=event.amount_paise)
         assert m.state_of(event.entity_id) is State.RECOVERED
         m.observe(event)
         assert m.pending() == ()
+
+    def test_settled_amount_lands_on_the_recovered_transition(self):
+        """amount_recovered_paise is the headline metric of the whole project
+        (CLAUDE.md), and it is only knowable here: settled() is the one call
+        that learns what actually landed. The RECOVERED transition is where
+        receipts.py has to be able to read it from."""
+        m, clock = machine()
+        event = event_for("gateway_technical_error")
+        m.observe(event)
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+
+        m.settled(event.entity_id, reason="captured", amount_paise=event.amount_paise)
+
+        recovered = [t for t in m.transitions if t.to_state is State.RECOVERED]
+        assert len(recovered) == 1
+        assert recovered[0].settled_amount_paise == event.amount_paise
+
+    def test_settled_amount_is_recorded_even_with_nothing_ever_executed(self):
+        """A07: the customer can pay out of band before a single tick runs, so
+        no proposal was ever gated or executed for this episode. settled()
+        still has to be able to say how much arrived."""
+        m, _ = machine()
+        event = event_for("insufficient_fund")
+        m.observe(event)
+
+        m.settled(event.entity_id, reason="out-of-band payment", amount_paise=event.amount_paise)
+
+        recovered = [t for t in m.transitions if t.to_state is State.RECOVERED]
+        assert len(recovered) == 1
+        assert recovered[0].settled_amount_paise == event.amount_paise
+        assert recovered[0].proposal is None
 
     def test_a12_closes_every_episode_for_the_customer(self):
         """Withdrawal is about the person, not the payment."""
@@ -361,7 +397,7 @@ class TestAdversary:
         m, clock = machine()
         event = event_for("insufficient_fund")
         m.observe(event)
-        m.settled(event.entity_id, reason="refund issued")
+        m.settled(event.entity_id, reason="refund issued", amount_paise=event.amount_paise)
         clock.advance_by(timedelta(days=30))
         m.tick()
         assert m.executor.executed == []
@@ -409,7 +445,7 @@ class TestTerminalStates:
         m, _ = machine()
         event = event_for("insufficient_fund")
         m.observe(event)
-        m.settled(event.entity_id, reason="captured")
+        m.settled(event.entity_id, reason="captured", amount_paise=event.amount_paise)
         m.observe(event)
         assert m.pending() == ()
 

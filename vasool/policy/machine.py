@@ -235,7 +235,7 @@ class PolicyMachine:
             note="consent withdrawn — queue purged and the episode closed",
         )
 
-    def settled(self, entity_id: str, *, reason: str) -> None:
+    def settled(self, entity_id: str, *, reason: str, amount_paise: int) -> None:
         """The money arrived, or went back. Either way, stop chasing.
 
         Covers adversary attacks A07 (customer pays out of band while a retry is
@@ -246,6 +246,18 @@ class PolicyMachine:
         Closes the episode whether or not anything was queued, for the same
         reason A12 does — the dangerous moment is precisely the one where a
         retry has fired and we are awaiting its outcome.
+
+        `amount_paise` is what the confirming event (payment.captured,
+        order.paid, refund.processed) reported — the caller's job, not this
+        method's, to read off the right field for a capture vs. a refund. It
+        travels on the RECOVERED transition (Transition.settled_amount_paise)
+        rather than on a Proposal, because nothing proposes a settlement: an
+        out-of-band payment can close an episode with zero proposals ever
+        gated (A07's own test observes-then-settles before a single tick), so
+        there is often no Proposal to carry an amount on. ledger/receipts.py
+        reads it from there to give the RECOVERED receipt a real
+        amount_recovered_paise — the one figure every other receipt this
+        session writes still cannot know (see that module's docstring).
         """
         episode = self.episodes.get(entity_id)
         self._stop(
@@ -253,6 +265,7 @@ class PolicyMachine:
             matches=lambda item: item.proposal.entity_id == entity_id,
             state=State.RECOVERED,
             note=f"stopped: {reason}",
+            settled_amount_paise=amount_paise,
         )
 
     # -- the tick ---------------------------------------------------------
@@ -463,18 +476,23 @@ class PolicyMachine:
         matches: Callable[[ScheduledItem], bool],
         state: State,
         note: str,
+        **extra,
     ) -> None:
         """Empty the queue of matching work, and close the named episodes.
 
         The episodes are passed in rather than derived from the doomed items,
         because the episode that most needs closing is the one with nothing
         queued.
+
+        `**extra` reaches `_to`/`_log` and so lands on the Transition itself —
+        `settled()` uses it to carry `settled_amount_paise`;
+        `consent_withdrawn()` passes none.
         """
         for item in [item for item in self._queue if matches(item)]:
             self._queue.remove(item)
         for episode in episodes:
             if not episode.is_terminal:
-                self._to(episode, state, note)
+                self._to(episode, state, note, **extra)
 
     def _to(self, episode: Episode, state: State, note: str, **extra) -> Episode:
         previous = episode.state
