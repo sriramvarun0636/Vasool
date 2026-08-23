@@ -438,7 +438,22 @@ the report card.
 
 | Date | Change | Reason | Post-hoc? |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-08-23 | §11: time-to-recovery excludes customer response latency | Settlement lands in the same tick as the action that earned it. No click-delay parameter is registered in §4 and inventing one would be a parameter this protocol never agreed to. | No |
+| 2026-08-23 | §4 add: `retry_success_unpriced_class` = 0.35 `[guess]`. Swept. | §4 prices no retry against CUSTOMER_ACTION or RISK_BLOCK because Vasool never retries either; `naive_retry` and A1 do. Set to the highest registered retry rate — generous is the anti-Vasool direction, and zero would flatter Vasool by construction. | No |
+| 2026-08-23 | `episodes_per_customer_lambda` = 1.0 `[guess]` (episodes = 1 + Poisson(λ), truncated at 6). Swept. | ~63% of customers get more than one episode. §3a's randomisation argument is that customers share a frequency-cap budget; a one-episode-each universe makes that decoration and `FrequencyCapGuard` unreachable. | No |
+| 2026-08-23 | `episode_arrival_window_days` = 60 `[guess]`. Swept. | Two months so both halves of taxonomy §6's salary cycle are exercised — two month-ends and two 1st–7th windows — rather than one payday deciding the run. | No |
+| 2026-08-23 | `inter_episode_gap_mean_days` = 9.0 `[guess]` (exponential). Swept. | Puts a little over half of consecutive episode pairs inside `FrequencyCapGuard`'s 7-day window. Never triggering leaves the cap untested; always triggering makes every second episode a block. | No |
+| 2026-08-23 | `settlement_drain_days` = 45 `[guess]`. Swept. | Covers the longest trajectory the agent can schedule (§6's three-rung ladder plus escalation, ~40 days) so nothing counts as unrecovered because the simulation stopped. | No |
+| 2026-08-23 | `amount_median_rupees` = 1200, `amount_sigma_log` = 1.4 `[guess]` (log-normal). Both swept. | Every payload in `data/` is ₹500 from one checkout. A constant amount leaves `AFAThresholdGuard`, `HumanApprovalGuard` and `SpendCapGuard` permanently unexercised — the report card would show three of thirteen passing having never run. σ sized so a few percent clear ₹15,000 and a fraction of a percent clear ₹50,000. | No |
+| 2026-08-23 | `consent_on_file_rate` = 0.97 `[guess]`. Swept, clamped to [0,1]. | The remainder have no record at all, which fails closed rather than permissively (`ConsentGuard.requires`). A world where consent is always present never exercises the guard the DPDP claim rests on. | No |
+| 2026-08-23 | `consent_withdrawn_rate` = 0.02 `[guess]`. Swept, clamped. | Puts A12 and §2a's "no action after consent withdrawal" into the run at all. A safety predicate nothing tests is not evidence. | No |
+| 2026-08-23 | `dnd_listed_rate` = 0.08 `[guess]`. Swept, clamped. | Inert today and registered anyway: `DNDGuard.applies_to` is PROMOTIONAL-only and every message here is TRANSACTIONAL, so the guard is NOT_APPLICABLE throughout. `proposal.py`'s own VERIFY says that categorisation is unsettled; if it moves, this becomes load-bearing overnight. | No |
+| 2026-08-23 | `mandate_share` = 0.35 `[guess]`. Swept, clamped. | Decides `RetryCapGuard`'s ceiling (4 vs 3), whether `PreDebitNoticeGuard` applies, and whether `AFAThresholdGuard` applies. Unanchored in a way the others are not — no subscription payload has ever been observed. | No |
+| 2026-08-23 | `promise_to_pay_rate` = 0.05, `promise_horizon_days` = 10 `[guess]`. Both swept. | `PromiseToPayGuard` is one of the two guards §3a names as coupling a customer's episodes. Small because a promise needs an interaction most failures never produce. | No |
+| 2026-08-23 | Universe epoch = 2026-09-01 00:00 IST; merchants = 1; consent granted 365d pre-epoch. **Not swept.** | Flagged rather than silently exempted from §7. Scaling a calendar anchor or a count by ±50% is meaningless; the arrival window is swept in the epoch's place. Consent age is inert — `ConsentRecord.covers` has no expiry rule — so sweeping it is guaranteed to show nothing. | No |
+
+Probabilities clamp to [0,1] under sweep, so +50% on 0.97 registers as 1.0
+rather than 1.455.
 
 ---
 
