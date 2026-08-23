@@ -13,6 +13,12 @@ ESCALATED without ever calling execute(), because a human queue is a handoff,
 not an action this module performs (see that module's comment on the same
 point). Receiving one here anyway is the programming error the session brief
 names, not a silent no-op — `_dispatch` raises rather than swallowing it.
+
+Also owns RetryIndex: a SILENT_RETRY/TIMED_RETRY has no merchant-notes field
+to tag the way `_link` tags a Payment Link, so `_retry` records the id
+Razorpay's own response carried instead. vasool/events/settlement.py reads it
+back to correlate a later `payment.captured` webhook to the episode it closes
+— see RetryIndex's own docstring for what that does and does not guarantee.
 """
 from __future__ import annotations
 
@@ -20,7 +26,7 @@ import logging
 from dataclasses import dataclass, field
 
 from vasool.actions.comms import CommsRefused, CommsSender
-from vasool.actions.razorpay_client import RazorpayCallFailed, RazorpayClient
+from vasool.actions.razorpay_client import RazorpayCallFailed, RazorpayClient, RazorpayConfig
 from vasool.diagnosis.proposal import Channel, Proposal, ProposalRole
 from vasool.diagnosis.taxonomy import InterventionType
 from vasool.policy.machine import ExecutionResult
@@ -76,6 +82,43 @@ class ExecutionJournal:
         return self._by_proposal.get(proposal_id)
 
 
+class RetryIndex:
+    """Where RazorpayExecutor remembers which entity_id a retried payment id
+    belongs to. vasool/events/settlement.py reads this to correlate a later
+    `payment.captured` webhook back to the episode a SILENT_RETRY/TIMED_RETRY
+    was for — see that module's `entity_id_from_payment_captured` for why
+    this is a non-guessed join key: `retry_payment` returns Razorpay's own id
+    for the payment it just created, and this is that same id recorded
+    against the entity_id that asked for it. Nothing inferred, nothing
+    matched by order_id/amount/customer.
+
+    **In-memory and process-local, deliberately not persisted here.** Nothing
+    in this codebase durably stores the action plane's own call history yet —
+    ExecutionJournal beside this class has exactly the same property, and the
+    only durable store that exists at all (EventStore) is scoped to *received*
+    webhooks, not calls we made ourselves; reusing it for this would distort
+    what it's for. The transition log is the other candidate and it is ruled
+    out on purpose too: vasool/ledger/receipts.py's own docstring establishes
+    that Razorpay-shaped data (a request id, a response body) deliberately
+    never enters the policy plane, so it must not carry this either. So: a
+    process restart between a retry firing and its `payment.captured`
+    arriving loses the mapping. That capture will not be recognised as ours —
+    the episode simply stays in AWAITING rather than reaching RECOVERED
+    through this path. Not silently wrong (nothing gets settled that
+    shouldn't), but a real gap, not a theoretical one, and durability for the
+    whole action/ledger plane is a bigger change than this session's scope.
+    """
+
+    def __init__(self) -> None:
+        self._by_payment_id: dict[str, str] = {}
+
+    def record(self, payment_id: str, entity_id: str) -> None:
+        self._by_payment_id[payment_id] = entity_id
+
+    def entity_id_for(self, payment_id: str) -> str | None:
+        return self._by_payment_id.get(payment_id)
+
+
 def _medium_for(channel: Channel) -> str:
     if channel is Channel.WHATSAPP:
         # VERIFY: payment_link.notifyBy supports "sms" and "email" only —
@@ -99,6 +142,7 @@ class RazorpayExecutor:
     comms: CommsSender
     registered_templates: frozenset[str]
     journal: ExecutionJournal = field(default_factory=ExecutionJournal)
+    retry_index: RetryIndex = field(default_factory=RetryIndex)
 
     def execute(self, proposal: Proposal) -> ExecutionResult:
         record = self._dispatch(proposal)
@@ -132,11 +176,14 @@ class RazorpayExecutor:
         except RazorpayCallFailed as exc:
             log.warning("retry failed for %s: %s", proposal.proposal_id, exc)
             return RazorpayCallRecord(proposal.proposal_id, ok=False, detail=str(exc))
+        razorpay_payment_id = response.get("id")
+        if razorpay_payment_id is not None:
+            self.retry_index.record(razorpay_payment_id, proposal.entity_id)
         return RazorpayCallRecord(
             proposal.proposal_id,
             ok=True,
             detail="retry dispatched",
-            razorpay_request_id=response.get("id"),
+            razorpay_request_id=razorpay_payment_id,
             razorpay_response=response,
         )
 
@@ -146,7 +193,17 @@ class RazorpayExecutor:
                 amount_paise=proposal.amount_paise,
                 currency="INR",
                 description=proposal.rationale,
-                notes={"vasool_proposal_id": proposal.proposal_id},
+                notes={
+                    "vasool_proposal_id": proposal.proposal_id,
+                    "vasool_entity_id": proposal.entity_id,
+                    # vasool_entity_id is what vasool/events/settlement.py reads
+                    # off the payment_link.paid webhook this link eventually
+                    # fires, to close the recovery episode it belongs to. notes
+                    # is merchant-supplied metadata, not a Razorpay-authored
+                    # field, so setting a second key on it is not inventing
+                    # anything Razorpay says — it is data we attach and expect
+                    # echoed back, the same way vasool_proposal_id already was.
+                },
                 idempotency_key=proposal.idempotency_key,
             )
         except RazorpayCallFailed as exc:
@@ -177,6 +234,22 @@ class RazorpayExecutor:
         params = {"link": link["short_url"], "payment_link_id": link["id"]} if link else {}
         self.comms.send(proposal=proposal, registered_templates=self.registered_templates, params=params)
         return RazorpayCallRecord(proposal.proposal_id, ok=True, detail="sent")
+
+    @classmethod
+    def from_env(cls, *, registered_templates: frozenset[str]) -> RazorpayExecutor:
+        """A live executor, credentials from RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET
+        via RazorpayConfig.from_env() (CLAUDE.md: read secrets from the
+        environment, never hardcode one).
+
+        This is the one seam a caller outside actions/ may use to get a live
+        client wired up at all: tests/test_actions_boundary.py restricts
+        razorpay_client.py's own module to being reached from here, so
+        vasool/demo.py cannot construct a RazorpayClient or a RazorpayConfig
+        itself. Raises RuntimeError (from RazorpayConfig.from_env()) if the
+        credentials aren't set — a plain builtin, not something reaching this
+        method requires knowing about.
+        """
+        return cls.build(client=RazorpayClient(config=RazorpayConfig.from_env()), registered_templates=registered_templates)
 
     @classmethod
     def build(cls, *, client: RazorpayClient, registered_templates: frozenset[str]) -> RazorpayExecutor:

@@ -6,15 +6,15 @@ Receipt is built FROM one via `receipt_from_transition`, not assembled by
 hand at each call site.
 
 **Not one receipt per Transition.** Money moves, is refused, or is escalated
-at three kinds of transition: GATED->EXECUTING (executed), GATED->BLOCKED,
-and GATED->ESCALATED — see `_RECEIPTABLE` below for why it is EXECUTING and
-not the AWAITING state that follows it. Every other transition — SCHEDULED,
-DIAGNOSED, DEFERRED — is already a complete record in the transition log
-itself and represents no decision about money; wrapping every one of them in
-a Receipt would bury the three that matter under the rest. taxonomy.md §5's
-argument that restraint has to be as visible as action is about BLOCKED and
-ESCALATED specifically, not about every intermediate state a proposal passes
-through on its way there.
+at four kinds of transition: GATED->EXECUTING (executed), GATED->BLOCKED,
+GATED->ESCALATED, and *->RECOVERED (settled — see below) — see `_RECEIPTABLE`
+below for why executed is keyed on EXECUTING and not the AWAITING state that
+follows it. Every other transition — SCHEDULED, DIAGNOSED, DEFERRED — is
+already a complete record in the transition log itself and represents no
+decision about money; wrapping every one of them in a Receipt would bury the
+four that matter under the rest. taxonomy.md §5's argument that restraint has
+to be as visible as action is about BLOCKED and ESCALATED specifically, not
+about every intermediate state a proposal passes through on its way there.
 
 **On design spec §3's Literal outcome field.** It reads
 `Literal["recovered", "failed", "pending", "blocked", "deferred"]`, and two
@@ -27,7 +27,35 @@ recovery, which is not knowable at the instant a Receipt is written: the
 episode moves to AWAITING, not RECOVERED, and a Receipt is written once, at
 the decision, never edited later when settlement resolves. `Outcome` below
 replaces "recovered"/"failed" with EXECUTED / EXECUTION_FAILED — what is
-actually known when the receipt is written — and adds ESCALATED.
+actually known when the receipt is written — and adds ESCALATED and RECOVERED
+(next).
+
+**Where amount_recovered_paise actually comes from.** It used to be hardcoded
+to 0 here, because the recovered amount is only knowable once money is
+confirmed to have landed — a fact vasool.policy.machine.PolicyMachine.settled()
+learns from a later, separate webhook, not from anything the executed
+proposal carried. settled() now takes that amount and puts it on the
+transition to State.RECOVERED (Transition.settled_amount_paise).
+
+That raised the question the session brief posed directly: does the earlier
+EXECUTED receipt get amended with the figure once it's known, or does
+RECOVERED become a fourth receiptable state with its own receipt? Amendment
+loses on the architecture's own terms. A Receipt's `hash` covers every field
+including amount_recovered_paise (`_compute_hash` below), and every receipt
+after it commits to that hash as its `prev_hash` — the whole point of chaining
+is that changing field on receipt N invalidates the hash on N, which no longer
+matches what receipt N+1 already recorded as `prev_hash`, and every receipt
+after N faces the same problem in turn. "Amend and rehash the rest of the
+chain" is indistinguishable from rewriting history, which is precisely what
+`verify_chain` exists to catch — the only way to make an amended receipt
+verify again is to also rewrite everything after it, at which point the hash
+chain is not proving anything a mutable ledger wouldn't. So: a receipt is
+written once, at the decision it records, exactly as the module already
+argued for "recovered"/"failed" above — and RECOVERED is a fourth entry in
+`_RECEIPTABLE`, appended to the end of the chain rather than reaching back
+into it. See `receipt_from_transition` for the shape that receipt takes: it
+is not gated on a Proposal the way the other three are, because nothing
+proposes a settlement.
 """
 from __future__ import annotations
 
@@ -76,11 +104,18 @@ class Outcome(StrEnum):
     session that decides to receipt deferrals is extending a closed set on
     purpose, not inventing a string at the call site."""
 
+    RECOVERED = "recovered"
+    """The fourth receiptable state — see the module docstring's argument
+    against amending the EXECUTED receipt instead. Written once, when
+    PolicyMachine.settled() closes the episode; carries the real
+    amount_recovered_paise no other Outcome can."""
+
 
 _RECEIPTABLE: dict[State, Outcome] = {
     State.EXECUTING: Outcome.EXECUTED,
     State.BLOCKED: Outcome.BLOCKED,
     State.ESCALATED: Outcome.ESCALATED,
+    State.RECOVERED: Outcome.RECOVERED,
 }
 """Which to_state produces a receipt, and what Outcome it starts as.
 
@@ -94,7 +129,17 @@ outcome", proposal=proposal)` — note no `chain=` kwarg, so that Transition's
 single executed proposal; EXECUTING is the transition that actually carries
 the verdicts, and it happens exactly once per execution, so it is both
 correct and sufficient. This is also the more precise thing to receipt
-anyway: it is the transition that recorded *why* execution was allowed."""
+anyway: it is the transition that recorded *why* execution was allowed.
+
+RECOVERED is different in kind from the other three, not just a fourth item
+on the list: EXECUTING/BLOCKED/ESCALATED all record a *compliance decision*
+about one Proposal, made by the guard chain, and `receipt_from_transition`
+requires a proposal and a chain for exactly that reason. RECOVERED records
+that money arrived, which vasool/policy/machine.py::settled() can learn with
+no proposal in play at all (an out-of-band payment can close an episode
+before anything was ever gated — tests/test_machine.py's A07 case). So it is
+handled separately below rather than folded into the same "requires
+proposal/chain" branch as the other three."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,9 +152,13 @@ class Receipt:
     hash: str
 
     entity_id: str
-    event_id: str
-    proposal: Proposal
+    event_id: str | None
+    """None only on a RECOVERED receipt — see `proposal` below."""
+    proposal: Proposal | None
+    """None only on a RECOVERED receipt: settled() closes an episode, not a
+    Proposal, and (A07) can do it with no Proposal ever having been gated."""
     verdicts: tuple[Verdict, ...]
+    """Empty on a RECOVERED receipt — no guard chain runs over a settlement."""
 
     executed: bool
     razorpay_request_id: str | None
@@ -117,7 +166,10 @@ class Receipt:
 
     outcome: Outcome
     amount_recovered_paise: int
-    """Always 0 as built this session. See receipt_from_transition."""
+    """0 on every outcome except RECOVERED, where it is what settled() was
+    told the customer actually paid (see receipt_from_transition and this
+    module's docstring on why that receipt is a fourth state rather than an
+    amendment to the EXECUTED one)."""
 
     at: datetime
     trace_id: str
@@ -148,8 +200,8 @@ def _compute_hash(
     prev_hash: str,
     receipt_id: str,
     entity_id: str,
-    event_id: str,
-    proposal: Proposal,
+    event_id: str | None,
+    proposal: Proposal | None,
     verdicts: Sequence[Verdict],
     executed: bool,
     razorpay_request_id: str | None,
@@ -164,7 +216,7 @@ def _compute_hash(
         "receipt_id": receipt_id,
         "entity_id": entity_id,
         "event_id": event_id,
-        "proposal": proposal.model_dump(mode="json"),
+        "proposal": proposal.model_dump(mode="json") if proposal is not None else None,
         "verdicts": [v.model_dump(mode="json") for v in verdicts],
         "executed": executed,
         "razorpay_request_id": razorpay_request_id,
@@ -177,11 +229,57 @@ def _compute_hash(
     return hashlib.sha256(_canonical(payload).encode()).hexdigest()
 
 
-def _receipt_id(entity_id: str, proposal_id: str, to_state: State) -> str:
+def _receipt_id(entity_id: str, proposal_id: str | None, to_state: State) -> str:
     """Deterministic, like every other id this codebase derives (see
     vasool/diagnosis/proposal.py::_derive_id) — not uuid4, so replay produces
-    the same receipt_id from the same inputs (CLAUDE.md invariant 5)."""
-    basis = f"{entity_id}|{proposal_id}|{to_state.value}"
+    the same receipt_id from the same inputs (CLAUDE.md invariant 5).
+
+    `proposal_id` is None only for a RECOVERED receipt. That's still
+    deterministic and still unique: an episode can reach RECOVERED at most
+    once (`_stop` only transitions a non-terminal episode, and RECOVERED is
+    terminal), so `entity_id` alone already picks out the one receipt this
+    will ever be.
+
+    **The uniqueness guarantee, and where it actually comes from.** Session
+    4.7 found two receipts sharing an id — card_expired and
+    card_disabled_for_online_payments in data/stubbed_payloads/ both produce
+    `rcpt_aa8ce1313a1ceab9`. Investigated: every file in that directory
+    carries the *same* `payment.entity.id`, because `tools/make_stubs.py`
+    derives every stub from one real capture and only ever edits the error
+    fields. Two stub scenarios collide exactly when they also happen to map
+    to the same (intervention, attempt, role) — here, both are
+    REAUTH_LINK/attempt-1/PRIMARY — which makes `proposal_id` identical too
+    (it's derived from the same entity_id, see
+    vasool/diagnosis/proposal.py::_derive_id), so the basis string below is
+    identical for both. This is a fixture artifact, not a defect in this
+    function: `entity_id` is part of the hash basis, so two receipts collide
+    only if their `entity_id` is *also* identical.
+
+    In production `entity_id` is `payment.entity.id`, a Razorpay-assigned id
+    that is globally unique per payment — so two receipts for two genuinely
+    different payments cannot collide; they differ on `entity_id` alone.
+    Within one entity_id, a collision needs identical `proposal_id` and
+    `to_state` too. `proposal_id` is deterministic on
+    (entity_id, intervention, attempt, role) by design — it is meant to be
+    idempotent, so that a replayed webhook (Razorpay redelivers every one,
+    docs/VERIFIED.md) or a reclassification lands on the *same* proposal
+    rather than a new one. Two receipts that share entity_id, proposal_id,
+    and to_state are therefore, by construction, records of the same
+    logical decision, not two different ones that happen to collide —
+    tests/test_receipts.py::TestReceiptIdUniqueness proves the
+    different-entity_id half of this mechanically; the same-entity_id half
+    follows from _derive_id's own idempotency, not from anything this
+    function does.
+
+    One caveat this proof doesn't cover: the "|" separator below is not
+    escaped, so a crafted entity_id or proposal_id containing "|" could in
+    principle shift the basis string's field boundaries and collide with a
+    different (entity_id, proposal_id) pair. Every observed Razorpay id
+    (`pay_...`, `prop_...`) is restricted to alphanumerics, so this is not a
+    reachable case today — noted rather than defended against, per this
+    project's rule against validating scenarios that can't happen.
+    """
+    basis = f"{entity_id}|{proposal_id or '-'}|{to_state.value}"
     return "rcpt_" + hashlib.sha256(basis.encode()).hexdigest()[:16]
 
 
@@ -193,21 +291,37 @@ def receipt_from_transition(
     call: CallRecord | None = None,
 ) -> Receipt | None:
     """Build the Receipt this Transition owes the ledger, or None if its
-    to_state isn't one of the three that owes one (see module docstring).
+    to_state isn't one of the four that owes one (see module docstring).
 
-    `amount_recovered_paise` is always 0 here. The actual recovered amount is
-    only knowable once the money is confirmed to have landed — a fact that
-    arrives later, via vasool.policy.machine.PolicyMachine.settled(), on a
-    transition to RECOVERED that carries no proposal at all (`_stop` calls
-    `_to(episode, state, note)` with none). There is nowhere on that
-    transition to read an amount from without vasool/policy/machine.py
-    logging one, and this session does not touch the policy plane. Recorded
-    here rather than worked around: closing this gap is a policy-plane
-    change for whichever session touches machine.py next.
+    RECOVERED is handled on its own branch: it is not a compliance decision
+    about a Proposal, so it does not require one, and `amount_recovered_paise`
+    comes from `transition.settled_amount_paise` rather than the constant 0
+    every other Outcome still gets (nothing else confirms money landed —
+    dispatching a retry or a link is not the same fact).
     """
     outcome = _RECEIPTABLE.get(transition.to_state)
     if outcome is None:
         return None
+
+    if outcome is Outcome.RECOVERED:
+        proposal_id = None
+        fields = dict(
+            receipt_id=_receipt_id(transition.entity_id, proposal_id, transition.to_state),
+            entity_id=transition.entity_id,
+            event_id=None,
+            proposal=None,
+            verdicts=(),
+            executed=False,
+            razorpay_request_id=None,
+            razorpay_response=None,
+            outcome=outcome,
+            amount_recovered_paise=transition.settled_amount_paise or 0,
+            at=transition.at,
+            trace_id=trace_id,
+        )
+        computed = _compute_hash(prev_hash=prev_hash, **fields)
+        return Receipt(prev_hash=prev_hash, hash=computed, **fields)
+
     if transition.proposal is None or transition.chain is None:
         raise ValueError(
             f"{transition.to_state} transition for {transition.entity_id} carries "
