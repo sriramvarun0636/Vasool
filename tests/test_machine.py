@@ -532,3 +532,188 @@ class TestTransitionLog:
         m.tick()
         gated = [t for t in m.transitions if t.to_state is State.GATED][-1]
         assert len(gated.chain.verdicts) == len(GUARD_CHAIN)
+
+
+# ---------------------------------------------------------------------------
+# the pre-debit notice — docs/taxonomy.md §9.13
+# ---------------------------------------------------------------------------
+class MandateWorld:
+    """A mandate customer, and a world that notices when the notice goes out.
+
+    `StubFactStore` above holds the world still, which is right for every other
+    test in this file. It cannot be right for these: `PreDebitNoticeGuard`'s
+    entire behaviour is a function of whether a notice has been *sent*, so a
+    store that can never learn that would defer the debit forever and the tests
+    below would be asserting the defect rather than the fix.
+
+    One object answering what the guards read and recording what the executor
+    did, which is the same split `windtunnel/world.py` holds — a fact about the
+    world, never a decision about the agent.
+    """
+
+    def __init__(self, clock: VirtualClock, **overrides):
+        self.clock = clock
+        self.overrides = overrides
+        self.executed: list = []
+        self.notice_sent_at: datetime | None = None
+
+    # -- FactStore
+    def snapshot(self, *, event, proposal, now) -> PolicyFacts:
+        return permissive_facts(
+            is_mandate=True,
+            pre_debit_notice_sent_at=self.notice_sent_at,
+            **self.overrides,
+        )
+
+    # -- Executor
+    def execute(self, proposal):
+        from vasool.diagnosis.proposal import ProposalRole
+        from vasool.policy.machine import ExecutionResult
+
+        self.executed.append(proposal)
+        if proposal.role is ProposalRole.PRE_DEBIT_NOTICE:
+            self.notice_sent_at = self.clock.now()
+        return ExecutionResult(ok=True, detail="recorded")
+
+
+def mandate_machine(*, now=NOON, chain=GUARD_CHAIN, **overrides):
+    clock = VirtualClock(now)
+    world = MandateWorld(clock, **overrides)
+    return (
+        PolicyMachine(clock=clock, facts=world, executor=world, chain=chain),
+        clock,
+        world,
+    )
+
+
+def _notices(machine_) -> list:
+    from vasool.diagnosis.proposal import ProposalRole
+
+    return [
+        item
+        for item in machine_.pending()
+        if item.proposal.role is ProposalRole.PRE_DEBIT_NOTICE
+    ]
+
+
+class TestPreDebitNotice:
+    """RBI e-mandate: the customer is notified before a recurring debit.
+
+    The guard cannot send the notice — it is a pure function — so it defers the
+    debit and returns an inert `Obligation` saying one is owed. Something has
+    to turn that into a Proposal, and until docs/taxonomy.md §9.13 was fixed
+    nothing did: `_execute` was the only place obligations were read, and a
+    guard can only attach one to a `DEFER`, so the one action that could
+    satisfy the guard was the action the guard was blocking.
+    """
+
+    def test_only_a_deferral_can_carry_an_obligation(self):
+        """Why the machine honours obligations on the deferral path and nowhere
+        else. This is a structural fact about the Guard base class, not a
+        convention — and it is what makes an obligation loop inside `_execute`
+        dead code rather than merely unreached."""
+        import inspect
+
+        assert "obligations" in inspect.signature(Guard.defer).parameters
+        for constructor in ("allow", "block", "escalate", "not_applicable"):
+            assert (
+                "obligations" not in inspect.signature(getattr(Guard, constructor)).parameters
+            ), constructor
+
+    def test_a_mandate_debit_does_not_execute_before_a_notice_has_been_served(self):
+        m, clock, world = mandate_machine()
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        assert [p for p in world.executed if p.is_retry] == []
+
+    def test_the_deferral_creates_the_notice_it_says_is_owed(self):
+        m, clock, _ = mandate_machine()
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        assert len(_notices(m)) == 1
+
+    def test_the_notice_is_a_contact_and_spends_no_attempt(self):
+        m, clock, _ = mandate_machine()
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        notice = _notices(m)[0].proposal
+        assert notice.is_contact and not notice.is_retry
+
+    def test_the_notice_is_gated_like_any_other_contact(self):
+        """The guard's own docstring: "a design where an obligation
+        short-circuits into an executor is a hole straight through the policy
+        plane". A notice owed at 03:00 IST waits for the contact window."""
+        m, clock, world = mandate_machine(
+            now=datetime(2026, 8, 25, 3, 0, tzinfo=IST).astimezone(timezone.utc)
+        )
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(hours=4))  # past the quiet-hours retry hold
+        m.tick()
+        clock.advance_by(timedelta(minutes=1))
+        m.tick()
+        assert world.executed == []
+        assert m.state_of(event_for("gateway_technical_error").entity_id) is State.DEFERRED
+
+    def test_the_notice_goes_out_and_then_the_debit_does(self):
+        m, clock, world = mandate_machine()
+        event = event_for("gateway_technical_error")
+        m.observe(event)
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        for _ in range(4):
+            clock.advance_by(timedelta(hours=12))
+            m.tick()
+        roles = [p.role.value for p in world.executed]
+        assert roles[0] == "PRE_DEBIT_NOTICE"
+        assert any(p.is_retry for p in world.executed), "the debit never happened"
+        notice_at = next(p for p in world.executed if not p.is_retry)
+        debit = next(p for p in world.executed if p.is_retry)
+        assert debit.execute_at >= world.notice_sent_at + timedelta(hours=24)
+        assert notice_at is not debit
+
+    def test_exactly_one_notice_is_ever_created(self):
+        """The second deferral names a deadline rather than an obligation, so
+        the debit re-gating does not mint another notice."""
+        from vasool.diagnosis.proposal import ProposalRole
+
+        m, clock, world = mandate_machine()
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        for _ in range(4):
+            clock.advance_by(timedelta(hours=12))
+            m.tick()
+        notices = [
+            t
+            for t in m.transitions
+            if t.proposal is not None
+            and t.proposal.role is ProposalRole.PRE_DEBIT_NOTICE
+            and t.to_state is State.SCHEDULED
+        ]
+        assert len(notices) == 1
+
+    def test_a_deferral_the_machine_refuses_creates_no_notice(self):
+        """The reason obligations are honoured after the deferral bounds and
+        not at the gate. Telling a customer we are about to debit them, for a
+        debit we have just refused to reschedule, is worse than saying nothing.
+        """
+        m, clock, _ = mandate_machine(chain=GUARD_CHAIN + (DefersBy(DEFER_HORIZON + timedelta(days=1)),))
+        event = event_for("gateway_technical_error")
+        m.observe(event)
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        assert m.state_of(event.entity_id) is State.BLOCKED
+        assert _notices(m) == []
+
+    def test_the_notice_starts_with_its_own_deferral_budget(self):
+        """It is a new action, not a continuation of the debit. Inheriting the
+        debit's deferral count would give a notice owed on the fourth deferral
+        a one-deferral budget."""
+        m, clock, _ = mandate_machine()
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        assert _notices(m)[0].deferrals == 0

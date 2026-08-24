@@ -390,15 +390,17 @@ class PolicyMachine:
         )
         self._log(episode, State.EXECUTING, State.AWAITING, "awaiting outcome", proposal=proposal)
 
-        for obligation in result.obligations:
-            if obligation.kind is ObligationKind.SEND_PRE_DEBIT_NOTICE:
-                self._schedule(
-                    dataclasses.replace(
-                        item,
-                        proposal=notice_proposal_from(proposal, execute_at=obligation.not_before),
-                        origin=proposal,
-                    )
-                )
+        # No obligations are honoured here, and none can arrive here. A guard
+        # attaches an obligation through `Guard.defer` and through no other
+        # verdict constructor (vasool/policy/guards/base.py), and a chain
+        # containing a DEFER resolves to DEFER or worse — never ALLOW — so
+        # `result.obligations` is empty on every execution by construction.
+        # A loop over it used to sit here, which is how docs/taxonomy.md §9.13
+        # happened: the only place obligations were read was the one place they
+        # could never arrive, so `PreDebitNoticeGuard` deferred a debit waiting
+        # for a notice that the deferral itself was supposed to create. They are
+        # honoured in `_defer` now. If `allow()` is ever given an `obligations`
+        # parameter, this is where the other call belongs.
 
     def _defer(
         self, episode: Episode, item: ScheduledItem, result: ChainResult, now: datetime
@@ -450,6 +452,64 @@ class PolicyMachine:
             chain=result,
             causes=causes,
         )
+        self._honour(item, result)
+
+    def _honour(self, item: ScheduledItem, result: ChainResult) -> None:
+        """Create the work a guard said was owed before its deferral can lift.
+
+        **Called from the deferral path and nowhere else**, because that is the
+        only path an obligation can reach. `Guard.defer` is the sole verdict
+        constructor that accepts one, so a chain carrying an obligation always
+        resolves to DEFER — see `_execute`, which used to hold this loop and
+        could never run it (docs/taxonomy.md §9.13).
+
+        **And after `_defer`'s two bounds, not before them.** A deferral that
+        `MAX_DEFERRALS` or `DEFER_HORIZON` refuses is a refusal, and the
+        obligation belonged to an action that is no longer going to happen —
+        serving a customer a pre-debit notice for a debit we have just declined
+        to reschedule tells them we are about to touch their account when we are
+        not. Same argument rules out honouring obligations on BLOCK and
+        ESCALATE, which is why this is not in `_gate`.
+
+        The notice is a new action rather than a continuation of the debit, so
+        it starts with its own deferral budget: inheriting `item.deferrals`
+        would hand a notice owed on the debit's fourth deferral a one-deferral
+        budget of its own. It keeps `origin` pointing at the debit, so its
+        horizon is measured from the action it exists to enable.
+
+        Nothing here sends anything. The notice is a Proposal and is gated like
+        any other contact — the contact window, the DND scrub, the DLT template
+        and the frequency cap all apply to it, which is the whole argument in
+        vasool/policy/guards/pre_debit_notice.py for describing it rather than
+        performing it.
+        """
+        queued = {item.proposal.idempotency_key for item in self._queue}
+        for obligation in result.obligations:
+            if obligation.kind is ObligationKind.SEND_PRE_DEBIT_NOTICE:
+                notice = notice_proposal_from(item.proposal, execute_at=obligation.not_before)
+                if notice.idempotency_key in queued:
+                    # The debit can re-gate before the notice it is waiting on
+                    # has gone out — the notice is a contact, so the window or
+                    # the frequency cap may hold it — and the guard correctly
+                    # says a notice is still owed. Owed, not owed *again*:
+                    # queueing a second copy would leave two identical
+                    # proposals racing, one of which `IdempotencyGuard` then
+                    # refuses, putting a BLOCKED receipt in the ledger for a
+                    # duplicate the machine created itself. This is not a
+                    # second deduplication mechanism competing with that guard:
+                    # the guard rules on what has already *executed*, and only
+                    # the machine can know what is already *queued*.
+                    continue
+                self._schedule(
+                    dataclasses.replace(
+                        item,
+                        proposal=notice,
+                        origin=item.proposal,
+                        deferrals=0,
+                        first_deferred_at=None,
+                        causes=(),
+                    )
+                )
 
     # -- plumbing ---------------------------------------------------------
     def _context(self, item: ScheduledItem, episode: Episode, now: datetime) -> GuardContext:

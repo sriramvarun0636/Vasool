@@ -480,6 +480,53 @@ class NoExecutionOnEntityAfter:
 
 
 @dataclass(frozen=True, slots=True)
+class NoDebitBeforeNoticeMatures:
+    """RBI e-mandate: the account is not touched until the notice has matured.
+
+    The rule as a relationship between two receipts, which is the only place
+    it can be checked — a notice is a contact and a debit is a
+    re-presentation, and what the framework requires is the *interval* between
+    them. Every executed re-presentation on this episode must be preceded by an
+    executed `PRE_DEBIT_NOTICE` at least `lead` earlier; a debit with no notice
+    behind it at all is the violation in its purest form.
+
+    Holds vacuously when nothing executed, and that is correct: this is the
+    safety half of the rule, and an episode where the debit never happened
+    never touched the account. Whether the debit *should* have happened is a
+    liveness claim and is carried by its own evidence — the distinction
+    docs/taxonomy.md §9.13 turns on.
+    """
+
+    entity_id: str
+    lead: timedelta
+
+    def check(self, scene: Scene) -> Clause:
+        executed = [r for r in _executed(scene.ledger()) if r.entity_id == self.entity_id]
+        notices = sorted(
+            r.at
+            for r in executed
+            if r.proposal.role.value == "PRE_DEBIT_NOTICE"
+        )
+        bad = []
+        for receipt in executed:
+            if not receipt.proposal.is_retry:
+                continue
+            matured = [at for at in notices if at + self.lead <= receipt.at]
+            if not matured:
+                bad.append(receipt)
+        return Clause(
+            name=f"no_debit_on_{self.entity_id}_before_its_notice_matured",
+            held=not bad,
+            detail=(
+                f"{len(notices)} notices served, no debit inside the {self.lead} lead"
+                if not bad
+                else f"{len(bad)} debits with no matured notice behind them, first "
+                f"{bad[0].receipt_id} at {bad[0].at.astimezone(IST):%d %b %H:%M} IST"
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class NoContactOutsideCustomerWindow:
     """08:00-19:00 in the *customer's* timezone, not the merchant's.
 

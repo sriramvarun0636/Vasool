@@ -36,6 +36,7 @@ from __future__ import annotations
 from datetime import timedelta, timezone
 
 from vasool.ledger.receipts import Outcome
+from vasool.policy.guards.pre_debit_notice import PRE_DEBIT_NOTICE_LEAD
 from windtunnel.adversary.arena import Arena
 from windtunnel.adversary.criterion import (
     Attack,
@@ -45,6 +46,7 @@ from windtunnel.adversary.criterion import (
     Expectation,
     NoContactOutsideCustomerWindow,
     NoContactToDndListed,
+    NoDebitBeforeNoticeMatures,
     NoExecutionOnEntityAfter,
     NoRetryExecutedBetweenIST,
     ReceiptCount,
@@ -469,7 +471,7 @@ def a22_blast_radius(arena: Arena) -> None:
 
 
 def a23_pre_debit_notice(arena: Arena) -> None:
-    """A mandate debit with no notice served.
+    """A mandate debit with no notice served, at 23:00 IST.
 
     RBI's e-mandate framework requires the customer to be notified before a
     recurring debit, and `PreDebitNoticeGuard` holds the debit until one has
@@ -477,12 +479,21 @@ def a23_pre_debit_notice(arena: Arena) -> None:
     notice period; the attack asks whether an unnotified debit can reach the
     instrument by waiting.
 
-    It cannot — and the reason it cannot is worth reading in the ledger. The
-    guard defers with an `Obligation` to send the notice, and
-    `PolicyMachine._execute` is the only place obligations are honoured, so a
-    debit that is *deferred* never produces a notice, keeps deferring, and
-    lands in BLOCKED after the fifth. Safe, and inert: on this path no mandate
-    debit executes at all.
+    23:00 because the notice is itself a contact, and the hour is what makes
+    that load-bearing: the notice cannot go out when it is owed, so it defers
+    to the contact window and the debit waits on a notice that is itself
+    waiting. Nothing about the notice short-circuits the chain — the whole
+    argument in `vasool/policy/guards/pre_debit_notice.py` for describing it
+    rather than performing it.
+
+    Until docs/taxonomy.md §9.13 was fixed this attack survived for the wrong
+    reason. Obligations were read only in `PolicyMachine._execute`, and a guard
+    can only attach one to a `DEFER`, so the notice was never created, the
+    debit deferred five times and landed in BLOCKED, and no mandate debit
+    executed anywhere in the system. Safe, and inert. The evidence below is
+    what the attack was always meant to assert, split so the two halves cannot
+    be confused again: the debit waits for a matured notice (safety), *and*
+    both of them actually happen (liveness).
     """
     mandy = arena.person("mandy", is_mandate=True)
     arena.advance_to(arena.ist(hour=23))
@@ -748,11 +759,12 @@ ATTACKS: tuple[Attack, ...] = (
         id="A23",
         title="a mandate debit with no notice served",
         targets="RBI e-mandate: the account is not touched inside the notice period",
-        source="design spec §10's compliance row; PreDebitNoticeGuard",
+        source="design spec §10's compliance row; docs/taxonomy.md §9.13",
         expectation=SURVIVES,
         evidence=(
-            ExecutedCount("pay_a23", 0, is_retry=True),
-            ReceiptWithOutcome("pay_a23", Outcome.BLOCKED, guard="PreDebitNoticeGuard"),
+            NoDebitBeforeNoticeMatures("pay_a23", PRE_DEBIT_NOTICE_LEAD),
+            ExecutedCount("pay_a23", 1, is_contact=True),
+            ExecutedCount("pay_a23", 1, is_retry=True),
         ),
         run=a23_pre_debit_notice,
     ),
