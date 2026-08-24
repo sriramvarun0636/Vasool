@@ -6,6 +6,17 @@ and §9's falsification criteria. §7's sweep grid is behind `--sweeps` because
 it is roughly a hundred times the work and §10 registers it on its own seed
 range.
 
+**Running part of the grid.** `--sweep-target NAME ...` runs only the named
+parameters' four configurations, always with §10's equally-powered reference,
+and `--skip-base` runs the grid without §6a's thousand-seed protocol — useful
+once the base is done at power, since it will not change. Both are CLI
+surface: which configurations *exist* is `windtunnel/sweeps.py`'s business and
+is untouched. Two consequences follow and are enforced here. A subset run
+**refuses to report an F6 verdict**, because F6 is registered against the
+whole grid and a partial one would count fewer flips than the rule allows.
+And `--skip-base` writes `sweeps.json` rather than `evaluation.json`, so a
+partial run can never overwrite the manifest from a run at power.
+
 **Resumability, and why it is a JSONL shard per (config, arm).** A thousand
 seeds times nine arms is half an hour, and the sweep grid is an overnight run;
 a crash at hour six must not mean starting again. Each completed seed appends
@@ -363,6 +374,46 @@ def sweep_verdicts(
     }
 
 
+def sweep_targets() -> tuple[str, ...]:
+    """Every name `--sweep-target` accepts.
+
+    Derived from the grid rather than listed, so a parameter registered in a
+    later §10 row is selectable without anyone remembering to touch the CLI.
+    `ScalarSweep.target` is the parameter's name and `MixShift.target` is the
+    composite's own name, so both kinds are addressable the same way.
+    """
+    return tuple(
+        sorted({c.target for c in sweep_configurations() if c.name != REFERENCE.name})
+    )
+
+
+def selected_grid(targets: Sequence[str]) -> tuple:
+    """§7's grid, or the subset `targets` names, with §10's reference in front.
+
+    The reference is not optional and is never filtered out: survival is judged
+    against an unswept comparison recomputed on the same 200 seeds (§10,
+    2026-08-23), so a subset without it would have nothing to judge against.
+
+    This selects which configurations *run*. It does not change which
+    configurations exist — `sweep_configurations()` is still the registered
+    grid, and F6 is still registered against all of it, which is why a subset
+    run refuses to report an F6 verdict.
+    """
+    grid = sweep_configurations()
+    if not targets:
+        return grid
+    wanted = set(targets)
+    return tuple(c for c in grid if c.name == REFERENCE.name or c.target in wanted)
+
+
+F6_PARTIAL_GRID = (
+    "§7's grid was run in part (--sweep-target), and F6 is registered against "
+    "the whole of it: every configuration is a chance to flip (§10, "
+    "2026-08-24). A verdict from a subset would count fewer flips than the "
+    "registered rule allows and report `fired: false` off work that was never "
+    "done. Run the full grid — `make sweeps` — for a verdict."
+)
+
 F6_DENOMINATOR: tuple[str, ...] = (
     "naive_retry",
     "retry_plus_contact",
@@ -587,11 +638,33 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
     parser.add_argument("--seeds", type=int, default=len(REGISTERED_SEEDS))
     parser.add_argument("--workers", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--sweeps", action="store_true", help="also run §7's grid (hours)")
+    parser.add_argument(
+        "--sweep-target", nargs="+", metavar="NAME", default=[],
+        help="run only these parameters' configurations from §7's grid, plus the "
+             "reference. Implies --sweeps. F6 is not reported off a subset.",
+    )
+    parser.add_argument(
+        "--skip-base", action="store_true",
+        help="run §7's grid only, not §6a's 1000-seed protocol. Writes sweeps.json "
+             "rather than evaluation.json, so a partial run cannot overwrite the "
+             "manifest from a run at power. Requires --sweeps.",
+    )
     parser.add_argument("--cohort", default=Cohort.DEVELOPMENT.value,
                         choices=[c.value for c in Cohort])
     parser.add_argument("--unseal", default=None,
                         help="the §3c phrase; required for --cohort holdout")
     args = parser.parse_args(argv)
+
+    if args.sweep_target:
+        unknown = sorted(set(args.sweep_target) - set(sweep_targets()))
+        if unknown:
+            parser.error(
+                f"not a registered sweep target: {', '.join(unknown)}\n"
+                "registered targets:\n  " + "\n  ".join(sweep_targets())
+            )
+        args.sweeps = True
+    if args.skip_base and not args.sweeps:
+        parser.error("--skip-base needs --sweeps: it would otherwise run nothing")
 
     if args.cohort == Cohort.HOLDOUT.value and args.unseal != UNSEAL_PHRASE:
         raise HoldoutSealed(
@@ -603,17 +676,84 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
     seeds = list(REGISTERED_SEEDS)[: args.seeds]
     started = time.perf_counter()
 
+    report: dict = {"cohort": args.cohort, "arms": [a.name for a in ALL_ARMS]}
+
+    if args.skip_base:
+        print("--skip-base: §6a's protocol not run, §7's grid only", file=sys.stderr)
+        report["base_protocol"] = {
+            "run": False,
+            "detail": (
+                "§6a's 1000-seed protocol was not run (--skip-base), so F1–F5 and "
+                "F7 are absent from this file rather than reported as not having "
+                "fired. They are read off the base run, which is already done at "
+                "power: see evaluation.json in this directory."
+            ),
+        }
+    else:
+        _base_protocol(
+            report, out=out, seeds=seeds, cohort=args.cohort,
+            pepper=pepper, unseal=args.unseal, workers=args.workers,
+        )
+
+    if args.sweeps:
+        grid = selected_grid(args.sweep_target)
+        swept_count = len(grid) - 1
+        print(
+            f"§7 sweeps: {swept_count} config(s) + reference x {len(SWEEP_SEEDS)} seeds",
+            file=sys.stderr,
+        )
+        swept = collect(
+            out=out / "sweeps", configs=grid, arms=ALL_ARMS, seeds=list(SWEEP_SEEDS),
+            cohort=args.cohort, pepper=pepper, unseal=args.unseal, workers=args.workers,
+        )
+        unswept = reference_differences(swept)
+        report["sweeps"] = {
+            config.name: sweep_verdicts(swept[config.name], unswept, config=config)
+            for config in grid
+            if config.name != REFERENCE.name
+        }
+        report["sweep_reference"] = compare(swept[REFERENCE.name])
+        report.setdefault("falsification", {})["F6_conclusions_are_model_artifacts"] = (
+            f6_verdict(report["sweeps"])
+            if not args.sweep_target
+            else {
+                "fired": None,
+                "detail": F6_PARTIAL_GRID,
+                "targets_run": sorted(args.sweep_target),
+                "configurations_run": swept_count,
+            }
+        )
+
+    report["elapsed_seconds"] = round(time.perf_counter() - started, 1)
+    destination = out / ("sweeps.json" if args.skip_base else "evaluation.json")
+    destination.write_text(json.dumps(report, indent=2, default=str))
+    print(f"wrote {destination} in {report['elapsed_seconds']}s", file=sys.stderr)
+
+    if not args.skip_base:
+        predicate = report["per_arm"]["vasool"]["safety_holds_on"]
+        print(f"§2a held on {predicate}/{len(seeds)} seeds", file=sys.stderr)
+    return 0
+
+
+def _base_protocol(
+    report: dict, *, out: pathlib.Path, seeds: Sequence[int], cohort: str,
+    pepper: str, unseal: str | None, workers: int,
+) -> None:
+    """§5's arms over §6a's registered range, and everything read off them.
+
+    Split out of `main` so `--skip-base` omits these keys rather than filling
+    them with placeholders: a manifest carrying `F1: null` beside a real F6
+    reads as a criterion that was evaluated and did not fire.
+    """
     print(f"base protocol: {len(ALL_ARMS)} arms x {len(seeds)} seeds -> {out}", file=sys.stderr)
     base = collect(
-        out=out, configs=[_Base()], arms=ALL_ARMS, seeds=seeds, cohort=args.cohort,
-        pepper=pepper, unseal=args.unseal, workers=args.workers,
+        out=out, configs=[_Base()], arms=ALL_ARMS, seeds=list(seeds), cohort=cohort,
+        pepper=pepper, unseal=unseal, workers=workers,
     )[BASE_CONFIG]
 
     comparisons = compare(base)
-    report = {
-        "cohort": args.cohort,
+    report.update({
         "seeds": {"first": seeds[0], "last": seeds[-1], "count": len(seeds)},
-        "arms": [a.name for a in ALL_ARMS],
         "per_arm": {
             arm: {
                 "recovery_rate_mean": sum(_series(rows, PRIMARY).values()) / len(rows),
@@ -635,31 +775,4 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
         "determinism": determinism_check(seeds[:3], pepper=pepper),
         "falsification": falsification(base, comparisons),
         "pepper_configured": True,
-    }
-
-    if args.sweeps:
-        grid = sweep_configurations()
-        print(f"§7 sweeps: {len(grid)} configs x {len(SWEEP_SEEDS)} seeds", file=sys.stderr)
-        swept = collect(
-            out=out / "sweeps", configs=grid, arms=ALL_ARMS, seeds=list(SWEEP_SEEDS),
-            cohort=args.cohort, pepper=pepper, unseal=args.unseal, workers=args.workers,
-        )
-        unswept = reference_differences(swept)
-        report["sweeps"] = {
-            config.name: sweep_verdicts(swept[config.name], unswept, config=config)
-            for config in grid
-            if config.name != REFERENCE.name
-        }
-        report["sweep_reference"] = compare(swept[REFERENCE.name])
-        report["falsification"]["F6_conclusions_are_model_artifacts"] = f6_verdict(
-            report["sweeps"]
-        )
-
-    report["elapsed_seconds"] = round(time.perf_counter() - started, 1)
-    destination = out / "evaluation.json"
-    destination.write_text(json.dumps(report, indent=2, default=str))
-    print(f"wrote {destination} in {report['elapsed_seconds']}s", file=sys.stderr)
-
-    predicate = report["per_arm"]["vasool"]["safety_holds_on"]
-    print(f"§2a held on {predicate}/{len(seeds)} seeds", file=sys.stderr)
-    return 0
+    })

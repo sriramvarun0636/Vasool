@@ -20,6 +20,7 @@ from windtunnel.arms import VASOOL, arm_named
 from windtunnel.evaluate import (
     BASE_CONFIG,
     F6_DENOMINATOR,
+    F6_PARTIAL_GRID,
     F6_THRESHOLD,
     REGISTERED_SEEDS,
     SWEEP_SEEDS,
@@ -33,6 +34,8 @@ from windtunnel.evaluate import (
     falsification,
     main,
     reference_differences,
+    selected_grid,
+    sweep_targets,
     sweep_verdicts,
 )
 from windtunnel.split import Cohort, HoldoutSealed
@@ -352,3 +355,64 @@ class TestF6:
         del grid["knob@1"]["arms"]["A3"]
         with pytest.raises(KeyError, match="harder to fire"):
             f6_verdict(grid)
+
+
+class TestSweepTargetSelection:
+    """`--sweep-target` and `--skip-base`: CLI surface over §7's grid.
+
+    Neither may change which configurations exist. `sweep_configurations()`
+    stays the registered grid; these choose which of it runs.
+    """
+
+    def test_every_registered_knob_and_composite_is_addressable(self):
+        targets = sweep_targets()
+        assert len(targets) == 23, "20 swept scalars plus §10's three mix composites"
+        assert "retry_success_instrument_dead" not in targets, "§10: not swept"
+        assert "mix:recoverable_heavy" in targets
+
+    def test_no_target_is_the_whole_registered_grid(self):
+        assert selected_grid([]) == sweep_configurations()
+
+    def test_a_target_selects_its_four_points_and_the_reference(self):
+        """§10, 2026-08-23: survival is judged against an unswept reference on
+        the same seeds, so a subset without it would have nothing to judge
+        against."""
+        chosen = selected_grid(["amount_sigma_log"])
+        assert [c.name for c in chosen] == [
+            "reference",
+            "amount_sigma_log@0.5",
+            "amount_sigma_log@0.75",
+            "amount_sigma_log@1.25",
+            "amount_sigma_log@1.5",
+        ]
+
+    def test_several_targets_compose(self):
+        chosen = selected_grid(["amount_sigma_log", "mix:recoverable_heavy"])
+        assert [c.name for c in chosen] == [
+            "reference",
+            "amount_sigma_log@0.5",
+            "amount_sigma_log@0.75",
+            "amount_sigma_log@1.25",
+            "amount_sigma_log@1.5",
+            "mix:recoverable_heavy",
+        ]
+
+    def test_an_unregistered_target_is_refused_before_anything_runs(self, tmp_path):
+        """Silently running nothing would produce an F6 verdict off an empty
+        grid, which is the failure this whole flag has to avoid."""
+        with pytest.raises(SystemExit) as exit:
+            main(["--sweep-target", "not_a_parameter", "--out", str(tmp_path)], pepper=PEPPER)
+        assert exit.value.code == 2
+        assert not list(tmp_path.iterdir())
+
+    def test_skip_base_without_sweeps_is_refused(self, tmp_path):
+        with pytest.raises(SystemExit) as exit:
+            main(["--skip-base", "--out", str(tmp_path)], pepper=PEPPER)
+        assert exit.value.code == 2
+        assert not list(tmp_path.iterdir())
+
+    def test_f6_is_not_reported_off_a_subset(self):
+        """§10, 2026-08-24 registers F6 against the whole grid. A subset counts
+        fewer flips than the rule allows, so `fired: false` from one would be a
+        verdict off work that was never done."""
+        assert "whole" in F6_PARTIAL_GRID and "subset" in F6_PARTIAL_GRID

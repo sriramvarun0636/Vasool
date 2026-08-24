@@ -9,6 +9,7 @@ VENV_PY := .venv/bin/python
 PYTHON  := $(shell test -x $(VENV_PY) && echo $(VENV_PY) || echo python3)
 
 SCENARIO ?= card_expired
+TARGET   ?=
 EVAL_ARGS ?=
 TIME     ?=
 LIVE     ?=
@@ -21,7 +22,7 @@ ifeq ($(strip $(LIVE)),1)
 DEMO_ARGS += --live
 endif
 
-.PHONY: demo golden eval sweeps redteam report replay all
+.PHONY: demo golden eval sweeps sweep-one redteam report replay all
 
 demo: ## one recovery episode, end to end, replay by default -- LIVE=1 make demo to opt in (see vasool/demo.py --help)
 	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
@@ -32,8 +33,11 @@ golden: ## regenerate data/golden/*.txt from a real demo run -- see tools/update
 eval: ## EVALUATION.md's protocol: 9 arms x 1000 seeds, development set, writes out/
 	$(PYTHON) tools/evaluate.py $(EVAL_ARGS)
 
-sweeps: ## eval + SS7's sensitivity grid (84 configs x 200 seeds -- hours, resumable)
+sweeps: ## eval + SS7's sensitivity grid (83 configs + reference x 200 seeds -- hours, resumable)
 	$(PYTHON) tools/evaluate.py --sweeps $(EVAL_ARGS)
+
+sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log make sweep-one
+	$(PYTHON) tools/evaluate.py --skip-base --sweep-target $(TARGET) $(EVAL_ARGS)
 
 redteam: ## 18 adversarial scenarios -- not built yet (lands with windtunnel/adversary)
 	@echo "make redteam: not built yet -- lands with the adversary harness (later session)"
