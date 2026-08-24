@@ -363,6 +363,91 @@ def sweep_verdicts(
     }
 
 
+F6_DENOMINATOR: tuple[str, ...] = (
+    "naive_retry",
+    "retry_plus_contact",
+    "vasool_ungated",
+    "A1",
+    "A2",
+    "A3",
+    "A5",
+)
+"""§10, 2026-08-24: F6's denominator — the seven per-arm primary comparisons a
+swept parameter can move.
+
+Not F1–F7: F6 is self-referential, F7 cannot be moved by a parameter, and F4
+and F5 are not paired differences, so `survives` cannot express them. **A4 is
+excluded** because its per-seed difference is identically `[0, 0]`: it fails to
+survive in every configuration for a reason no swept parameter touches, and a
+criterion about model artifacts should not be part-triggered by an arm with a
+zero-difference vector. The exclusion costs nothing in strictness — the
+eight-arm version this replaces also required four *real* flips, because A4
+supplied the fifth for free.
+"""
+
+F6_THRESHOLD = 4
+"""§9's "more than half", on a denominator of seven."""
+
+F6_DETAIL = (
+    "§10, 2026-08-24: fires iff 4 or more of the 7 per-arm primary comparisons "
+    "a swept parameter can move fail to survive in at least one of §7's "
+    "configurations. A4 is excluded from the denominator — its per-seed "
+    "difference is identically [0, 0], so it cannot survive anything for a "
+    "reason no parameter touches. Primary metric only: a conclusion flipping "
+    "solely on a secondary is not caught (§9)."
+)
+
+
+def f6_verdict(sweeps: dict[str, dict]) -> dict:
+    """§9's F6, evaluated against §7's grid under §10's registered rule.
+
+    A comparison counts as flipped if it fails to survive in **at least one**
+    configuration — §9's "under some ±50% sweep" — and "±50% sweep" is the
+    whole grid rather than its two endpoints, so every configuration in
+    `sweeps` is a chance to flip.
+
+    The configurations each arm flipped in are reported, not just the count.
+    §7 exists to say *which* parameter made a conclusion an artifact, and a
+    bare tally would answer the question §7 asks with the same sign bit this
+    block was carrying before.
+    """
+    flipped: dict[str, list[str]] = {}
+    for arm in F6_DENOMINATOR:
+        configs = [
+            name for name, block in sweeps.items() if not _survival(block, arm, name)
+        ]
+        if configs:
+            flipped[arm] = configs
+
+    return {
+        "fired": len(flipped) >= F6_THRESHOLD,
+        "detail": F6_DETAIL,
+        "denominator": list(F6_DENOMINATOR),
+        "excluded": {"A4": ZERO_DIFFERENCE_DETAIL},
+        "threshold": F6_THRESHOLD,
+        "configurations": len(sweeps),
+        "flipped_count": len(flipped),
+        "flipped": flipped,
+    }
+
+
+def _survival(block: dict, arm: str, config: str) -> bool:
+    """One arm's verdict in one configuration, and a hard failure if it is
+    absent.
+
+    Skipping a missing arm would quietly shrink the numerator and make F6
+    *harder* to fire, which is the one direction an error here must not go.
+    """
+    try:
+        return block["arms"][arm]["survives"]
+    except KeyError:
+        raise KeyError(
+            f"§7's grid has no {arm!r} comparison in configuration {config!r}. "
+            "F6 cannot be evaluated on a denominator with a hole in it, and "
+            "skipping the arm would make the criterion harder to fire."
+        ) from None
+
+
 def _direction(interval: dict | None) -> str:
     """Which way a paired difference actually came out.
 
@@ -566,6 +651,9 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
             if config.name != REFERENCE.name
         }
         report["sweep_reference"] = compare(swept[REFERENCE.name])
+        report["falsification"]["F6_conclusions_are_model_artifacts"] = f6_verdict(
+            report["sweeps"]
+        )
 
     report["elapsed_seconds"] = round(time.perf_counter() - started, 1)
     destination = out / "evaluation.json"

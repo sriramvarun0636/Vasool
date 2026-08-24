@@ -19,17 +19,24 @@ import pytest
 from windtunnel.arms import VASOOL, arm_named
 from windtunnel.evaluate import (
     BASE_CONFIG,
+    F6_DENOMINATOR,
+    F6_THRESHOLD,
     REGISTERED_SEEDS,
     SWEEP_SEEDS,
+    ZERO_DIFFERENCE_DETAIL,
     _Base,
     _shard,
     collect,
     compare,
     determinism_check,
+    f6_verdict,
     falsification,
     main,
+    reference_differences,
+    sweep_verdicts,
 )
 from windtunnel.split import Cohort, HoldoutSealed
+from windtunnel.sweeps import REFERENCE, sweep_configurations
 
 PEPPER = "test-pepper-do-not-use-in-prod"
 ARMS = (VASOOL, arm_named("vasool_ungated"))
@@ -215,3 +222,133 @@ class TestEndToEnd:
         root = pathlib.Path(__file__).resolve().parent.parent.parent
         assert "VASOOL_ID_PEPPER" in (root / "tools" / "evaluate.py").read_text()
         assert "tools/evaluate.py" in (root / "Makefile").read_text()
+
+
+# ---------------------------------------------------------------------------
+# §7's block, and §9's F6 read off it
+# ---------------------------------------------------------------------------
+SWEEP_ARMS = (VASOOL, arm_named("naive_retry"), arm_named("A4"))
+"""Vasool, one baseline that moves, and the one arm that cannot. Three seeds
+and two configurations: what is under test is the block's shape and F6's
+arithmetic, not any number in it."""
+
+
+@pytest.fixture(scope="module")
+def grid(tmp_path_factory):
+    """A miniature §7 grid: the reference plus one swept configuration."""
+    config = next(
+        c for c in sweep_configurations() if c.name.startswith("retry_success_transient@")
+    )
+    swept = collect(
+        out=tmp_path_factory.mktemp("grid"),
+        configs=[REFERENCE, config],
+        arms=SWEEP_ARMS,
+        seeds=[0, 1, 2],
+        cohort=Cohort.DEVELOPMENT.value,
+        pepper=PEPPER,
+        unseal=None,
+        workers=1,
+        progress=False,
+    )
+    reference = reference_differences(swept)
+    return sweep_verdicts(swept[config.name], reference, config=config)
+
+
+class TestSweepBlockShape:
+    """§10, 2026-08-24. The block used to carry one boolean per arm, which
+    collapses §7 to a sign test and throws the effect size away — 83
+    configurations rendered one distinct block. The shape is pinned here
+    because nothing else would have caught that: every value in it was
+    correct."""
+
+    def test_the_configuration_is_named_by_kind_target_and_factor(self, grid):
+        assert grid["kind"] == "outcome"
+        assert grid["target"] == "retry_success_transient"
+        assert grid["factor"] in (0.5, 0.75, 1.25, 1.5)
+
+    def test_every_arm_carries_an_interval_beside_the_boolean(self, grid):
+        assert set(grid["arms"]) == {"naive_retry", "A4"}
+        for arm, entry in grid["arms"].items():
+            assert isinstance(entry["survives"], bool), arm
+            assert entry["interval"]["n_seeds"] == 3, arm
+
+    def test_the_interval_is_the_object_the_headline_comparison_emits(self, grid, tmp_path):
+        """§7's grid and §6a's paired comparison must serialise one shape. Two
+        shapes for the same quantity is how a report card ends up comparing a
+        magnitude against a boolean without noticing."""
+        headline = compare(gather(tmp_path, range(3), arms=SWEEP_ARMS)[BASE_CONFIG])
+        expected = set(headline["naive_retry"]["recovery_rate"])
+        for arm, entry in grid["arms"].items():
+            assert set(entry["interval"]) == expected, arm
+
+    def test_a_zero_difference_arm_is_noted_and_no_other_arm_is(self, grid):
+        """A4 differs from Vasool only in how the guard chain resolves a
+        refusal, which never changes an outcome here, so its interval is
+        [0, 0] and `survives` is false for a reason no parameter touches."""
+        a4 = grid["arms"]["A4"]
+        assert (a4["interval"]["point"], a4["interval"]["low"], a4["interval"]["high"]) == (0.0, 0.0, 0.0)
+        assert a4["survives"] is False
+        assert a4["detail"] == ZERO_DIFFERENCE_DETAIL
+        assert "detail" not in grid["arms"]["naive_retry"]
+
+
+def _grid(configs: int = 3, flips: dict[int, set[str]] | None = None) -> dict:
+    """A synthetic §7 grid. Every arm survives everywhere except where told."""
+    flips = flips or {}
+    return {
+        f"knob@{i}": {
+            "arms": {
+                arm: {"survives": arm not in flips.get(i, set()), "interval": {}}
+                for arm in (*F6_DENOMINATOR, "A4")
+            }
+        }
+        for i in range(configs)
+    }
+
+
+class TestF6:
+    """§9's F6 under §10's registered rule, 2026-08-24."""
+
+    def test_the_denominator_is_the_seven_comparisons_a_parameter_can_move(self):
+        assert F6_DENOMINATOR == (
+            "naive_retry", "retry_plus_contact", "vasool_ungated", "A1", "A2", "A3", "A5",
+        )
+        assert F6_THRESHOLD == 4
+
+    def test_a_grid_in_which_everything_survives_does_not_fire(self):
+        verdict = f6_verdict(_grid())
+        assert verdict["fired"] is False
+        assert verdict["flipped_count"] == 0
+        assert verdict["configurations"] == 3
+
+    def test_three_of_seven_does_not_fire_and_four_does(self):
+        """§9's "more than half", on a denominator of seven."""
+        three = {"naive_retry", "retry_plus_contact", "A1"}
+        assert f6_verdict(_grid(flips={0: three}))["fired"] is False
+        assert f6_verdict(_grid(flips={0: three | {"A2"}}))["fired"] is True
+
+    def test_one_configuration_is_enough_to_flip_a_comparison(self):
+        """§9: "under some ±50% sweep" — failing anywhere in the grid counts,
+        and the configurations it failed in are reported, because §7 exists to
+        say which parameter made a conclusion an artifact."""
+        verdict = f6_verdict(_grid(configs=3, flips={1: {"A5"}}))
+        assert verdict["flipped"] == {"A5": ["knob@1"]}
+        assert verdict["fired"] is False
+
+    def test_a4_never_counts_however_it_reports(self):
+        """§10, 2026-08-24: excluded, because its difference is identically
+        [0, 0] and it fails in every configuration for a reason no swept
+        parameter touches."""
+        verdict = f6_verdict(_grid(flips={i: {"A4"} for i in range(3)}))
+        assert verdict["fired"] is False
+        assert verdict["flipped"] == {}
+        assert "A4" not in verdict["denominator"]
+        assert verdict["excluded"]["A4"] == ZERO_DIFFERENCE_DETAIL
+
+    def test_a_missing_comparison_raises_rather_than_shrinking_the_numerator(self):
+        """Skipping an absent arm would make F6 harder to fire, which is the
+        one direction an error here must not go."""
+        grid = _grid()
+        del grid["knob@1"]["arms"]["A3"]
+        with pytest.raises(KeyError, match="harder to fire"):
+            f6_verdict(grid)
