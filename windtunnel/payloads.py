@@ -146,6 +146,58 @@ def _event_id_for(entity_id: str, sequence: int) -> str:
     return "evt_" + hashlib.sha256(f"{entity_id}|{sequence}".encode()).hexdigest()[:14]
 
 
+def source_on_disk(reason: str) -> str:
+    """The `error_source` the payload for `reason` actually carries.
+
+    So that a caller which only cares about the reason does not have to
+    transcribe a source string — the one field pairing that has ever been
+    observed for a reason is the one on its own envelope, and typing it out at
+    a call site is how a pair that exists nowhere in data/ gets invented by
+    accident. Raises rather than defaulting, exactly as `_template` does.
+    """
+    for on_disk_reason, on_disk_source in sorted(_by_pair()):
+        if on_disk_reason == reason:
+            return on_disk_source
+    raise NoSuchPayload(
+        f"no payload in data/ for error_reason {reason!r} — add one to "
+        "data/stubbed_payloads/ and a row to docs/taxonomy.md rather than "
+        "generating a reason that does not exist"
+    )
+
+
+def failure_body(
+    *,
+    reason: str,
+    source: str | None = None,
+    entity_id: str,
+    contact: str,
+    email: str,
+    amount_paise: int,
+    occurred_at: datetime,
+) -> dict[str, Any]:
+    """The `payment.failed` webhook body itself, identity stamped on.
+
+    Split out of `failure_event` below for one caller: `windtunnel/adversary/`
+    delivers webhooks through the real receiver rather than handing decoded
+    events to the machine, so it needs the envelope a route would receive —
+    signature, headers, dedupe and all. Same stamping, same untouched error
+    fields; `failure_event` is now this plus the production decode.
+
+    `source` defaults to whatever the reason's own payload carries, which is
+    the only pairing that has ever existed for it.
+    """
+    body = _template(reason, source if source is not None else source_on_disk(reason))
+    entity = body["payload"]["payment"]["entity"]
+
+    entity["id"] = entity_id
+    entity["contact"] = contact
+    entity["email"] = email
+    entity["amount"] = amount_paise
+    entity["created_at"] = int(occurred_at.timestamp())
+    body["created_at"] = int(occurred_at.timestamp())
+    return body
+
+
 def failure_event(
     *,
     reason: str,
@@ -176,16 +228,15 @@ def failure_event(
     through the same `from_webhook` the receiver calls — see
     Runner._deliver_retry_failures.
     """
-    body = _template(reason, source)
-    entity = body["payload"]["payment"]["entity"]
-
-    entity["id"] = entity_id
-    entity["contact"] = contact
-    entity["email"] = email
-    entity["amount"] = amount_paise
-    entity["created_at"] = int(occurred_at.timestamp())
-    body["created_at"] = int(occurred_at.timestamp())
-
+    body = failure_body(
+        reason=reason,
+        source=source,
+        entity_id=entity_id,
+        contact=contact,
+        email=email,
+        amount_paise=amount_paise,
+        occurred_at=occurred_at,
+    )
     return from_webhook(
         event_id=_event_id_for(entity_id, sequence),
         body=body,

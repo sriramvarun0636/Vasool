@@ -44,6 +44,8 @@ ACTING_MODULES = (
     "vasool.policy.machine",
     "vasool.events.receiver",
     "windtunnel.runner",
+    "windtunnel.adversary.arena",
+    "windtunnel.adversary.harness",
     "vasool.demo",
 )
 """Everything that can take an action, write a receipt, decide a verdict, or

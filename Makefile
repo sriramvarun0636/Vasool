@@ -56,8 +56,8 @@ sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log m
 shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
-redteam: ## 18 adversarial scenarios -- not built yet (lands with windtunnel/adversary)
-	@echo "make redteam: not built yet -- lands with the adversary harness (later session)"
+redteam: ## 22 attacks, scored against the registered survival criterion -- writes out/adversary/
+	$(PYTHON) tools/redteam.py
 
 report: ## builds out/report.html -- not built yet (lands with windtunnel/report)
 	@echo "make report: not built yet -- lands with the report builder (later session)"
