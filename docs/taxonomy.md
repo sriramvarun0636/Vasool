@@ -552,6 +552,124 @@ Listing these is more useful than pretending otherwise.
     ends without an escalation, or the day an LLM classifier (§8) proposes
     one that does.
 
+12. **A queued proposal outlives the diagnosis that built it, and a deferral
+    carries an action past the moment its reasoning was checked.** One defect,
+    two halves, four demonstrations.
+
+    The policy plane re-reads the *world* on every gate — consent, contacts
+    already sent, whether the payment settled — and that is the right design,
+    argued at length in `vasool/policy/machine.py`. What it never re-reads is
+    the *classification*. The machine's own docstring says re-running
+    `classify()` on wake would be vacuous, and for the case it addresses it is
+    correct: `classify` is a pure function of (event, attempt), and neither
+    changes while one action waits. The case it does not address is a
+    *different* event arriving for the same episode. That mints a new proposal
+    from the new row and retires nothing — the proposal the old row scheduled
+    is still on the queue, still carrying the old row's `failure_class`, and it
+    gates on its own terms when its time comes.
+
+    The second half is the same fact reached from the other direction. A guard
+    that defers moves an action to an instant at which nobody re-checks the
+    classify-time reasoning, because nothing downstream re-applies it. §6's
+    quiet-hours hold on retries is applied in `vasool/diagnosis/rules.py`,
+    once, at classify time; a deferral steps over it and nothing puts it back.
+
+    **This pattern has been fixed once already, one plane up.** `rules.py`'s
+    `QUIET_HOURS_END_HOUR_IST` docstring records it: the 00:00–06:00 hold used
+    to be applied to `HUMAN_QUEUE` as well, so a risk-declined payment arriving
+    at 02:00 IST sat until 06:00 before reaching an operator queue — a hold
+    applied at classify time to a path no rule governed. The fix was to move
+    the rule to the plane that owns it and enforce it where the action actually
+    happens. Every demonstration below is asking for that same move, and none
+    of them has had it.
+
+    Four attacks, from `windtunnel/adversary/attacks.py`:
+
+    - **A15** — a risk decline arrives at the instant a queued retry falls
+      due. The retry was built from the earlier, benign row and carries
+      `failure_class: TRANSIENT`; `RiskBlockGuard.applies_to` keys on the
+      proposal's class rather than the episode's, so it has no jurisdiction and
+      the re-presentation goes out on a risk-declined payment. Arrival order
+      decides it: the same decline a minute earlier escalates the episode
+      first, and the queued retry is then dropped at its gate.
+    - **A16** — the card expires between attempt 2 and 3 (design spec §9's
+      A06). The re-auth link the new row calls for goes out, and thirty minutes
+      later the stale `SILENT_RETRY` re-presents the expired card. §5's
+      flagship zero, spent anyway.
+    - **A18** — a promise to pay defers a re-presentation to exactly 00:00 IST,
+      inside §6's quiet period. `PromiseToPayGuard` defers to midnight of the
+      day after the promised date and has no `applies_to`, so it governs silent
+      retries as well as messages, and nothing re-applies the classifier's
+      hold. Nothing is sent to anyone, so this costs efficacy rather than
+      dignity — but §6 states the rule for both halves, and this is the half
+      that is enforced nowhere.
+    - **A19** — the same guard defers a `HUMAN_QUEUE` handoff, because DEFER
+      outranks the ALLOW `RiskBlockGuard` returns for one. §7 lists the
+      RISK_BLOCK stop as immediate; the measured delay on the attack is 1 day
+      14 hours. This is `rules.py`'s already-fixed bug, resurrected in the
+      policy plane.
+
+    **The ledger scan cannot see the first two.** `EVALUATION.md` §2a's two
+    class-keyed claims — no automated action on a `RISK_BLOCK` episode, no
+    retry on an `INSTRUMENT_DEAD` classification beyond the single probe — both
+    key on `Proposal.failure_class`, which on a stale proposal is the *old*
+    label. So A15 and A16 execute exactly the actions those two rows forbid and
+    both rows still pass. §10 of that document already records the class-keyed
+    scans' blind spot for an arm that declines to classify; this is the same
+    blind spot reached with every arm classifying correctly. Catching it needs
+    a scan keyed on the episode, which is what the adversary's own evidence
+    does and what §2a does not.
+
+    Not fixed. A proposal that carries its diagnosis rather than a snapshot of
+    it, and a supersession rule that retires queued proposals when a new
+    failure reclassifies the episode, are both larger than an end-of-session
+    patch — and choosing between them is a design decision rather than a
+    repair.
+
+13. **The pre-debit notice is never sent, so no mandate debit ever executes.
+    This is a liveness failure, and it is the only one in this section.**
+
+    Every limit above is about safety: something the agent might wrongly do, or
+    evidence it cannot produce. This one is the opposite, and belongs in the
+    list anyway — the agent correctly refuses, forever, an action it was
+    supposed to take.
+
+    The loop is closed on itself. `PreDebitNoticeGuard` holds a mandate debit
+    until a notice has been served, and returns `DEFER` carrying an
+    `Obligation(SEND_PRE_DEBIT_NOTICE)`. `PolicyMachine._execute` is the only
+    place obligations are read. A deferred proposal does not execute, so no
+    notice proposal is ever built, so `pre_debit_notice_sent_at` stays None, so
+    the guard defers again — five times, and then `MAX_DEFERRALS` blocks it.
+    The one thing that could satisfy the guard is an execution the guard is
+    blocking.
+
+    **Measured, seed 0, full Vasool:** 888 episodes, of which 275 are on a
+    mandate. 707 retries executed across the run; **zero** of them on a mandate
+    episode. 209 of the 275 mandate episodes end in `BLOCKED`. That is 31% of
+    the population whose retry ladder never fires at all — not a tail case, and
+    not something the report card distinguishes from a compliance save.
+
+    **It has been shaping every evaluation number to date, including the
+    recovery comparison.** `mandate_share` is 0.35 (`windtunnel/parameters.py`,
+    registered under `EVALUATION.md` §10), so roughly a third of every arm's
+    population is affected and every absolute recovery figure is computed over
+    it. The paired comparisons are not uniformly protected either, because the
+    guard chain is exactly what differs between some arms: `vasool_ungated`
+    runs with `chain=()`, so `PreDebitNoticeGuard` is not there and its mandate
+    retries do fire. On seed 0 that arm executes 1050 retries to full Vasool's
+    707, and **306 of the 343-retry gap are mandate retries** — 89% of it. F5
+    is registered against `vasool_ungated` as the price of the guards, at 20
+    absolute percentage points; on this evidence a large part of that gap is
+    this defect rather than the cost of compliance. The recovery-rate
+    consequence follows but has not been measured, and should be before F5 is
+    reported as a compliance number.
+
+    Not fixed, and deliberately not patched at the end of the session that
+    found it: honouring obligations on a `DEFER` as well as on an execution
+    changes when the machine creates work, it would move every mandate episode
+    in every arm, and every number currently in `out/development/` was computed
+    without it.
+
 ---
 
 ## 10. The five sentences

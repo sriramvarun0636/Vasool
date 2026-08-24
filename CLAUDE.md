@@ -96,7 +96,7 @@ OpenTelemetry · Jinja2
 - `make sweep-one` — one parameter's 4 configs + reference (`TARGET=<name>`)
 - `make shadow` — §4.5's rules-vs-LLM comparison. Replay by default;
   `RECORD=1 make shadow` is the only thing that calls Gemini.
-- `make redteam` — 18 adversarial scenarios
+- `make redteam` — 22 attacks, scored against §2a-shaped ledger scans
 - `make report` — build out/report.html
 - `make replay` — assert ledger hash determinism
 - `pytest` — full suite
@@ -104,6 +104,18 @@ OpenTelemetry · Jinja2
 `tools/evaluate.py` also takes `--sweep-target NAME ...` and `--skip-base`.
 A partial grid writes `sweeps.json`, not `evaluation.json`, and refuses to
 report an F6 verdict — F6 is registered against all 83 configurations.
+
+`tools/redteam.py` runs the adversary. The survival criterion is registered in
+`windtunnel/adversary/criterion.py` and `judge()` is the only thing that can
+produce a verdict: an attack survives iff no money moved that policy forbids,
+no contact was sent outside policy, and the ledger records the refusal with a
+verifiable chain — all three scanned from the ledger the way EVALUATION.md §2a
+scans, never from "a guard returned BLOCKED". An attack declares `evidence`
+that can only *add* requirements; `attacks.py` contains no `assert` and names
+no scoring function, and `tests/adversary/test_attacks.py` enforces both by
+AST. Each attack's registered expectation is asserted against its actual
+outcome, so a known failure keeps the suite green and a *fixed* one turns it
+red.
 
 `tools/shadow.py` takes `--record`, `--partial`, `--repeats N`,
 `--consistency-cell REASON/SOURCE`, `--consistency-k N`, `--model`, `--rpm`.
@@ -121,7 +133,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 7 (LLM classifier, shadow mode). 1287 tests.
+Current stage: 8 (adversary). 1353 tests.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
@@ -143,6 +155,29 @@ Stages complete:
          tools/shadow.py. Corpus is the whole input space: 12 distinct
          (reason, source, code, step) tuples, which is every question the
          registered universe can ask a fields-only classifier.
+  - 8  — adversary: windtunnel/adversary/{criterion,arena,attacks,harness}.py,
+         tools/redteam.py. Criterion registered before any attack was written.
+         22 attacks, ids kept from the reviewed list (A17/A21/A25 were cut, so
+         the numbering has gaps on purpose). **14 of 22 survive.** Every attack
+         drives the real receiver, the real FSM, the real thirteen guards and
+         the real executor; the arena only decides what happens *to* the agent.
+
+Adversarial state: 14/22. Eight named failures, three of them already recorded
+as open (§9.3 timezone, §9.10 out-of-band, derive_customer_id's identity
+split). The rest are now **taxonomy.md §9.12** — one defect with four
+demonstrations, A15/A16/A18/A19: a queued proposal outlives the diagnosis that
+built it, and a DEFER carries an action past a hold applied at classify time.
+`rules.py` fixed the same pattern one plane up.
+
+**taxonomy.md §9.13** is the session's other finding and did not come from an
+attack: obligations are honoured only in `PolicyMachine._execute`, and
+`PreDebitNoticeGuard` emits its own on a DEFER, so a mandate debit never
+produces its notice and never executes. Seed 0: 0 of 707 executed retries on
+the 275 mandate episodes, 209 of them BLOCKED — 31% of the population. It is a
+*liveness* failure, the only one in §9, and it has been shaping every
+evaluation number to date: `vasool_ungated` (no guard chain) executes 1050
+retries to Vasool's 707, and 306 of that 343 gap are mandate retries, so F5's
+20-point "price of the guards" is substantially this instead.
 
 Evaluation state: base protocol run at 1000 seeds, development cohort.
 Full §7 grid run. F1 fires against Vasool as registered
