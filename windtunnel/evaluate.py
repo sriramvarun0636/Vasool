@@ -39,7 +39,13 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 
 from windtunnel.arms import ALL_ARMS, arm_named
-from windtunnel.inference import PASS_K_VALUES, paired_difference, pass_k, survives
+from windtunnel.inference import (
+    PASS_K_VALUES,
+    PairedComparison,
+    paired_difference,
+    pass_k,
+    survives,
+)
 from windtunnel.metrics import Metrics, measure
 from windtunnel.runner import run_seed
 from windtunnel.split import UNSEAL_PHRASE, Cohort, HoldoutSealed, split_customers
@@ -239,6 +245,24 @@ def _series(rows: dict[int, dict], metric: str) -> dict[int, float]:
     return {seed: float(row[metric] or 0.0) for seed, row in rows.items()}
 
 
+def _interval(comparison: PairedComparison) -> dict:
+    """§6a's paired difference, serialised. The manifest's one interval shape.
+
+    Extracted so §7's grid emits the same object the headline comparison does
+    rather than a second, subtly different one. The two saying the same thing
+    in two shapes is how a report card ends up comparing a magnitude against a
+    boolean without noticing.
+    """
+    return {
+        "n_seeds": comparison.n_seeds,
+        "point": comparison.interval.point,
+        "low": comparison.interval.low,
+        "high": comparison.interval.high,
+        "excludes_zero": comparison.interval.excludes_zero,
+        "superior": comparison.superior,
+    }
+
+
 def compare(results: dict[str, dict[int, dict]], *, treatment: str = "vasool") -> dict:
     """§6a's paired differences: every other arm against Vasool."""
     out: dict[str, dict] = {}
@@ -247,18 +271,96 @@ def compare(results: dict[str, dict[int, dict]], *, treatment: str = "vasool") -
             continue
         out[arm] = {}
         for metric in (PRIMARY, *SECONDARY):
-            comparison = paired_difference(
-                _series(results[treatment], metric), _series(rows, metric), metric=metric
+            out[arm][metric] = _interval(
+                paired_difference(
+                    _series(results[treatment], metric),
+                    _series(rows, metric),
+                    metric=metric,
+                )
             )
-            out[arm][metric] = {
-                "n_seeds": comparison.n_seeds,
-                "point": comparison.interval.point,
-                "low": comparison.interval.low,
-                "high": comparison.interval.high,
-                "excludes_zero": comparison.interval.excludes_zero,
-                "superior": comparison.superior,
-            }
     return out
+
+
+# ---------------------------------------------------------------------------
+# §7
+# ---------------------------------------------------------------------------
+ZERO_DIFFERENCE_DETAIL = (
+    "sign test undefined for a zero-difference arm; excludes_zero is false by "
+    "definition."
+)
+"""Why an arm whose per-seed difference is identically zero reports
+`survives: false` in every configuration.
+
+A4 is the case: it differs from Vasool only in how the guard chain resolves a
+refusal, which in this simulator never changes an outcome, so `d_s = 0` on
+every seed and the bootstrap interval is [0, 0]. `survives` requires the
+*reference* interval to exclude zero — there has to be a conclusion before
+there can be a surviving one — so A4 fails at the first line for a reason that
+has nothing to do with the swept parameter. Reported as a note rather than
+fixed in the verdict: §7's registered rule is the rule, and a null result
+labelled robust would be a finding invented out of nothing (see
+`inference.survives`).
+"""
+
+
+def _primary_difference(rows: dict[str, dict[int, dict]], arm: str) -> PairedComparison:
+    """§6a's paired difference on §6's primary, for one arm in one
+    configuration. §7 judges survival on the primary alone."""
+    return paired_difference(
+        _series(rows["vasool"], PRIMARY), _series(rows[arm], PRIMARY), metric=PRIMARY
+    )
+
+
+def reference_differences(
+    swept: dict[str, dict[str, dict[int, dict]]],
+) -> dict[str, PairedComparison]:
+    """§10's equally-powered reference: the unswept comparison recomputed on
+    the sweep's own 200 seeds, one per arm.
+
+    Computed once for the whole grid rather than inside each of its eighty-odd
+    blocks. It is the same eighty-odd times over, and it is the number every
+    survival verdict is read against, so it gets one evaluation.
+    """
+    rows = swept[REFERENCE.name]
+    return {arm: _primary_difference(rows, arm) for arm in rows if arm != "vasool"}
+
+
+def sweep_verdicts(
+    rows: dict[str, dict[int, dict]],
+    reference: dict[str, PairedComparison],
+    *,
+    config,
+) -> dict:
+    """One §7 configuration: per arm, the survival verdict *and* the paired
+    difference it was read off.
+
+    `survives` is unchanged and stays the registered verdict — §7's wording is
+    "survives all sweeps / survives some / flips" and that is the field it
+    names. But a boolean is a sign test: it cannot separate a conclusion that
+    barely held from one the parameter never came close to moving, and the
+    symptom is a grid in which every block prints the same eight booleans and
+    §7 appears to have tested nothing. The interval beside it carries the
+    magnitude, so "survives all sweeps" becomes a statement about effect sizes
+    rather than about signs — which is what §7 says the evaluation's
+    credibility actually lives on.
+    """
+    arms: dict[str, dict] = {}
+    for arm, unswept in reference.items():
+        comparison = _primary_difference(rows, arm)
+        entry: dict = {
+            "survives": survives(unswept, comparison),
+            "interval": _interval(comparison),
+        }
+        if all(difference == 0.0 for difference in unswept.differences):
+            entry["detail"] = ZERO_DIFFERENCE_DETAIL
+        arms[arm] = entry
+
+    return {
+        "kind": str(config.kind),
+        "target": config.target,
+        "factor": config.factor,
+        "arms": arms,
+    }
 
 
 def _direction(interval: dict | None) -> str:
@@ -457,33 +559,13 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
             out=out / "sweeps", configs=grid, arms=ALL_ARMS, seeds=list(SWEEP_SEEDS),
             cohort=args.cohort, pepper=pepper, unseal=args.unseal, workers=args.workers,
         )
-        reference = compare(swept[REFERENCE.name])
+        unswept = reference_differences(swept)
         report["sweeps"] = {
-            config.name: {
-                "kind": str(config.kind),
-                "target": config.target,
-                "factor": config.factor,
-                "survives": {
-                    arm: survives(
-                        paired_difference(
-                            _series(swept[REFERENCE.name]["vasool"], PRIMARY),
-                            _series(swept[REFERENCE.name][arm], PRIMARY),
-                            metric=PRIMARY,
-                        ),
-                        paired_difference(
-                            _series(swept[config.name]["vasool"], PRIMARY),
-                            _series(swept[config.name][arm], PRIMARY),
-                            metric=PRIMARY,
-                        ),
-                    )
-                    for arm in swept[config.name]
-                    if arm != "vasool"
-                },
-            }
+            config.name: sweep_verdicts(swept[config.name], unswept, config=config)
             for config in grid
             if config.name != REFERENCE.name
         }
-        report["sweep_reference"] = reference
+        report["sweep_reference"] = compare(swept[REFERENCE.name])
 
     report["elapsed_seconds"] = round(time.perf_counter() - started, 1)
     destination = out / "evaluation.json"
