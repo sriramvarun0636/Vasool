@@ -91,27 +91,73 @@ OpenTelemetry · Jinja2
 ## Commands
 
 - `make demo` — live run against Razorpay test mode
-- `make eval` — 1000-seed evaluation
+- `make eval` — 1000-seed evaluation, development cohort
+- `make sweeps` — eval + §7's full grid (83 configs + reference × 200 seeds, ~9h)
+- `make sweep-one` — one parameter's 4 configs + reference (`TARGET=<name>`)
+- `make shadow` — §4.5's rules-vs-LLM comparison. Replay by default;
+  `RECORD=1 make shadow` is the only thing that calls Gemini.
 - `make redteam` — 18 adversarial scenarios
 - `make report` — build out/report.html
 - `make replay` — assert ledger hash determinism
 - `pytest` — full suite
 
-## Status
+`tools/evaluate.py` also takes `--sweep-target NAME ...` and `--skip-base`.
+A partial grid writes `sweeps.json`, not `evaluation.json`, and refuses to
+report an F6 verdict — F6 is registered against all 83 configurations.
+
+`tools/shadow.py` takes `--record`, `--repeats N`, `--model`, `--rpm`. Without
+`--record` no provider client is constructed at all and a missing cassette is a
+hard failure (exit 3), never a silent live call. `--record` is incremental: it
+requests only the cassettes that are absent, so raising `--repeats` costs only
+the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 4 (actions + ledger)
+Current stage: 7 (LLM classifier, shadow mode). 1241 tests.
+
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
   - 0B — closed early; subscriptions unavailable pre-activation
   - 1  — clock + event plane, HMAC verified against real captured signatures
   - 2  — failure taxonomy + deterministic classifier
-  - 3  — policy plane: 13 guards, FSM, transition log. 607 tests.
+  - 3  — policy plane: 13 guards, FSM, transition log.
          Guards evaluate all-then-resolve-by-severity, not short-circuit.
          Gating happens at execute time, not propose time.
-Cassettes: not yet — LLM classifier lands in Session 7
+  - 4  — actions + ledger; 4.5 demo; 4.6 golden fixtures; 4.7 replay-by-default
+  - 5  — windtunnel: simulator, universe, outcome model, runner
+  - 5.5 — two agent defects the simulator found (Closure enum; RetryIndex
+         correlation through from_webhook)
+  - 6  — evaluator: metrics, arms, ablations, sweeps, split. F6 wired.
+         §10 rows 1–5 registered.
+  - 7  — LLM classifier in shadow: vasool/diagnosis/llm.py (pure prompt +
+         parser, emits LLMVerdict — deliberately NOT a Proposal, see below),
+         windtunnel/cassette.py, windtunnel/shadow.py, tools/gemini.py,
+         tools/shadow.py. Corpus is the whole input space: 12 distinct
+         (reason, source, code, step) tuples, which is every question the
+         registered universe can ask a fields-only classifier.
+
+Evaluation state: base protocol run at 1000 seeds, development cohort.
+Full §7 grid run. F1 fires against Vasool as registered
+(−0.310 vs retry_plus_contact) and holds across the sweep range.
+Holdout sealed.
+
+Cassettes: `data/cassettes/`, one JSON per (provider, model, prompt, repeat),
+sha256-addressed and provider-agnostic. Replay is the default everywhere,
+including pytest; a miss raises `CassetteMiss` rather than calling anything.
+Determinism is bought twice: the LLM also never runs on any path that writes a
+ledger, and `tests/test_shadow_boundary.py` walks the import graph in both
+directions to prove it. There is no conversion from an `LLMVerdict` to a
+`Proposal` anywhere — invariant 1 is a property of the type graph, which is a
+deliberate departure from §4.5's wording.
+
+Ground truth for the comparison is `PlannedEpisode.failure_class`, which
+resolves through the same `lookup()` the rules classifier reads — so the Rules
+column is **1.000 by construction, not by measurement**. That is stated in the
+rendered artifact itself, alongside the nine-of-ten-reasons-are-`_SIMULATED`
+limit (EVALUATION.md §11) and the fact that the model was chosen for cost.
 
 - **Never run git commit, git add, git push, git merge, or git checkout.**
   I commit. You write code; I review the diff and commit it myself. If you
-  think something is ready to commit, say so and stop.
+  think something is ready to commit, say so and stop. This includes read-only
+  git — reconstruct diffs from the files.
+- Small commits, imperative messages, one logical change each.
