@@ -23,6 +23,8 @@ from windtunnel.shadow import (
     Cell,
     build_corpus,
     compare,
+    measure_stability,
+    render_stability,
     render_table,
 )
 
@@ -353,3 +355,330 @@ class TestTheRenderedArtifactCarriesItsLimits:
     def test_the_five_classes_each_get_a_row(self, corpus, rendered):
         for member in FailureClass:
             assert member.value in rendered
+
+
+class TestPartialCoverage:
+    """A run that could not ask every question must not look like a run that
+    asked and got them wrong.
+
+    The free tier's daily cap is twenty requests, which is smaller than one
+    full pass over the corpus, so a partial artifact is the normal case rather
+    than an edge case. The danger is entirely in the arithmetic: an uncovered
+    cell scored as 0.000 is indistinguishable, in a table, from a cell the
+    model failed — and it is the more damning of the two. So an unmeasured
+    cell is excluded from every aggregate, rendered as a dash, and counted in
+    a coverage line that travels with the numbers.
+
+    Mirrors the convention windtunnel/evaluate.py already sets: a partial grid
+    writes `sweeps.json` rather than `evaluation.json` and refuses to report an
+    F6 verdict, because a partial run must not be able to overwrite or
+    impersonate a run at power.
+    """
+
+    @staticmethod
+    def only(corpus, labels, *, upto=None):
+        """A responder that answers correctly for `labels` and reports every
+        other cell as unrecorded by returning None."""
+        wanted = set(labels)
+
+        def respond(prompt: str, repeat: int) -> str | None:
+            cell = next(c for c in corpus if c.prompt == prompt)
+            if cell.label not in wanted:
+                return None
+            if upto is not None and repeat >= upto:
+                return None
+            return response(cell.truth.value)
+
+        return respond
+
+    @pytest.fixture(scope="class")
+    def partial(self, corpus):
+        heaviest = corpus[0].label
+        return compare(
+            corpus, self.only(corpus, [heaviest]), repeats=4,
+            provider=PROVIDER, model=MODEL,
+        )
+
+    def test_an_unrecorded_cell_is_not_scored_at_all(self, corpus, partial):
+        unmeasured = [r for r in partial.cells if not r.measured]
+        assert len(unmeasured) == len(corpus) - 1
+        assert all(r.repeats == 0 for r in unmeasured)
+
+    def test_an_unrecorded_repeat_is_absent_not_rejected(self, corpus):
+        """The distinction the whole class exists for. A rejection is
+        something the model said; an absence is something it was never
+        asked."""
+        comparison = compare(
+            corpus, self.only(corpus, [corpus[0].label], upto=2), repeats=5,
+            provider=PROVIDER, model=MODEL,
+        )
+        first = comparison.cells[0]
+        assert first.repeats == 2
+        assert first.absent == 3
+        assert first.rejected == 0
+        assert comparison.rejected == 0
+
+    def test_aggregates_cover_only_the_measured_cells(self, partial):
+        """One cell answered perfectly must read as 1.000 over one cell, never
+        as 1/12 of the corpus."""
+        assert partial.llm_accuracy == pytest.approx(1.0)
+        assert partial.covered_cells == 1
+
+    def test_a_class_with_no_coverage_reports_no_number(self, partial):
+        by_class = {row.failure_class: row for row in partial.rows}
+        uncovered = [row for row in by_class.values() if row.covered_cells == 0]
+        assert uncovered, "this fixture should leave classes uncovered"
+        assert all(row.llm_accuracy is None for row in uncovered)
+
+    def test_a_partial_comparison_knows_it_is_partial(self, corpus, partial):
+        assert partial.complete is False
+        assert partial.covered_cells < partial.total_cells
+        assert partial.total_cells == len(corpus)
+
+    def test_a_full_comparison_is_complete(self, corpus):
+        comparison = compare(
+            corpus, oracle(corpus), repeats=2, provider=PROVIDER, model=MODEL
+        )
+        assert comparison.complete is True
+        assert comparison.covered_cells == comparison.total_cells
+        assert all(r.absent == 0 for r in comparison.cells)
+
+    def test_the_rendered_table_is_stamped_partial(self, partial):
+        rendered = render_table(partial)
+        assert "PARTIAL" in rendered
+        assert "1 of 12" in rendered
+
+    def test_an_unmeasured_cell_renders_as_a_dash_not_a_zero(self, corpus, partial):
+        """The single most important line in this file. A reader scanning the
+        per-cell block must not be able to mistake 'never asked' for 'got it
+        wrong'."""
+        rendered = render_table(partial)
+        for line in rendered.splitlines():
+            for result in partial.cells:
+                if line.startswith(result.cell.reason + " / " + result.cell.source):
+                    if result.measured:
+                        continue
+                    assert "0.000" not in line, line
+                    assert "—" in line or "-" in line
+
+    def test_a_full_table_is_not_stamped_partial(self, corpus):
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL)
+        )
+        assert "PARTIAL" not in rendered
+
+    def test_a_cell_with_no_coverage_carries_no_weight(self, corpus, partial):
+        """Weighted accuracy over one covered cell is that cell's accuracy —
+        the uncovered episodes are not in the denominator, because counting
+        them would silently report the corpus as mostly-wrong."""
+        assert partial.llm_accuracy_weighted == pytest.approx(1.0)
+
+    def test_the_document_records_coverage(self, partial):
+        from windtunnel.shadow import to_document
+
+        document = to_document(partial)
+        assert document["complete"] is False
+        assert document["covered_cells"] == 1
+        assert document["total_cells"] == 12
+        uncovered = [c for c in document["by_cell"] if c["repeats"] == 0]
+        assert all(c["llm_accuracy"] is None for c in uncovered)
+
+
+class TestConsistencyIsUndefinedAtKEqualsOne:
+    """One answer per cell cannot measure whether the answer is stable.
+
+    Left alone, the modal-answer arithmetic reports 1.000 at k=1 — the single
+    response is trivially its own mode — and a reader scanning the column sees
+    a model that never changes its mind, on evidence that could not have shown
+    it changing. That is the same failure the em dash exists to prevent one
+    column over, so it gets the same treatment.
+    """
+
+    def test_a_single_repeat_reports_no_consistency(self, corpus):
+        comparison = compare(
+            corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL
+        )
+        assert all(result.consistency is None for result in comparison.cells)
+        assert comparison.consistency is None
+        assert all(row.consistency is None for row in comparison.rows)
+
+    def test_accuracy_is_still_measured_at_k_equals_one(self, corpus):
+        """Only stability is undefined. One answer is a perfectly good
+        measurement of whether that answer was right."""
+        comparison = compare(
+            corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL
+        )
+        assert comparison.llm_accuracy == pytest.approx(1.0)
+
+    def test_two_repeats_are_enough_to_report_consistency(self, corpus):
+        comparison = compare(
+            corpus, oracle(corpus), repeats=2, provider=PROVIDER, model=MODEL
+        )
+        assert comparison.consistency == pytest.approx(1.0)
+
+    def test_the_column_renders_as_a_dash_at_k_equals_one(self, corpus):
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL)
+        )
+        overall = next(l for l in rendered.splitlines() if l.startswith("Overall"))
+        assert "1.000" in overall, "accuracy should still be reported"
+        assert overall.count("1.000") < 4, f"consistency leaked a number: {overall}"
+
+    def test_a_k_equals_one_run_says_the_quota_forced_it(self, corpus):
+        """Not an aside. A reader has to know that k=1 is what the free tier
+        allowed across twelve cells, not a considered choice about power."""
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL)
+        )
+        flat = " ".join(rendered.split()).lower()
+        assert "k=1" in flat
+        assert "quota" in flat
+
+    def test_a_deeper_run_does_not_carry_the_quota_note(self, corpus):
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=3, provider=PROVIDER, model=MODEL)
+        )
+        assert "forced" not in rendered.lower()
+
+
+class TestStabilityAtDepth:
+    """One cell, asked many times — and reported with its accuracy attached.
+
+    The section exists because of a specific result: the heaviest cell in the
+    corpus answered identically fifteen times out of fifteen, and was wrong
+    fifteen times out of fifteen. Reporting the 1.000 on its own would say the
+    model is dependable. Reporting the 0.000 on its own would say it is
+    unreliable. Neither is what happened, and the pair is the finding — so the
+    renderer is not allowed to print one without the other.
+
+    Also why the section is not called consistency. What it measures is
+    stability: whether the model says the same thing twice. That is a
+    different axis from whether the thing is right, and naming the section
+    after only one axis is how the two get conflated.
+    """
+
+    @pytest.fixture(scope="class")
+    def wrong_but_stable(self, corpus):
+        """A model that answers one cell identically every time, and wrongly."""
+        cell = corpus[0]
+
+        def respond(prompt: str, repeat: int) -> str:
+            other = next(c for c in FailureClass if c is not cell.truth)
+            return response(other.value)
+
+        return measure_stability(cell, respond, repeats=15)
+
+    def test_it_measures_the_requested_depth(self, wrong_but_stable):
+        assert wrong_but_stable.repeats == 15
+        assert wrong_but_stable.absent == 0
+
+    def test_stability_and_accuracy_disagree_and_both_are_recorded(self, wrong_but_stable):
+        assert wrong_but_stable.consistency == pytest.approx(1.0)
+        assert wrong_but_stable.accuracy == pytest.approx(0.0)
+
+    def test_the_section_prints_both_numbers(self, corpus, wrong_but_stable):
+        section = render_stability(wrong_but_stable, corpus_episodes=sum(c.episodes for c in corpus))
+        assert "0.000" in section
+        assert "1.000" in section
+
+    def test_the_section_says_stability_is_not_correctness(self, corpus, wrong_but_stable):
+        section = render_stability(
+            wrong_but_stable, corpus_episodes=sum(c.episodes for c in corpus)
+        ).lower()
+        assert "stability" in section
+        assert "not correctness" in section or "is not correct" in section
+
+    def test_the_section_is_not_titled_consistency(self, corpus, wrong_but_stable):
+        """The retitle, asserted. `consistency` alone names one axis and the
+        section is about the gap between two."""
+        section = render_stability(
+            wrong_but_stable, corpus_episodes=sum(c.episodes for c in corpus)
+        )
+        title = section.strip().splitlines()[0]
+        assert "STABILITY" in title.upper()
+        assert "CONSISTENCY" not in title.upper()
+
+    def test_the_section_names_the_cell_and_says_it_generalises_to_nothing(
+        self, corpus, wrong_but_stable
+    ):
+        section = render_stability(
+            wrong_but_stable, corpus_episodes=sum(c.episodes for c in corpus)
+        )
+        assert corpus[0].reason in section
+        assert "one cell" in section.lower()
+
+    def test_the_section_reports_what_was_actually_said(self, corpus, wrong_but_stable):
+        section = render_stability(
+            wrong_but_stable, corpus_episodes=sum(c.episodes for c in corpus)
+        )
+        said = wrong_but_stable.verdicts[0]
+        assert said is not None
+        assert said.failure_class.value in section
+        assert said.intervention.value in section
+
+    def test_stability_cannot_be_claimed_at_one_repeat(self, corpus):
+        """The k=1 rule, applied here too. A single answer is trivially its own
+        mode, and a section headed 'stability' printing 1.000 off one response
+        would be the most misleading thing in the artifact."""
+        cell = corpus[0]
+        result = measure_stability(cell, lambda p, r: response(cell.truth.value), repeats=1)
+        assert result.consistency is None
+        section = render_stability(result, corpus_episodes=1000)
+        assert "1.000" not in section.split("accuracy")[0]
+        assert "—" in section
+
+    def test_a_perfectly_correct_stable_cell_reads_as_both(self, corpus):
+        cell = corpus[0]
+        result = measure_stability(
+            cell, lambda p, r: response(cell.truth.value), repeats=4
+        )
+        section = render_stability(result, corpus_episodes=sum(c.episodes for c in corpus))
+        assert result.accuracy == pytest.approx(1.0)
+        assert result.consistency == pytest.approx(1.0)
+        assert "1.000" in section
+
+
+class TestTheStabilitySectionRidesTheArtifact:
+    """It has to travel with the table, not beside it in a second file — the
+    whole point is that a reader meets the pair together."""
+
+    def test_the_table_carries_the_section_when_one_is_given(self, corpus):
+        cell = corpus[0]
+        stability = measure_stability(
+            cell, lambda p, r: response(cell.truth.value), repeats=5
+        )
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL),
+            stability=stability,
+        )
+        assert "STABILITY" in rendered.upper()
+
+    def test_the_table_omits_the_section_when_none_is_given(self, corpus):
+        rendered = render_table(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL)
+        )
+        assert "STABILITY AT DEPTH" not in rendered.upper()
+
+    def test_the_document_carries_it_too(self, corpus):
+        from windtunnel.shadow import to_document
+
+        cell = corpus[0]
+        stability = measure_stability(
+            cell, lambda p, r: response(cell.truth.value), repeats=5
+        )
+        document = to_document(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL),
+            stability=stability,
+        )
+        assert document["stability"]["repeats"] == 5
+        assert document["stability"]["error_reason"] == cell.reason
+        assert document["stability"]["accuracy"] is not None
+        assert document["stability"]["stability"] is not None
+
+    def test_the_document_omits_it_when_absent(self, corpus):
+        from windtunnel.shadow import to_document
+
+        document = to_document(
+            compare(corpus, oracle(corpus), repeats=1, provider=PROVIDER, model=MODEL)
+        )
+        assert document["stability"] is None

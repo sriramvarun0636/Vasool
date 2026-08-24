@@ -15,6 +15,7 @@ TIME     ?=
 LIVE     ?=
 RECORD   ?=
 REPEATS  ?=
+CELL     ?=
 
 SHADOW_ARGS :=
 ifeq ($(strip $(RECORD)),1)
@@ -22,6 +23,9 @@ SHADOW_ARGS += --record
 endif
 ifneq ($(strip $(REPEATS)),)
 SHADOW_ARGS += --repeats $(REPEATS)
+endif
+ifneq ($(strip $(CELL)),)
+SHADOW_ARGS += --consistency-cell $(CELL)
 endif
 
 DEMO_ARGS := --scenario $(SCENARIO)
@@ -49,7 +53,7 @@ sweeps: ## eval + SS7's sensitivity grid (83 configs + reference x 200 seeds -- 
 sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log make sweep-one
 	$(PYTHON) tools/evaluate.py --skip-base --sweep-target $(TARGET) $(EVAL_ARGS)
 
-shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 make shadow calls the provider
+shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
 redteam: ## 18 adversarial scenarios -- not built yet (lands with windtunnel/adversary)

@@ -36,16 +36,33 @@ from vasool.clock import RealClock  # noqa: E402
 from vasool.diagnosis.llm import RESPONSE_SCHEMA  # noqa: E402
 from windtunnel.cassette import CassetteMiss, CassetteStore, Request  # noqa: E402
 from windtunnel.shadow import (  # noqa: E402
+    PINNED_MODEL,
+    PINNED_PROVIDER,
     REPEATS,
     build_corpus,
     compare,
+    measure_stability,
     render_table,
     to_document,
 )
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
+MAX_STABILITY_DEPTH = 200
+"""Upper bound on how deep a cell's cassettes are counted. Only a search
+bound — nothing is recorded by counting."""
 OUT_DIR = REPO_ROOT / "out" / "shadow"
+
+
+def default_model() -> str:
+    """The model this tool records and replays against.
+
+    A function rather than a re-exported constant so that nothing here can
+    quietly hold a second copy of the pin — `tests/windtunnel/test_cassette_pin.py`
+    asserts this returns exactly `PINNED_MODEL`, and the cassettes on disk
+    agree with it.
+    """
+    return PINNED_MODEL
 
 
 def _parse(argv):
@@ -61,21 +78,79 @@ def _parse(argv):
             "missing cassette is a hard failure and nothing reaches the network."
         ),
     )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        help=(
+            "replay only the cassettes that exist instead of failing on the "
+            "first miss. Rates are computed over the recorded cells alone, the "
+            "table is stamped PARTIAL, and the result is written to "
+            "classifier_comparison_partial.* so it cannot impersonate a full run."
+        ),
+    )
     parser.add_argument("--repeats", type=int, default=REPEATS)
-    parser.add_argument("--model", default=None, help="override the recorded model")
+    parser.add_argument(
+        "--consistency-cell",
+        default=None,
+        metavar="REASON/SOURCE",
+        help=(
+            "additionally measure one cell at depth and render it as its own "
+            "section, with its accuracy printed beside its stability. Depth is "
+            "however many cassettes that cell has, unless --consistency-k says "
+            "otherwise."
+        ),
+    )
+    parser.add_argument("--consistency-k", type=int, default=None)
+    parser.add_argument(
+        "--model",
+        default=None,
+        help=(
+            "override the pinned model. Every cassette is keyed by model, so "
+            "this orphans the entire recorded corpus — see PINNED_MODEL."
+        ),
+    )
     parser.add_argument("--rpm", type=int, default=None, help="requests per minute")
     parser.add_argument("--cassettes", type=pathlib.Path, default=CASSETTE_DIR)
     parser.add_argument("--out", type=pathlib.Path, default=OUT_DIR)
     return parser.parse_args(argv)
 
 
-def _replay_only(store, provider, model):
-    def respond(prompt: str, repeat: int) -> str:
-        return store.get(
-            Request(provider=provider, model=model, prompt=prompt, repeat=repeat)
-        ).response_text
+def _replay_only(store, provider, model, *, allow_missing: bool = False):
+    """Replay, and nothing else. No client is constructed on this path.
+
+    `allow_missing` reports an absent cassette as None rather than raising.
+    That is a reporting mode, not a relaxation of the rule: the default is
+    still a hard failure, and what a None becomes downstream is an em dash in
+    the table and an exclusion from every rate — never a zero, and never a
+    live call.
+    """
+
+    def respond(prompt: str, repeat: int) -> str | None:
+        request = Request(
+            provider=provider, model=model, prompt=prompt, repeat=repeat
+        )
+        if allow_missing and not store.has(request):
+            return None
+        return store.get(request).response_text
 
     return respond
+
+
+def _coverage(store, corpus, provider, model, repeats):
+    """Which cells have recordings, and how many, before anything is scored."""
+    rows = []
+    for cell in corpus:
+        have = sum(
+            1
+            for repeat in range(repeats)
+            if store.has(
+                Request(
+                    provider=provider, model=model, prompt=cell.prompt, repeat=repeat
+                )
+            )
+        )
+        rows.append((cell, have))
+    return rows
 
 
 def _recording(store, client, provider, labels, clock):
@@ -110,9 +185,18 @@ def _recording(store, client, provider, labels, clock):
 def main(argv, *, pepper: str, api_key: str | None) -> int:
     args = _parse(argv)
 
-    from tools.gemini import DEFAULT_MODEL, DEFAULT_RPM, PROVIDER
+    from tools.gemini import DEFAULT_RPM
 
-    model = args.model or DEFAULT_MODEL
+    model = args.model or default_model()
+    if model != PINNED_MODEL:
+        print(
+            f"warning: --model {model!r} is not the pinned model "
+            f"({PINNED_MODEL!r}). Cassettes are keyed by model, so every "
+            "existing recording will miss and a full re-record costs a day "
+            "against a 20-request quota. Continuing because you asked.",
+            file=sys.stderr,
+        )
+    PROVIDER = PINNED_PROVIDER
     store = CassetteStore(args.cassettes)
     corpus = build_corpus(pepper=pepper)
 
@@ -157,7 +241,51 @@ def main(argv, *, pepper: str, api_key: str | None) -> int:
             RealClock(),
         )
     else:
-        respond = _replay_only(store, PROVIDER, model)
+        respond = _replay_only(store, PROVIDER, model, allow_missing=args.partial)
+
+    coverage = _coverage(store, corpus, PROVIDER, model, args.repeats)
+    recorded = sum(have for _cell, have in coverage)
+    print(
+        f"coverage: {sum(1 for _c, h in coverage if h)} of {len(corpus)} cells, "
+        f"{recorded} of {len(corpus) * args.repeats} classifications recorded"
+    )
+    for cell, have in coverage:
+        marker = " " if have == args.repeats else ("~" if have else "!")
+        print(f"  {marker} {cell.reason + ' / ' + cell.source:<44} {have:>3}/{args.repeats}")
+    print()
+
+    stability = None
+    if args.consistency_cell:
+        wanted = args.consistency_cell.replace("/", "__").replace(" ", "")
+        matches = [c for c in corpus if c.label == wanted]
+        if not matches:
+            print(
+                f"error: no cell named {args.consistency_cell!r}. Available: "
+                + ", ".join(c.label for c in corpus),
+                file=sys.stderr,
+            )
+            return 4
+        cell = matches[0]
+        depth = args.consistency_k or sum(
+            1
+            for repeat in range(MAX_STABILITY_DEPTH)
+            if store.has(
+                Request(
+                    provider=PROVIDER, model=model, prompt=cell.prompt, repeat=repeat
+                )
+            )
+        )
+        if depth < 1:
+            print(
+                f"error: {cell.label} has no cassettes to measure at depth.",
+                file=sys.stderr,
+            )
+            return 4
+        try:
+            stability = measure_stability(cell, respond, repeats=depth)
+        except CassetteMiss as miss:
+            print(f"error: {miss}", file=sys.stderr)
+            return 3
 
     try:
         comparison = compare(
@@ -167,20 +295,32 @@ def main(argv, *, pepper: str, api_key: str | None) -> int:
         print(f"error: {miss}", file=sys.stderr)
         return 3
 
-    rendered = render_table(comparison)
+    rendered = render_table(comparison, stability=stability)
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "classifier_comparison.txt").write_text(rendered + "\n")
+
+    # The name is decided by what the run achieved, not by which flag was
+    # passed — the same rule windtunnel/evaluate.py applies when a partial
+    # sweep grid writes sweeps.json rather than evaluation.json. A partial
+    # result must not be able to overwrite or impersonate a full one.
+    stem = "classifier_comparison" if comparison.complete else "classifier_comparison_partial"
 
     import json
 
-    (args.out / "classifier_comparison.json").write_text(
-        json.dumps(to_document(comparison), indent=2, sort_keys=True) + "\n"
+    (args.out / f"{stem}.txt").write_text(rendered + "\n")
+    (args.out / f"{stem}.json").write_text(
+        json.dumps(to_document(comparison, stability=stability), indent=2, sort_keys=True)
+        + "\n"
     )
 
     print()
     print(rendered)
-    print(f"written: {args.out / 'classifier_comparison.txt'}")
-    print(f"written: {args.out / 'classifier_comparison.json'}")
+    print(f"written: {args.out / (stem + '.txt')}")
+    print(f"written: {args.out / (stem + '.json')}")
+    if not comparison.complete:
+        print(
+            "note: PARTIAL — written under the _partial name so it cannot be "
+            "mistaken for, or overwrite, a full run."
+        )
     return 0
 
 

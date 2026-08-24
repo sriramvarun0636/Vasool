@@ -18,38 +18,68 @@ recording path alone, and the boundary scan reads this file as text rather
 than importing it, so the whole suite runs on a machine that has never
 installed it.
 
-# VERIFY: the free tier's requests-per-minute and requests-per-day are not
-# published in Google's own documentation any more — ai.google.dev's
-# rate-limits page defers to the AI Studio dashboard. DEFAULT_RPM below is the
-# pessimistic end of what third-party sources report. Check
-# aistudio.google.com/rate-limit against the project before a record run; the
-# failure mode of guessing low is a slower run, and of guessing high is a
-# burnt daily quota.
+**Observed, 2026-08-24.** The free tier's daily cap on `gemini-3.6-flash` for
+this project is **20 requests**, reported by the API itself as
+`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `quotaValue: 20`. That is
+far below the 250–1,500 third-party sources report, and it is smaller than one
+full pass over the twelve-cell corpus at any k. It is the binding constraint on
+this comparison; requests-per-minute never comes close to mattering.
+
+Google no longer publishes free-tier limits in its own documentation —
+ai.google.dev's rate-limits page defers to the AI Studio dashboard — so the
+number above is what the API said when it refused, which is better evidence
+than any page.
+
+# VERIFY: 20/day is one project, one model, one day. It is not a documented
+# constant and may differ per model or change without notice. The code below
+# reads the refusal rather than assuming the number.
 """
 from __future__ import annotations
 
+import re
 import time
 
 PROVIDER = "gemini"
 """Recorded into every cassette. The cassette layer is provider-agnostic, so
 this string is the only thing that identifies where a response came from."""
 
-DEFAULT_MODEL = "gemini-3.7-flash"
-"""The current stable Flash model, and free of charge on the free tier.
-
-Chosen for cost, which is a fact the artifact states about itself rather than
-hides: a stronger model might close whatever gap the comparison finds, and
-nothing measured here bounds a model that was not run.
-"""
+# There is deliberately no DEFAULT_MODEL here. The model is pinned once, in
+# windtunnel/shadow.py::PINNED_MODEL, because it is part of every cassette's
+# address and changing it orphans the whole recorded corpus. A default in this
+# file would be a second place to change it, which is exactly the drift the
+# pin exists to prevent — so GeminiClient requires the caller to say.
 
 DEFAULT_RPM = 10
 """Requests per minute. See the VERIFY note above."""
 
 MAX_ATTEMPTS = 5
 BACKOFF_SECONDS = (5, 15, 45, 90)
-"""What to wait after a rate-limit refusal. Longer than an ordinary API
-backoff because the thing being waited out is a per-minute quota, not
-congestion — retrying in 200ms simply spends another request against it."""
+"""What to wait after a *per-minute* refusal. Longer than an ordinary API
+backoff because the thing being waited out is a quota window, not congestion —
+retrying in 200ms simply spends another request against it.
+
+Used only when the refusal is a per-minute one. A daily refusal is not retried
+at all; see `DailyQuotaExhausted`."""
+
+MAX_SERVER_RETRY_DELAY = 120.0
+"""Cap on an honoured server-supplied `retryDelay`. Anything longer is a wait
+the operator should decide about, not one this process should take silently."""
+
+
+class DailyQuotaExhausted(RuntimeError):
+    """The per-day free-tier allowance is spent.
+
+    Raised immediately and never retried, which is the whole point of having
+    its own type. The first version of this file treated every 429 alike and
+    spent four further requests against a cap of twenty — a fifth of a day's
+    budget, on attempts that could not have succeeded, to learn something the
+    first refusal already said. A daily quota does not clear in ninety seconds;
+    it clears tomorrow.
+
+    Cassettes recorded before the refusal are already on disk — the store
+    writes each one as it arrives — so this is a stopping condition, not a
+    lost run. Re-running with `--record` resumes at the first missing cell.
+    """
 
 
 class GeminiUnavailable(RuntimeError):
@@ -74,7 +104,7 @@ class GeminiClient:
         self,
         *,
         api_key: str,
-        model: str = DEFAULT_MODEL,
+        model: str,
         rpm: int = DEFAULT_RPM,
         response_schema: dict | None = None,
     ) -> None:
@@ -118,35 +148,73 @@ class GeminiClient:
         `vasool.diagnosis.llm.parse_verdict`, on replay, where it can be
         re-run against an edited parser without spending another request.
         """
-        request: dict = {"model": self._model, "input": prompt}
+        from google.genai import types
+
+        config = types.GenerateContentConfig()
         if self._schema is not None:
-            request["response_format"] = {
-                "type": "text",
-                "mime_type": "application/json",
-                "schema": self._schema,
-            }
+            config.response_mime_type = "application/json"
+            config.response_schema = self._schema
 
         last: Exception | None = None
         for attempt in range(MAX_ATTEMPTS):
             self._pace()
             try:
-                interaction = self._client.interactions.create(**request)
+                response = self._client.models.generate_content(
+                    model=self._model,
+                    contents=prompt,
+                    config=config,
+                )
             except Exception as exc:  # noqa: BLE001 - re-raised below
                 last = exc
+                if _is_daily_quota(exc):
+                    raise DailyQuotaExhausted(
+                        f"{self._model}: the free tier's daily request quota is "
+                        "spent. Nothing is retried — a daily cap clears tomorrow, "
+                        "not after a backoff. Cassettes already recorded are on "
+                        "disk; re-run with --record to resume at the first "
+                        "missing cell."
+                    ) from exc
                 if not _is_rate_limit(exc) or attempt == MAX_ATTEMPTS - 1:
                     break
-                time.sleep(BACKOFF_SECONDS[min(attempt, len(BACKOFF_SECONDS) - 1)])
+                time.sleep(_wait_for(exc, attempt))
                 continue
 
-            text = getattr(interaction, "output_text", None)
+            text = getattr(response, "text", None)
             if not text:
                 raise GeminiUnavailable(
                     f"{self._model} returned no text — the response carried "
-                    f"{sorted(vars(interaction)) if hasattr(interaction, '__dict__') else type(interaction)}"
+                    f"{sorted(vars(response)) if hasattr(response, '__dict__') else type(response)}"
                 )
             return text
 
         raise GeminiUnavailable(f"{self._model} failed after {MAX_ATTEMPTS} attempts: {last}")
+
+
+def _is_daily_quota(exc: Exception) -> bool:
+    """Whether this refusal is the per-day cap rather than the per-minute one.
+
+    Keyed on the `quotaId` the API returns — `...RequestsPerDay...` — because
+    that is the field that actually distinguishes them; the HTTP status, the
+    message and the `retryDelay` are identical for both, and the `retryDelay`
+    on a daily refusal is misleading (thirty-three seconds, for a window that
+    reopens tomorrow).
+    """
+    return "PERDAY" in str(exc).upper().replace("_", "")
+
+
+def _wait_for(exc: Exception, attempt: int) -> float:
+    """How long to wait after a per-minute refusal.
+
+    Prefers the server's own `retryDelay` over the local ladder — it knows
+    when the window reopens and the ladder is guessing. Capped, and floored at
+    the ladder's value so a suspiciously small server hint cannot turn the
+    backoff into a hot loop against a quota.
+    """
+    ladder = BACKOFF_SECONDS[min(attempt, len(BACKOFF_SECONDS) - 1)]
+    match = re.search(r"retryDelay['\"]?\s*:\s*['\"]?(\d+(?:\.\d+)?)s", str(exc))
+    if not match:
+        return ladder
+    return min(max(float(match.group(1)) + 1.0, ladder), MAX_SERVER_RETRY_DELAY)
 
 
 def _is_rate_limit(exc: Exception) -> bool:

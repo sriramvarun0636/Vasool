@@ -105,7 +105,15 @@ OpenTelemetry · Jinja2
 A partial grid writes `sweeps.json`, not `evaluation.json`, and refuses to
 report an F6 verdict — F6 is registered against all 83 configurations.
 
-`tools/shadow.py` takes `--record`, `--repeats N`, `--model`, `--rpm`. Without
+`tools/shadow.py` takes `--record`, `--partial`, `--repeats N`,
+`--consistency-cell REASON/SOURCE`, `--consistency-k N`, `--model`, `--rpm`.
+`--consistency-cell` measures one cell at depth and renders it as its own
+section with **accuracy printed beside stability** — a stable wrong answer is
+the finding, and either number alone misreports it. Depth defaults to however
+many cassettes that cell has. `--partial` replays only the cassettes that exist: unrecorded cells
+render as `—`, contribute to no rate, and the result is written to
+`classifier_comparison_partial.*` so it cannot impersonate a full run — the
+same rule `--skip-base` follows with `sweeps.json`. Without
 `--record` no provider client is constructed at all and a missing cassette is a
 hard failure (exit 3), never a silent live call. `--record` is incremental: it
 requests only the cassettes that are absent, so raising `--repeats` costs only
@@ -113,7 +121,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 7 (LLM classifier, shadow mode). 1241 tests.
+Current stage: 7 (LLM classifier, shadow mode). 1287 tests.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
@@ -140,6 +148,20 @@ Evaluation state: base protocol run at 1000 seeds, development cohort.
 Full §7 grid run. F1 fires against Vasool as registered
 (−0.310 vs retry_plus_contact) and holds across the sweep range.
 Holdout sealed.
+
+**The model is pinned**: `windtunnel/shadow.py::PINNED_MODEL`. Cassettes are
+keyed by model, so changing that string orphans every recording at once and a
+re-record costs a fresh day. `tests/windtunnel/test_cassette_pin.py` holds the
+pin against the cassettes actually on disk, so the edit fails a test before it
+spends the day. There is deliberately no second model constant anywhere.
+
+**Gemini free tier: 20 requests/day** on `gemini-3.6-flash` for this project,
+observed 2026-08-24 from the API's own refusal (`quotaValue: 20`,
+`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Smaller than one pass
+over the 12-cell corpus at any k. `tools/gemini.py` now stops immediately on a
+per-day refusal instead of retrying it — the first record run spent 4 futile
+retries, a fifth of a day's budget. Per-minute refusals are still retried, and
+honour the server's `retryDelay`.
 
 Cassettes: `data/cassettes/`, one JSON per (provider, model, prompt, repeat),
 sha256-addressed and provider-agnostic. Replay is the default everywhere,
