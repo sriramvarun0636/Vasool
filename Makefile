@@ -13,6 +13,16 @@ TARGET   ?=
 EVAL_ARGS ?=
 TIME     ?=
 LIVE     ?=
+RECORD   ?=
+REPEATS  ?=
+
+SHADOW_ARGS :=
+ifeq ($(strip $(RECORD)),1)
+SHADOW_ARGS += --record
+endif
+ifneq ($(strip $(REPEATS)),)
+SHADOW_ARGS += --repeats $(REPEATS)
+endif
 
 DEMO_ARGS := --scenario $(SCENARIO)
 ifneq ($(strip $(TIME)),)
@@ -22,7 +32,7 @@ ifeq ($(strip $(LIVE)),1)
 DEMO_ARGS += --live
 endif
 
-.PHONY: demo golden eval sweeps sweep-one redteam report replay all
+.PHONY: demo golden eval sweeps sweep-one shadow redteam report replay all
 
 demo: ## one recovery episode, end to end, replay by default -- LIVE=1 make demo to opt in (see vasool/demo.py --help)
 	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
@@ -38,6 +48,9 @@ sweeps: ## eval + SS7's sensitivity grid (83 configs + reference x 200 seeds -- 
 
 sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log make sweep-one
 	$(PYTHON) tools/evaluate.py --skip-base --sweep-target $(TARGET) $(EVAL_ARGS)
+
+shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 make shadow calls the provider
+	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
 redteam: ## 18 adversarial scenarios -- not built yet (lands with windtunnel/adversary)
 	@echo "make redteam: not built yet -- lands with the adversary harness (later session)"
