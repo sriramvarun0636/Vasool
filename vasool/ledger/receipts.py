@@ -210,6 +210,7 @@ class Receipt:
     receipt_id: str
     prev_hash: str
     hash: str
+    canonical_payload: str
 
     entity_id: str
     customer_id: str | None
@@ -288,7 +289,7 @@ def _compute_hash(
     amount_recovered_paise: int,
     at: datetime,
     trace_id: str,
-) -> str:
+) -> tuple[str, str]:
     payload = {
         "prev_hash": prev_hash,
         "receipt_id": receipt_id,
@@ -305,7 +306,8 @@ def _compute_hash(
         "at": at.isoformat(),
         "trace_id": trace_id,
     }
-    return hashlib.sha256(_canonical(payload).encode()).hexdigest()
+    canonical_str = _canonical(payload)
+    return hashlib.sha256(canonical_str.encode()).hexdigest(), canonical_str
 
 
 def _receipt_id(entity_id: str, proposal_id: str | None, to_state: State) -> str:
@@ -404,8 +406,8 @@ def receipt_from_transition(
             at=transition.at,
             trace_id=trace_id,
         )
-        computed = _compute_hash(prev_hash=prev_hash, **fields)
-        return Receipt(prev_hash=prev_hash, hash=computed, **fields)
+        computed, canonical_str = _compute_hash(prev_hash=prev_hash, **fields)
+        return Receipt(prev_hash=prev_hash, hash=computed, canonical_payload=canonical_str, **fields)
 
     if transition.proposal is None or transition.chain is None:
         raise ValueError(
@@ -439,8 +441,8 @@ def receipt_from_transition(
         at=transition.at,
         trace_id=trace_id,
     )
-    computed = _compute_hash(prev_hash=prev_hash, **fields)
-    return Receipt(prev_hash=prev_hash, hash=computed, **fields)
+    computed, canonical_str = _compute_hash(prev_hash=prev_hash, **fields)
+    return Receipt(prev_hash=prev_hash, hash=computed, canonical_payload=canonical_str, **fields)
 
 
 class ReceiptChain:

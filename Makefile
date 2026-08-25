@@ -59,8 +59,8 @@ shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls 
 redteam: ## 22 attacks, scored against the registered survival criterion -- writes out/adversary/
 	$(PYTHON) tools/redteam.py
 
-report: ## builds out/report.html -- not built yet (lands with windtunnel/report)
-	@echo "make report: not built yet -- lands with the report builder (later session)"
+report: ## builds out/report.html with the embedded evaluation payload
+	$(PYTHON) tools/report.py
 
 replay: ## rebuild state from the ledger, assert hash determinism at full scale
 	@echo "make replay: covered by 'make eval', which runs the determinism check"
