@@ -753,10 +753,17 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
         // --- CRYPTO HELPER ---
         async function hashString(str) {{
-            const encoder = new TextEncoder();
-            const data = encoder.encode(str);
-            const digest = await crypto.subtle.digest("SHA-256", data);
-            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+            if (!window.crypto || !window.crypto.subtle) {{
+                return "insecure-env";
+            }}
+            try {{
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                const digest = await crypto.subtle.digest("SHA-256", data);
+                return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }} catch (e) {{
+                return "hash-error";
+            }}
         }}
 
         // --- RENDER LAYER ---
@@ -959,6 +966,12 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 consoleBox.innerHTML += `&gt; payload: ${{escapeHtml(payloadStr.substring(0, 60))}}...\\n`;
                 
                 const hashHex = await hashString(payloadStr);
+                
+                if (hashHex === "insecure-env") {{
+                    consoleBox.innerHTML += `\\n<span class="console-error">&gt; ERROR: Web Crypto API is unavailable. Are you opening this file locally (file://) in Safari? Use Chrome, or host it on an HTTPS server (like GitHub Pages) to run live cryptographic verification.</span>`;
+                    return;
+                }}
+                
                 consoleBox.innerHTML += `\\n&gt; COMPUTED HASH: ${{hashHex}}\\n`;
                 
                 const expectedHash = record.hash || "UNKNOWN";
