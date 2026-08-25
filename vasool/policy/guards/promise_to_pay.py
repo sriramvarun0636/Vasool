@@ -21,6 +21,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from vasool.diagnosis.rules import IST
+from vasool.diagnosis.taxonomy import InterventionType
 from vasool.policy.facts import GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.verdict import Verdict
@@ -46,6 +47,15 @@ class PromiseToPayGuard(Guard):
     # recovery flow is by analogy — it governs regulated lenders' recovery
     # conduct. We hold ourselves to it because the conduct is the same conduct,
     # not because we have established that it binds a merchant's agent.
+
+    def applies_to(self, ctx: GuardContext) -> bool:
+        """A human handoff is not automated chasing.
+
+        A risk decline must reach an operator immediately.  Holding
+        HUMAN_QUEUE until a customer's promise expires delays the very review
+        that makes the risk path safe (A19).
+        """
+        return ctx.proposal.intervention is not InterventionType.HUMAN_QUEUE
 
     def check(self, ctx: GuardContext) -> Verdict:
         promise = ctx.facts.promise_to_pay

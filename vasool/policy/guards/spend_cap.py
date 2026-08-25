@@ -57,6 +57,17 @@ class SpendCapGuard(Guard):
         cap = ctx.facts.merchant.daily_retry_cap_paise
         amount = ctx.proposal.amount_paise
 
+        # This is the final policy-plane check for the taxonomy's 00:00-06:00
+        # retry exclusion.  Classify-time scheduling is not enough: another
+        # guard may later defer a legal retry to midnight (A18).
+        legal_at = hold_out_of_quiet_hours(ctx.effective_at)
+        if legal_at > ctx.effective_at:
+            return self.defer(
+                legal_at,
+                "retry falls inside the 00:00-06:00 IST issuer-maintenance "
+                "quiet period",
+            )
+
         if amount > cap:
             return self.block(
                 f"a single ₹{amount / 100:,.2f} retry exceeds the whole ₹"

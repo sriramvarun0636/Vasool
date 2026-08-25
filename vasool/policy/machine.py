@@ -8,7 +8,7 @@ Three design decisions are worth reading before the code.
 
 **Gating happens immediately before execution, never at propose time.** The
 design spec's FSM has no state between DIAGNOSED and GATED, so an action
-scheduled 48 hours out would have its compliance check now and its money
+scheduled 4z8 hours out would have its compliance check now and its money
 movement then. That is adversary attack A04 promoted from a test case to an
 architecture. Here a proposal waits in SCHEDULED, and the guard chain runs in
 the same tick that executes it, against the same snapshot.
@@ -223,6 +223,15 @@ class PolicyMachine:
                 closure=Closure.CLOCK_SKEW,
             )
             return
+
+        # Changed failure evidence is a new recovery plan for the same
+        # payment. Retire queued work built from a different reason/source
+        # before deriving its replacement; an identical delivery stays queued
+        # for the idempotency path. Re-gating obsolete work cannot fix this:
+        # RiskBlockGuard and the instrument-dead checks correctly read the
+        # proposal's own class, which is precisely the class that is stale
+        # (A15/A16).
+        self._supersede_queued(episode, event)
 
         attempt = episode.attempts_used + 1
         diagnosis = classify(event, clock=self._clock, attempt=attempt, rules=self._rules)
@@ -563,6 +572,34 @@ class PolicyMachine:
             proposal=item.proposal,
             **extra,
         )
+
+    def _supersede_queued(self, episode: Episode, event: FailureEvent) -> None:
+        """Discard work derived from an earlier failure for this episode.
+
+        A retry failure can arrive with a materially different reason while a
+        sibling action or a later retry is waiting.  Leaving that work queued
+        makes arrival order decide whether the old diagnosis reaches the
+        executor.  The replacement diagnosis below is the current plan; the
+        removed proposals remain visible in the append-only transition log,
+        but are never gated or executed.
+        """
+        stale = [
+            item
+            for item in self._queue
+            if item.proposal.entity_id == episode.entity_id
+            and (
+                item.event.error_reason != event.error_reason
+                or item.event.error_source != event.error_source
+            )
+        ]
+        for item in stale:
+            self._queue.remove(item)
+            self._to(
+                episode,
+                State.DIAGNOSED,
+                "superseded by a later failure for this episode",
+                proposal=item.proposal,
+            )
 
     def _stop(
         self,

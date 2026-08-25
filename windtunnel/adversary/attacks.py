@@ -9,9 +9,9 @@ nothing the rest of the list reports means anything. An adversary that only
 tested things nobody worried about would be measuring the wrong surface.
 
 The remainder are the design spec §9 list and four seams found by reading
-`vasool/policy/` — a stale proposal surviving a reclassification (A15, A16), a
-promise to pay releasing a re-presentation inside the quiet hours (A18), and a
-promise to pay deferring the one handoff taxonomy §7 calls immediate (A19).
+`vasool/policy/`. A15, A16, A18 and A19 now survive: later failure evidence
+supersedes stale queued work, retry quiet hours are enforced at final gating,
+and a promise never delays a human risk handoff.
 
 **The ids are the reviewed ids, with gaps.** A17, A21 and A25 were registered
 and then cut before implementation — a prompt-injection probe that could not
@@ -687,7 +687,7 @@ ATTACKS: tuple[Attack, ...] = (
         title="a risk decline in the same instant as a due retry",
         targets="a queued proposal outliving the diagnosis that built it",
         source="taxonomy §2's hardest rule; found reading PolicyMachine.tick",
-        expectation=FAILS,
+        expectation=SURVIVES,
         evidence=(
             ExecutedCount("pay_a15", 0),
             ReceiptWithOutcome("pay_a15", Outcome.ESCALATED),
@@ -699,7 +699,7 @@ ATTACKS: tuple[Attack, ...] = (
         title="the card expires between attempt 2 and 3",
         targets="stale classification: the queued retry is never reclassified",
         source="design spec §9 A06; taxonomy §5's card_expired",
-        expectation=FAILS,
+        expectation=SURVIVES,
         evidence=(
             NoExecutionOnEntityAfter("pay_a16", mark="card_reported_expired", is_retry=True),
             ExecutedCount("pay_a16", 1, is_retry=True),
@@ -711,7 +711,7 @@ ATTACKS: tuple[Attack, ...] = (
         title="a promise to pay releases a retry at midnight",
         targets="taxonomy §6's quiet period on the retry half",
         source="vasool/diagnosis/rules.py's own note that the hold is classify-time only",
-        expectation=FAILS,
+        expectation=SURVIVES,
         evidence=(NoRetryExecutedBetweenIST(0, 6),),
         run=a18_promise_releases_at_midnight,
     ),
@@ -720,7 +720,7 @@ ATTACKS: tuple[Attack, ...] = (
         title="a promise to pay defers the human handoff",
         targets="taxonomy §7's immediate hard stop on RISK_BLOCK",
         source="PromiseToPayGuard has no applies_to; the same defect rules.py already fixed",
-        expectation=FAILS,
+        expectation=SURVIVES,
         evidence=(
             ReceiptNoLaterThan(
                 "pay_a19", Outcome.ESCALATED, mark="declined", within=timedelta(hours=1)

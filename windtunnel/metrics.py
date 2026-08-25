@@ -537,6 +537,7 @@ class Metrics:
     """
 
     risk_block_actions_world: int
+    customer_action_retries_world: int
     """**World numbers, not §2a claims, and they must never be reported as
     part of the safety predicate.**
 
@@ -661,6 +662,14 @@ def measure(
             if a.ok
             and a.entity_id in entities
             and a.true_failure_class == FailureClass.RISK_BLOCK.value
+        ),
+        customer_action_retries_world=sum(
+            1
+            for a in run.executed
+            if a.ok
+            and a.is_retry
+            and a.entity_id in entities
+            and a.true_failure_class == FailureClass.CUSTOMER_ACTION.value
         ),
         out_of_band_occurrences=len(out_of_band),
         actions_after_out_of_band=len(after),

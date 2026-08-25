@@ -620,11 +620,14 @@ Listing these is more useful than pretending otherwise.
     a scan keyed on the episode, which is what the adversary's own evidence
     does and what §2a does not.
 
-    Not fixed. A proposal that carries its diagnosis rather than a snapshot of
-    it, and a supersession rule that retires queued proposals when a new
-    failure reclassifies the episode, are both larger than an end-of-session
-    patch — and choosing between them is a design decision rather than a
-    repair.
+    **Fixed 2026-08-25.** `PolicyMachine.observe()` now retires queued
+    proposals when a later failure changes the reason or source that produced
+    them; identical duplicate deliveries remain available to the idempotency
+    path. The transition log records each supersession. `SpendCapGuard` performs the
+    retry quiet-hours check at final gating, so a promise cannot release a
+    retry at midnight. `PromiseToPayGuard` has no jurisdiction over
+    `HUMAN_QUEUE`, so a risk handoff is immediate. A15, A16, A18 and A19 are
+    registered as surviving controls and exercised by the red-team suite.
 
 13. **The pre-debit notice is never sent, so no mandate debit ever executes.
     This is a liveness failure, and it is the only one in this section.**

@@ -158,16 +158,16 @@ Stages complete:
   - 8  — adversary: windtunnel/adversary/{criterion,arena,attacks,harness}.py,
          tools/redteam.py. Criterion registered before any attack was written.
          22 attacks, ids kept from the reviewed list (A17/A21/A25 were cut, so
-         the numbering has gaps on purpose). **14 of 22 survive.** Every attack
+         the numbering has gaps on purpose). **18 of 22 survive.** Every attack
          drives the real receiver, the real FSM, the real thirteen guards and
          the real executor; the arena only decides what happens *to* the agent.
 
-Adversarial state: 14/22. Eight named failures, three of them already recorded
-as open (§9.3 timezone, §9.10 out-of-band, derive_customer_id's identity
-split). The rest are now **taxonomy.md §9.12** — one defect with four
-demonstrations, A15/A16/A18/A19: a queued proposal outlives the diagnosis that
-built it, and a DEFER carries an action past a hold applied at classify time.
-`rules.py` fixed the same pattern one plane up.
+Adversarial state: 18/22. Four named failures remain: §9.3 timezone, §9.10
+out-of-band settlement, `derive_customer_id`'s identity split, and the DND
+classification gap. A15/A16/A18/A19 were fixed on 2026-08-25: later failure
+evidence supersedes queued work from a different reason/source, retry quiet
+hours are re-checked at final gating, and promise-to-pay never delays a human
+handoff.
 
 **taxonomy.md §9.13** is the session's other finding and did not come from an
 attack: obligations are honoured only in `PolicyMachine._execute`, and

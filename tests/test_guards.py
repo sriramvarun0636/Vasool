@@ -326,6 +326,14 @@ class TestPromiseToPayGuard:
         )
         assert self.guard.evaluate(ctx).decision is D.DEFER
 
+    def test_a_promise_does_not_hold_a_human_queue(self):
+        proposal = proposal_for("payment_risk_check_failed")
+        ctx = context(
+            proposal,
+            promise_to_pay=(POOL_NOW + timedelta(days=3)).date(),
+        )
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
     def test_a_lapsed_promise_no_longer_holds(self):
         ctx = context(
             proposal_for("card_expired"), promise_to_pay=(POOL_NOW - timedelta(days=5)).date()
@@ -697,6 +705,15 @@ class TestSpendCapGuard:
 
     def test_a_retry_inside_the_cap_passes(self):
         assert self.guard.evaluate(self.spending(100_000, 0)).decision is D.ALLOW
+
+    def test_a_retry_due_in_quiet_hours_defers_to_six(self):
+        quiet_now = POOL_NOW.astimezone(IST).replace(hour=1).astimezone(timezone.utc)
+        proposal = proposal_for("gateway_technical_error", now=quiet_now).model_copy(
+            update={"execute_at": quiet_now}
+        )
+        v = self.guard.evaluate(context(proposal, now=quiet_now))
+        assert v.decision is D.DEFER
+        assert v.defer_until.astimezone(IST).hour == QUIET_HOURS_END_HOUR_IST
 
     def test_a_retry_that_would_breach_the_cap_defers(self):
         """Deferring, not blocking — the spec says block, but a daily ceiling
