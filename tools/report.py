@@ -579,7 +579,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <div class="card" style="position: relative; overflow: hidden;">
                     <div class="rubber-stamp">NON-COMPLIANT</div>
                 <div class="card-title">Baseline Agent<br>(retry_plus_contact)</div>
-                <div class="yield-number yield-red count-up">65.42%</div>
+                <div class="yield-number yield-red count-up" id="yield-baseline">65.42%</div>
                 <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 100%; background-color: var(--violation-red); color: var(--violation-red);"></div></div>
                 <div style="font-weight: 600; margin-bottom: 8px;">Estimated Regulatory Exposure (per instance):</div>
                     <div class="fine-print">
@@ -596,7 +596,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <div class="card" style="position: relative; overflow: hidden;">
                     <div class="rubber-stamp" style="transform: rotate(10deg); top: 32px; right: 16px;">ILLEGAL</div>
                 <div class="card-title">Greedy Agent (vasool_ungated)</div>
-                <div class="yield-number yield-red count-up">53.81%</div>
+                <div class="yield-number yield-red count-up" id="yield-greedy">53.81%</div>
                 <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 100%; background-color: var(--violation-red); color: var(--violation-red);"></div></div>
                 <div style="font-weight: 600; margin-bottom: 8px;">Estimated Regulatory Exposure (per instance):</div>
                     <div class="fine-print">
@@ -606,7 +606,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 </div>
                 <div class="card hero-card">
                 <div class="card-title">Vasool Control Plane</div>
-                <div class="yield-number yield-blue count-up">49.07%</div>
+                <div class="yield-number yield-blue count-up" id="yield-vasool">49.07%</div>
                 <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 0%; background-color: var(--compliant-green); color: var(--compliant-green);"></div></div>
                 <div style="font-weight: 600; margin-bottom: 8px;">Regulatory Exposure Avoided:</div>
                     <div class="fine-print" style="color: var(--compliant-green);">
