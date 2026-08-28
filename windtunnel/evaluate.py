@@ -421,31 +421,36 @@ F6_DENOMINATOR: tuple[str, ...] = (
     "A1",
     "A2",
     "A3",
+    "A4",
     "A5",
 )
-"""§10, 2026-08-24: F6's denominator — the seven per-arm primary comparisons a
-swept parameter can move.
+"""F6's denominator — the eight per-arm primary comparisons a swept parameter
+can move.
+
+Registered in two steps, and the second is the one that decides the size.
+§10's **2026-08-24** row set the denominator at *seven*, excluding A4 on the
+ground that its per-seed difference was identically [0, 0]. §10's
+**2026-08-25** row, "A4's exclusion ground is now stale", dropped that
+exclusion — post-fix A4's difference is +7.29e-05 and excludes zero, so the
+original ground is empirically false and preserving the exclusion on a new
+ground would have been the rescue the protocol forbids. Eight is therefore the
+2026-08-25 reading, not the 2026-08-24 one; citing the earlier row for it
+attributes this set to the row that registers its complement.
 
 Not F1–F7: F6 is self-referential, F7 cannot be moved by a parameter, and F4
-and F5 are not paired differences, so `survives` cannot express them. **A4 is
-excluded** because its per-seed difference is identically `[0, 0]`: it fails to
-survive in every configuration for a reason no swept parameter touches, and a
-criterion about model artifacts should not be part-triggered by an arm with a
-zero-difference vector. The exclusion costs nothing in strictness — the
-eight-arm version this replaces also required four *real* flips, because A4
-supplied the fifth for free.
+and F5 are not paired differences, so `survives` cannot express them.
 """
 
-F6_THRESHOLD = 4
-"""§9's "more than half", on a denominator of seven."""
+F6_THRESHOLD = 5
+"""§9's "more than half", applied to §10's 2026-08-25 denominator of eight."""
 
 F6_DETAIL = (
-    "§10, 2026-08-24: fires iff 4 or more of the 7 per-arm primary comparisons "
-    "a swept parameter can move fail to survive in at least one of §7's "
-    "configurations. A4 is excluded from the denominator — its per-seed "
-    "difference is identically [0, 0], so it cannot survive anything for a "
-    "reason no parameter touches. Primary metric only: a conclusion flipping "
-    "solely on a secondary is not caught (§9)."
+    "§10, 2026-08-25 ('A4's exclusion ground is now stale', which restored A4 "
+    "to the denominator §10's 2026-08-24 row had set at seven): fires iff 5 or "
+    "more of the 8 per-arm primary comparisons a swept parameter can move fail "
+    "to survive in at least one of §7's configurations. Threshold is §9's "
+    "'more than half' on that denominator. Primary metric only: a conclusion "
+    "flipping solely on a secondary is not caught (§9)."
 )
 
 
@@ -474,7 +479,6 @@ def f6_verdict(sweeps: dict[str, dict]) -> dict:
         "fired": len(flipped) >= F6_THRESHOLD,
         "detail": F6_DETAIL,
         "denominator": list(F6_DENOMINATOR),
-        "excluded": {"A4": ZERO_DIFFERENCE_DETAIL},
         "threshold": F6_THRESHOLD,
         "configurations": len(sweeps),
         "flipped_count": len(flipped),
@@ -762,6 +766,15 @@ def _base_protocol(
                 "instrument_dead_retries_world": sum(r["instrument_dead_retries_world"] for r in rows.values()),
                 "risk_block_actions_world": sum(
                     r["risk_block_actions_world"] for r in rows.values()
+                ),
+                # §10, 2026-08-24 registered the absence of this third counter as
+                # an open limit and estimated the cost of closing it as a full
+                # re-run of the §7 grid. That estimate was right when the row was
+                # written and is no longer: `measure()` has recorded the field
+                # since the obligation-loop re-run, so every shard on disk already
+                # carries it and the closure is this line. See §10, 2026-08-28.
+                "customer_action_retries_world": sum(
+                    r["customer_action_retries_world"] for r in rows.values()
                 ),
                 "seeds": len(rows),
             }

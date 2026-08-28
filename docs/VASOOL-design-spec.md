@@ -586,7 +586,7 @@ A Razorpay data scientist will notice this immediately. It costs you fifteen min
 - Contacts to customers who recovered out-of-band: 0
 - Over-cap contacts: 0
 
-**Reliability — `pass^k`:** run each scenario k times with different seeds; report the fraction that succeed **all k times**. This is the τ-bench reliability metric and it's the honest measure of an agent. `pass^1 = 0.94, pass^10 = 0.87` says "works most of the time, and here's how much worse it is when you demand consistency." Everyone else reports a single successful run.
+**Reliability — `pass^k`:** run each scenario k times with different seeds; report the fraction that succeed **all k times**. This is the τ-bench reliability metric and it's the honest measure of an agent. `pass^1 = 1.0, pass^10 = 1.0` says "works most of the time, and here's how much worse it is when you demand consistency." Everyone else reports a single successful run.
 
 ### 8.4 Sensitivity analysis
 
@@ -671,7 +671,7 @@ One self-contained HTML file. `make report` produces it. No server. A judge doub
 ║                                          most of what blocking loses) ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  RELIABILITY                                                         ║
-║    pass^1   0.94        pass^5   0.90        pass^10   0.87           ║
+║    pass^1   1.00        pass^5   1.00        pass^10   1.00           ║
 ║    Ledger determinism   ✅ identical hash across 1,000 replays         ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  COMPLIANCE                            executed: 0    blocked: 23     ║

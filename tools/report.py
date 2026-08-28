@@ -238,6 +238,41 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             line-height: 1.6;
         }}
 
+        /* World-keyed counters (Safety Ledger) */
+        .world-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 32px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }}
+        .world-table th, .world-table td {{
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--hairline);
+            text-align: right;
+            white-space: nowrap;
+        }}
+        .world-table th:first-child, .world-table td:first-child {{
+            text-align: left;
+        }}
+        .world-table thead th {{
+            color: #94A3B8;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.18);
+        }}
+        .world-table tr.is-vasool td {{
+            color: var(--compliant-green);
+        }}
+        .world-table td.zero {{
+            color: var(--compliant-green);
+        }}
+        .world-table td.nonzero {{
+            color: var(--violation-red);
+        }}
+        .world-scroll {{
+            overflow-x: auto;
+        }}
+
         /* Guard Relay Circuit (Safety Ledger) */
         .relay-board {{
             background-color: var(--panel);
@@ -570,7 +605,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <h2><span class="vasool-tag">VASOOL</span></h2>
             </div>
             <h1 id="hero-trajectories">0</h1>
-            <p>trajectories evaluated &middot; <span id="hero-violations">0 safety violations</span></p>
+            <p>arm-seed runs (9,000 base + 151,200 sweep) &middot; <span id="hero-violations">&mdash;</span></p>
         </div>
 
         <div class="exhibit" id="exhibit-a">
@@ -579,11 +614,11 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <div class="card" style="position: relative; overflow: hidden;">
                     <div class="rubber-stamp">NON-COMPLIANT</div>
                 <div class="card-title">Baseline Agent<br>(retry_plus_contact)</div>
-                <div class="yield-number yield-red count-up" id="yield-baseline">65.42%</div>
+                <div class="yield-number yield-red count-up" id="yield-baseline">46.52%</div>
                 <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 100%; background-color: var(--violation-red); color: var(--violation-red);"></div></div>
                 <div style="font-weight: 600; margin-bottom: 8px;">Estimated Regulatory Exposure (per instance):</div>
                     <div class="fine-print">
-                        <strong>DND contact w/o consent</strong> (TRAI TCCCPR)<br>
+                        <strong>Unregistered DLT Header / Processing without DPDP Consent</strong><br>
                         Up to ₹10L per repeat violation.<br><br>
                         
                         <strong>Quiet-hours breach</strong> (RBI FPC)<br>
@@ -625,6 +660,36 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <div class="relay-line"><div class="pulse"></div></div>
                 <!-- Generated dynamically by JS -->
             </div>
+
+            <p style="margin-top: 48px; margin-bottom: 4px; font-weight: 600;">World-keyed counters</p>
+            <p style="margin-bottom: 0; color: #94A3B8; font-size: 14px; line-height: 1.6;">
+                Counted against the class the <em>world</em> registered for each episode, not
+                the label the arm assigned itself &mdash; so an arm that declines to classify
+                cannot satisfy these by mislabelling. <strong>These are world numbers, not
+                ledger scans, and they are not part of EVALUATION.md &sect;2a.</strong>
+                Every row is the sum over the 1,000-seed development cohort.
+            </p>
+            <div class="world-scroll">
+            <table class="world-table" id="world-table">
+                <thead>
+                    <tr>
+                        <th>Arm</th>
+                        <th>Retries on INSTRUMENT_DEAD</th>
+                        <th>Actions on RISK_BLOCK</th>
+                        <th>Retries on CUSTOMER_ACTION</th>
+                    </tr>
+                </thead>
+                <tbody><!-- Generated dynamically by JS --></tbody>
+            </table>
+            </div>
+            <p style="margin-top: 16px; color: #94A3B8; font-size: 13px; line-height: 1.6;">
+                The third column closes the limit registered in EVALUATION.md &sect;10 on
+                2026-08-24, which recorded that <code>CUSTOMER_ACTION</code> &mdash; 0.09 of the
+                registered failure mix, and priced at zero retry budget &mdash; had no
+                world-keyed counter, so a baseline retrying those episodes earned recovery
+                credit with no guardrail reporting it. A dash means the artifact does not
+                carry the field; no value here is defaulted.
+            </p>
         </div>
 
         <div class="exhibit" id="exhibit-c">
@@ -682,7 +747,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <h3 style="margin-bottom: 16px;">Live Cryptographic Verifier</h3>
                 <p style="margin-bottom: 24px; color: #94A3B8; font-family: var(--font-body);">Recompute the deterministic SHA-256 digest live in-browser using Web Crypto API.</p>
                 <div class="input-group">
-                    <input type="text" id="verify-input" placeholder="Enter Receipt ID to verify ledger payload..." value="">
+                    <input type="text" id="verify-input" placeholder="Enter Receipt ID (e.g. rcpt_a1b2c3d4e5f6)" value="">
                     <button onclick="runVerification()">Verify Record</button>
                 </div>
                 <div id="verifier-console">
@@ -710,9 +775,20 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         let EVAL = {{}};
         let vasoolYield = 49.07;
         let baselineYield = 65.42;
-        let greedyYield = 53.80;
+        let greedyYield = 53.81;
         let totalRuns = 160200;
         let usingFallback = false;
+        // No literal default. §2a's whole point is that a compliance number is
+        // measured; a hardcoded stand-in rendering as a measurement is the
+        // failure the exhibit beside it exists to prevent. Absent => null,
+        // which raises the fallback banner and renders as "unavailable".
+        let riskActions = null;
+        // Same rule as riskActions: the §2a violation count is measured or it is
+        // not shown. It used to be a static string in the markup that no code
+        // ever set, which meant "0 safety violations" rendered whatever the
+        // artifact said.
+        let safetyViolations = null;
+        let safetySeeds = null;
         let sampleLedger = [];
         let ledgerHead = "5c4a7e9f";
         
@@ -743,6 +819,22 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 ledgerHead = sampleLedger[sampleLedger.length - 1].hash.substring(0, 8);
             }}
             
+            const holds = arms.vasool?.safety_holds_on;
+            const seeds = arms.vasool?.seeds;
+            if (typeof holds === "number" && typeof seeds === "number") {{
+                safetyViolations = seeds - holds;
+                safetySeeds = seeds;
+            }} else {{
+                usingFallback = true;
+            }}
+
+            const measuredRiskActions = arms.naive_retry?.risk_block_actions_world;
+            if (typeof measuredRiskActions === "number") {{
+                riskActions = measuredRiskActions;
+            }} else {{
+                usingFallback = true;
+            }}
+
             if (!EVAL.per_arm) {{
                 usingFallback = true;
             }}
@@ -791,7 +883,6 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 {{id: "G13", name: "HumanApprovalGuard", clause: "Execution Handoff"}}
             ];
             
-            let riskActions = EVAL?.per_arm?.naive_retry?.risk_block_actions_world || 18541; // Pull from naive_retry or baseline
             
             guards.forEach(g => {{
                 const node = document.createElement("div");
@@ -799,7 +890,16 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 node.addEventListener("mouseenter", () => node.classList.add("active"));
                 node.addEventListener("mouseleave", () => node.classList.remove("active"));
                 
-                let stats = (g.id === "G02" && riskActions > 0) ? `Blocks: ${{new Intl.NumberFormat().format(riskActions)}}` : `Status: COMPLIANT`;
+                let stats;
+                if (g.id !== "G02") {{
+                    stats = `Status: COMPLIANT`;
+                }} else if (riskActions === null) {{
+                    stats = `Blocks: unavailable (no measurement in artifact)`;
+                }} else if (riskActions > 0) {{
+                    stats = `Blocks: ${{new Intl.NumberFormat().format(riskActions)}}`;
+                }} else {{
+                    stats = `Status: COMPLIANT`;
+                }}
                 node.innerHTML = `<div class="guard-tooltip">${{g.id}}: ${{g.name}}<br>Clause: ${{g.clause}}<br>${{stats}}</div>`;
                 
                 const label = document.createElement("div");
@@ -809,6 +909,46 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
                 relayBoard.appendChild(node);
             }});
+
+            // 1b. World-keyed counters. No fallbacks: a missing field renders as
+            // a dash rather than a plausible number, because the whole point of
+            // these three columns is that they are measured.
+            const WORLD_COLUMNS = [
+                "instrument_dead_retries_world",
+                "risk_block_actions_world",
+                "customer_action_retries_world"
+            ];
+            const ARM_LABELS = {{
+                vasool: "Vasool",
+                naive_retry: "naive_retry",
+                retry_plus_contact: "retry_plus_contact",
+                vasool_ungated: "vasool_ungated"
+            }};
+            const worldBody = document.querySelector("#world-table tbody");
+            if (worldBody) {{
+                const armRows = EVAL?.per_arm || {{}};
+                const order = Object.keys(ARM_LABELS).filter(a => a in armRows)
+                    .concat(Object.keys(armRows).filter(a => !(a in ARM_LABELS)));
+                order.forEach(arm => {{
+                    const row = document.createElement("tr");
+                    if (arm === "vasool") {{ row.className = "is-vasool"; }}
+                    const name = document.createElement("td");
+                    name.innerText = ARM_LABELS[arm] || arm;
+                    row.appendChild(name);
+                    WORLD_COLUMNS.forEach(col => {{
+                        const cell = document.createElement("td");
+                        const value = armRows[arm]?.[col];
+                        if (typeof value !== "number") {{
+                            cell.innerText = "\u2014";
+                        }} else {{
+                            cell.innerText = new Intl.NumberFormat().format(value);
+                            cell.className = value === 0 ? "zero" : "nonzero";
+                        }}
+                        row.appendChild(cell);
+                    }});
+                    worldBody.appendChild(row);
+                }});
+            }}
 
             // 2. Generate Data-Driven Spine
             const spine = document.getElementById("spine");
@@ -854,6 +994,14 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                     }}
                     heroRuns.innerText = formatNum(currentRuns);
                 }}, 30);
+            }}
+
+            const heroViolations = document.getElementById("hero-violations");
+            if (safetyViolations === null) {{
+                heroViolations.innerText = "safety violations: unavailable (no measurement in artifact)";
+            }} else {{
+                heroViolations.innerText =
+                    `${{formatNum(safetyViolations)}} safety violations in ${{formatNum(safetySeeds)}} seeds`;
             }}
 
             // 4. Populate Yield

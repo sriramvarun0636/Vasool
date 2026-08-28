@@ -50,8 +50,7 @@
     ConsentGuard        ALLOW
                                        DPDP Act 2023 s.6 + DPDP Rules 2025
     RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
+    PromiseToPayGuard   NOT_APPLICABLE
     DNDGuard            NOT_APPLICABLE
     FrequencyCapGuard   NOT_APPLICABLE
     ContactWindowGuard  NOT_APPLICABLE
@@ -70,7 +69,7 @@
 [8] receipt
     outcome      : escalated
     receipt_id   : rcpt_19abe5843d52f01b
-    hash         : 71297b3b3642d778bfe7545a69e218935967cb466089bf20d84de61fc1eb39a0
+    hash         : 54c25d77bcb1c470e6e002c2957f168443ea2cf8f52924a4008608df316dea31
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -78,5 +77,5 @@
 SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms
 on retrying declined authorisations, and stayed with a human, executor never
 called.
-Receipt: 71297b3b3642d778bfe7545a69e218935967cb466089bf20d84de61fc1eb39a0
+Receipt: 54c25d77bcb1c470e6e002c2957f168443ea2cf8f52924a4008608df316dea31
 ==============================================================================

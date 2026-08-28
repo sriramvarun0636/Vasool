@@ -8,7 +8,7 @@ Three design decisions are worth reading before the code.
 
 **Gating happens immediately before execution, never at propose time.** The
 design spec's FSM has no state between DIAGNOSED and GATED, so an action
-scheduled 4z8 hours out would have its compliance check now and its money
+scheduled 48 hours out would have its compliance check now and its money
 movement then. That is adversary attack A04 promoted from a test case to an
 architecture. Here a proposal waits in SCHEDULED, and the guard chain runs in
 the same tick that executes it, against the same snapshot.

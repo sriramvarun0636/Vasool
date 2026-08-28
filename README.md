@@ -11,7 +11,7 @@
 <p>
   <a href="#the-state-topology"><img src="https://img.shields.io/badge/Architecture-Strict_LLM_Isolation-000000?style=for-the-badge" alt="Architecture"></a>
   <a href="#the-offensive-engine-why-an-llm-is-mandatory"><img src="https://img.shields.io/badge/Recovery_Intelligence-LLM_Intent_Resolution-8A2BE2?style=for-the-badge" alt="Offensive AI"></a>
-  <a href="#the-empirical-roofline-financial-telemetry"><img src="https://img.shields.io/badge/Cost_of_Compliance_(Safety_Tax)-4.7%25-fb8c00?style=for-the-badge" alt="Compliance Cost"></a>
+  <a href="#the-empirical-roofline-financial-telemetry"><img src="https://img.shields.io/badge/Cost_of_Compliance_(Safety_Tax)-4.7_pp-fb8c00?style=for-the-badge" alt="Compliance Cost"></a>
   <a href="https://razorpay.com/buildathon/"><img src="https://img.shields.io/badge/Track_03-AI_Revenue_Recovery-005571?style=for-the-badge" alt="Track 03"></a>
 </p>
 
@@ -33,6 +33,9 @@
 The industry is currently building financial agents on a fatal premise: prompt-engineering compliance. We believe putting an unconstrained LLM in front of a payment gateway is negligence. LLMs hallucinate, and in enterprise finance, a hallucination is a regulatory violation. 
 
 **Vasool** abandons prompt-based safety. We treat the LLM as a hostile subsystem. It is strictly quarantined in the diagnosis plane. The LLM generates an inert hypothesis to recover lost revenue, and execution is strictly gated by a 13-guard, deterministic Python state machine that hard-enforces RBI, TRAI, and DPDP regulations.
+
+### 3. The Statistical Robustness (F1–F7)  
+The baseline performance isn't cherry-picked. Vasool survives a ±50% sensitivity sweep over **83 sensitivity configurations plus an unswept reference**, where any failure to recover significantly more than the baseline mathematically invalidates the run (`F6_conclusions_are_model_artifacts`). You can view the live status of the 7 falsification criteria on the dashboard.
 
 ---
 
@@ -61,23 +64,22 @@ make report
 
 ## Exhibit A: The Yield Reality
 
-Vasool was aggressively evaluated across a bespoke adversarial harness. Bare percentages mean nothing without context; here is the physical financial telemetry over **160,200 trajectories** protecting **₹42.76 Cr** of revenue.
+Vasool was aggressively evaluated across a bespoke simulation harness. Bare percentages mean nothing without context; here is the financial telemetry over **160,200 arm-seed runs** (9,000 base + 151,200 sweep).
 
 ### Comparative Benchmark
 
 | Metric / Approach | Baseline Agent (retry_plus_contact) | Greedy Agent (vasool_ungated) | ⚖️ Vasool (Ours) |
 | :--- | :--- | :--- | :--- |
-| **Recovery Yield** | 65.4% (₹27.96 Cr) | 53.8% (₹22.99 Cr) | **49.1% (₹20.99 Cr)** |
+| **Recovery Yield** | 65.4% (₹73.96 Cr) | 53.8% (₹61.31 Cr) | **49.1% (₹46.50 Cr)** |
 | **Regulatory Fines** | 🔴 Catastrophic | 🔴 Catastrophic | 🟢 **Zero** |
-| **Cost of Safety** | N/A (Illegal) | **0% (Illegal)** | **4.7% (Safety Tax)** |
+| **Cost of Safety** | N/A (Illegal) | **0 pp (Illegal)** | **4.7 pp (Safety Tax)** |
 
 <details>
 <summary><b>🔍 Expand for deep-dive metrics (Throughput & Reliability)</b></summary>
 <br>
 
-*   **Deterministic Enforcement:** **100% (0 bypasses)** across 151,200 trajectories, mathematically proving the state machine isolates and neutralizes 100% of LLM hallucinations before network egress.
-*   **End-to-End Agent Cycle:** 7.8 episodes/sec (including LLM inference).
-*   **Policy Plane Throughput (Pure State Machine):** State transition evaluations operate at **P50 = 1.2ms**, **P95 = 1.8ms**, and **P99 = 2.4ms**, proving the Policy Plane adds zero perceptible overhead.
+*   **Deterministic Enforcement:** the §2a safety predicate held on **1,000 of 1,000 seeds**, with `pass^k = 1.0` at every registered k ∈ {1, 5, 10, 25, 50, 100}.
+*   **Throughput and latency are not reported.** No timing measurement exists in this repository, so there is no number here to quote. §11's closing rule applies to us before it applies to anyone else: a figure not derivable from the protocol is not a result.
 </details>
 
 ---
@@ -148,7 +150,7 @@ flowchart TD
 
 ## ☠️ Exhibit D (Supplement): What Broke, and How We Got Out
 
-The difference between a student project and enterprise software is how you treat failure. We subjected the state machine to 22 hostile attacks. **13 attacks were structurally blocked, while 9 remain open as known limitations.**
+The difference between a student project and enterprise software is how you treat failure. We subjected the state machine to 22 hostile attacks. **18 survived the registered survival criterion; 4 remain open as known limitations.**
 
 <details>
 <summary><b>🛠 Expand to see the specific vulnerabilities and architectural patches</b></summary>
@@ -161,10 +163,14 @@ The difference between a student project and enterprise software is how you trea
 | **A10** | **Prompt Injection (Name Field)** | ✅ Blocked | Fails structurally. The LLM can only emit values from a closed `Enum`, and Policy Guards run downstream regardless of LLM output. |
 
 ### 🚧 What Remains (The Open Vulnerabilities)
-We are leaving 9 known vulnerabilities explicitly open and documented (registered as expected failures in `attacks.py`) because real engineering requires honesty. For example:
-* **A01: Out-of-band payment mid-ladder** (Risk of double collection without durable reconciliations).
+We are leaving 4 known vulnerabilities explicitly open and documented (registered as expected failures in `attacks.py`) because real engineering requires honesty. They are the complete set — there is no fifth:
+* **A01: Out-of-band payment mid-ladder** (Risk of double collection without durable reconciliation).
 * **A07: One human, two customer IDs** (Multiple customer IDs bypassing per-human contact caps).
 * **A08: Contact window in the wrong timezone** (Contact windows currently enforce IST instead of the customer's local time).
+* **A09: Message to a DND-listed customer** (the DND classification gap).
+
+Run `make redteam` to reproduce. The result is written to `out/adversary/redteam.json`
+and recorded in `docs/EVALUATION.md` §10 under 2026-08-29.
 </details>
 
 ---

@@ -504,7 +504,7 @@ def verify_chain(receipts: Sequence[Receipt]) -> bool:
     for r in receipts:
         if r.prev_hash != prev:
             return False
-        recomputed = _compute_hash(
+        recomputed, _ = _compute_hash(
             prev_hash=r.prev_hash,
             receipt_id=r.receipt_id,
             entity_id=r.entity_id,

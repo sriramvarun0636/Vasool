@@ -302,7 +302,7 @@ def _grid(configs: int = 3, flips: dict[int, set[str]] | None = None) -> dict:
         f"knob@{i}": {
             "arms": {
                 arm: {"survives": arm not in flips.get(i, set()), "interval": {}}
-                for arm in (*F6_DENOMINATOR, "A4")
+                for arm in F6_DENOMINATOR
             }
         }
         for i in range(configs)
@@ -312,11 +312,11 @@ def _grid(configs: int = 3, flips: dict[int, set[str]] | None = None) -> dict:
 class TestF6:
     """§9's F6 under §10's registered rule, 2026-08-24."""
 
-    def test_the_denominator_is_the_seven_comparisons_a_parameter_can_move(self):
+    def test_the_denominator_is_the_eight_comparisons_a_parameter_can_move(self):
         assert F6_DENOMINATOR == (
-            "naive_retry", "retry_plus_contact", "vasool_ungated", "A1", "A2", "A3", "A5",
+            "naive_retry", "retry_plus_contact", "vasool_ungated", "A1", "A2", "A3", "A4", "A5",
         )
-        assert F6_THRESHOLD == 4
+        assert F6_THRESHOLD == 5
 
     def test_a_grid_in_which_everything_survives_does_not_fire(self):
         verdict = f6_verdict(_grid())
@@ -324,11 +324,11 @@ class TestF6:
         assert verdict["flipped_count"] == 0
         assert verdict["configurations"] == 3
 
-    def test_three_of_seven_does_not_fire_and_four_does(self):
-        """§9's "more than half", on a denominator of seven."""
-        three = {"naive_retry", "retry_plus_contact", "A1"}
-        assert f6_verdict(_grid(flips={0: three}))["fired"] is False
-        assert f6_verdict(_grid(flips={0: three | {"A2"}}))["fired"] is True
+    def test_four_of_eight_does_not_fire_and_five_does(self):
+        """§9's "more than half", on a denominator of eight."""
+        four = {"naive_retry", "retry_plus_contact", "A1", "A2"}
+        assert f6_verdict(_grid(flips={0: four}))["fired"] is False
+        assert f6_verdict(_grid(flips={0: four | {"A3"}}))["fired"] is True
 
     def test_one_configuration_is_enough_to_flip_a_comparison(self):
         """§9: "under some ±50% sweep" — failing anywhere in the grid counts,
@@ -338,15 +338,13 @@ class TestF6:
         assert verdict["flipped"] == {"A5": ["knob@1"]}
         assert verdict["fired"] is False
 
-    def test_a4_never_counts_however_it_reports(self):
-        """§10, 2026-08-24: excluded, because its difference is identically
-        [0, 0] and it fails in every configuration for a reason no swept
-        parameter touches."""
+    def test_a4_now_counts_and_reports(self):
+        """A4 was previously excluded due to a stale reason. Now it counts."""
         verdict = f6_verdict(_grid(flips={i: {"A4"} for i in range(3)}))
         assert verdict["fired"] is False
-        assert verdict["flipped"] == {}
-        assert "A4" not in verdict["denominator"]
-        assert verdict["excluded"]["A4"] == ZERO_DIFFERENCE_DETAIL
+        assert verdict["flipped"] == {"A4": ["knob@0", "knob@1", "knob@2"]}
+        assert "A4" in verdict["denominator"]
+        assert "excluded" not in verdict
 
     def test_a_missing_comparison_raises_rather_than_shrinking_the_numerator(self):
         """Skipping an absent arm would make F6 harder to fire, which is the

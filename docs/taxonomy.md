@@ -629,49 +629,91 @@ Listing these is more useful than pretending otherwise.
     `HUMAN_QUEUE`, so a risk handoff is immediate. A15, A16, A18 and A19 are
     registered as surviving controls and exercised by the red-team suite.
 
-13. **The pre-debit notice is never sent, so no mandate debit ever executes.
-    This is a liveness failure, and it is the only one in this section.**
+    **Verified 2026-08-29**, and not before: the sentence above was written on
+    the strength of the fixes existing, and the suite that would test them had
+    not been run on record. It has now — 18 of 22 survive, all four of these
+    among them — and the closure is recorded in `EVALUATION.md` §10 rather than
+    here, because a status this paragraph asserts about itself is exactly the
+    kind of claim `windtunnel/adversary/criterion.py` exists to refuse.
+
+13. **The pre-debit notice was never sent, so no mandate debit ever executed.
+    This was a liveness failure, the only one in this section, and it is fixed
+    — the account below is kept because it shaped every evaluation number
+    published before 2026-08-25.**
 
     Every limit above is about safety: something the agent might wrongly do, or
-    evidence it cannot produce. This one is the opposite, and belongs in the
-    list anyway — the agent correctly refuses, forever, an action it was
+    evidence it cannot produce. This one was the opposite, and belongs in the
+    list anyway — the agent correctly refused, forever, an action it was
     supposed to take.
 
-    The loop is closed on itself. `PreDebitNoticeGuard` holds a mandate debit
+    The loop was closed on itself. `PreDebitNoticeGuard` holds a mandate debit
     until a notice has been served, and returns `DEFER` carrying an
-    `Obligation(SEND_PRE_DEBIT_NOTICE)`. `PolicyMachine._execute` is the only
-    place obligations are read. A deferred proposal does not execute, so no
-    notice proposal is ever built, so `pre_debit_notice_sent_at` stays None, so
-    the guard defers again — five times, and then `MAX_DEFERRALS` blocks it.
-    The one thing that could satisfy the guard is an execution the guard is
-    blocking.
+    `Obligation(SEND_PRE_DEBIT_NOTICE)`. `PolicyMachine._execute` was the only
+    place obligations were read. A deferred proposal does not execute, so no
+    notice proposal was ever built, so `pre_debit_notice_sent_at` stayed None,
+    so the guard deferred again — five times, and then `MAX_DEFERRALS` blocked
+    it. The one thing that could satisfy the guard was an execution the guard
+    was blocking.
 
-    **Measured, seed 0, full Vasool:** 888 episodes, of which 275 are on a
-    mandate. 707 retries executed across the run; **zero** of them on a mandate
-    episode. 209 of the 275 mandate episodes end in `BLOCKED`. That is 31% of
-    the population whose retry ladder never fires at all — not a tail case, and
-    not something the report card distinguishes from a compliance save.
+    **Measured before the fix, seed 0, full Vasool:** 888 episodes, of which
+    275 are on a mandate. 707 retries executed across the run; **zero** of them
+    on a mandate episode. 209 of the 275 mandate episodes ended in `BLOCKED`.
+    That is 31% of the population whose retry ladder never fired at all — not a
+    tail case, and not something the report card distinguished from a
+    compliance save.
 
-    **It has been shaping every evaluation number to date, including the
-    recovery comparison.** `mandate_share` is 0.35 (`windtunnel/parameters.py`,
-    registered under `EVALUATION.md` §10), so roughly a third of every arm's
-    population is affected and every absolute recovery figure is computed over
-    it. The paired comparisons are not uniformly protected either, because the
-    guard chain is exactly what differs between some arms: `vasool_ungated`
-    runs with `chain=()`, so `PreDebitNoticeGuard` is not there and its mandate
-    retries do fire. On seed 0 that arm executes 1050 retries to full Vasool's
-    707, and **306 of the 343-retry gap are mandate retries** — 89% of it. F5
-    is registered against `vasool_ungated` as the price of the guards, at 20
-    absolute percentage points; on this evidence a large part of that gap is
-    this defect rather than the cost of compliance. The recovery-rate
-    consequence follows but has not been measured, and should be before F5 is
-    reported as a compliance number.
+    **It had been shaping every evaluation number up to that point, including
+    the recovery comparison.** `mandate_share` is 0.35
+    (`windtunnel/parameters.py`, registered under `EVALUATION.md` §10), so
+    roughly a third of every arm's population is affected and every absolute
+    recovery figure is computed over it. The paired comparisons were not
+    uniformly protected either, because the guard chain is exactly what differs
+    between some arms: `vasool_ungated` runs with `chain=()`, so
+    `PreDebitNoticeGuard` is not there and its mandate retries did fire. On
+    seed 0 that arm executed 1050 retries to full Vasool's 707, and **306 of
+    the 343-retry gap were mandate retries** — 89% of it. F5 is registered
+    against `vasool_ungated` as the price of the guards, at 20 absolute
+    percentage points.
 
-    Not fixed, and deliberately not patched at the end of the session that
-    found it: honouring obligations on a `DEFER` as well as on an execution
-    changes when the machine creates work, it would move every mandate episode
-    in every arm, and every number currently in `out/development/` was computed
-    without it.
+    **Fixed 2026-08-25.** Obligations are honoured on the deferral path.
+    `PolicyMachine._defer` calls `_honour`, which builds the notice proposal
+    the guard asked for; the dead loop in `_execute` is gone, and its docstring
+    now records why no obligation can reach it. The notice is a `Proposal` like
+    any other and is gated like any other — contact window, DND scrub, DLT
+    template and frequency cap all apply to it — and `_honour` runs *after*
+    `_defer`'s `MAX_DEFERRALS` and `DEFER_HORIZON` bounds, so a debit we have
+    just declined to reschedule does not warn a customer about a debit that is
+    not coming.
+
+    **Measured after the fix, seed 0, full Vasool**, against the same run
+    above:
+
+    | | before | after |
+    |---|---|---|
+    | pre-debit notices executed | 0 | **196** |
+    | retries executed | 707 | **979** |
+    | …of them on a mandate episode | 0 | **272** |
+    | mandate episodes ending `BLOCKED` | 209 / 275 | **30 / 275** |
+
+    The 196 notices land on 196 distinct mandate episodes, which is the shape
+    the guard describes: one notice per episode, then the debit.
+    `vasool_ungated` is unmoved at 1050 retries and 306 mandate retries, as it
+    must be — it carries no guard chain, so there was nothing there to fix. The
+    seed-0 retry gap between the two arms is now 71 rather than 343, and 34 of
+    it is mandate rather than 306, so the arm difference is once again mostly
+    the guards rather than mostly this defect.
+
+    **What it moved in the evaluation**, recorded in full in `EVALUATION.md`
+    §10's rows of 2026-08-25: Vasool's mean recovery rate 0.344341 → 0.490698,
+    F5's gap 19.378 → 4.742 absolute percentage points against a threshold of
+    20 — so about three quarters of the measured "price of the guards" was this
+    defect and not compliance — and F1 against `retry_plus_contact` −0.310 →
+    −0.164. `naive_retry` went −0.122 → +0.025, a flipped conclusion. The three
+    arms that did not move are exactly the three with `chain=()`. Every figure
+    now in `out/development/` is post-fix; §10 also records the stale-shard
+    incident from the first re-run, when a resumed `make eval` re-emitted
+    pre-fix rows in 5.5 seconds because a shard carries no fingerprint of the
+    agent that produced it.
 
 ---
 

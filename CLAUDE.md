@@ -133,7 +133,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 8 (adversary). 1353 tests.
+Current stage: 8 (adversary). 1370 tests.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
@@ -169,20 +169,26 @@ evidence supersedes queued work from a different reason/source, retry quiet
 hours are re-checked at final gating, and promise-to-pay never delays a human
 handoff.
 
-**taxonomy.md §9.13** is the session's other finding and did not come from an
-attack: obligations are honoured only in `PolicyMachine._execute`, and
-`PreDebitNoticeGuard` emits its own on a DEFER, so a mandate debit never
-produces its notice and never executes. Seed 0: 0 of 707 executed retries on
-the 275 mandate episodes, 209 of them BLOCKED — 31% of the population. It is a
-*liveness* failure, the only one in §9, and it has been shaping every
-evaluation number to date: `vasool_ungated` (no guard chain) executes 1050
-retries to Vasool's 707, and 306 of that 343 gap are mandate retries, so F5's
-20-point "price of the guards" is substantially this instead.
+**taxonomy.md §9.13 — found, fixed and re-run on 2026-08-25.** Did not come
+from an attack. Obligations were honoured only in `PolicyMachine._execute`,
+while `PreDebitNoticeGuard` emits its own on a DEFER, so a mandate debit never
+produced its notice and never executed — a *liveness* failure, the only one in
+§9. `_defer` now calls `_honour`, after its `MAX_DEFERRALS` and `DEFER_HORIZON`
+bounds, and the dead loop in `_execute` is gone. Seed 0, full universe: 196
+pre-debit notices now execute, 272 of 979 retries land on the 275 mandate
+episodes (was 0 of 707), and 30 of those episodes end BLOCKED (was 209). It had
+been shaping every evaluation number published before that date — Vasool
+0.344341 → 0.490698, F5's gap 19.378 → 4.742pp against a threshold of 20, so
+about three quarters of the measured "price of the guards" was this defect.
+`EVALUATION.md` §10 carries the fix, the re-run, and the stale-shard incident;
+`docs/taxonomy.md` §9.13 keeps the full before/after.
 
-Evaluation state: base protocol run at 1000 seeds, development cohort.
-Full §7 grid run. F1 fires against Vasool as registered
-(−0.310 vs retry_plus_contact) and holds across the sweep range.
-Holdout sealed.
+Evaluation state: base protocol run at 1000 seeds, development cohort, all
+post-fix. Full §7 grid run. F1 does **not** fire — its interval excludes zero —
+but it excludes it on the wrong side: Vasool is behind `retry_plus_contact` by
+−0.164, which the artifact's own `detail` field flags as a worse result than F1
+firing, so `fired: false` must not be read as "good". Holds across the sweep
+range. No criterion fires; F6 false. Holdout sealed.
 
 **The model is pinned**: `windtunnel/shadow.py::PINNED_MODEL`. Cassettes are
 keyed by model, so changing that string orphans every recording at once and a
