@@ -1,0 +1,74 @@
+CLASSIFIER COMPARISON — deterministic rules vs LLM, shadow mode
+provider=gemini  model=gemini-3.6-flash  repeats=15  cells=12  episodes=3565
+
+*** PARTIAL — 3 of 12 cells recorded, 139 of 180 classifications absent.
+    Every rate below is computed over the recorded cells only; an
+    unrecorded cell is shown as — and contributes to no numerator and no
+    denominator. This is not a comparison of the classifiers over the
+    corpus, and must not be read as one.
+
+READ THIS FIRST
+  The LLM arm runs on a model chosen for cost — a free tier is the budget
+  this comparison had. A stronger model might close the gap, and nothing
+  measured here bounds one that was not run.
+
+  Nine of the ten error reasons are _SIMULATED stubs, documentation-derived
+  rather than captured; only payment_failed is reproducible against live
+  test mode (docs/VERIFIED.md). EVALUATION.md §11 registers that this
+  comparison does not generalise beyond these ten.
+
+  The Rules column is 1.000 by construction, not by measurement: the
+  registered truth is PlannedEpisode.failure_class, which resolves through
+  the same taxonomy lookup the rules classifier reads. Read it as the
+  definition of truth in this world, never as evidence the table is right.
+
+                           Rules     LLM   LLM(wt)  consist  cells  covered  episodes  rejected  absent
+-------------------------------------------------------------------------------------------------------
+Overall                    1.000   0.576     0.545    0.909     12        3      3565         0     139
+  TRANSIENT                1.000   0.000     0.000    1.000      3        1      1427         0      30
+  LIQUIDITY                1.000   1.000     1.000    1.000      1        1       732         0       0
+  INSTRUMENT_DEAD          1.000   0.727     0.727    0.727      4        1       982         0      49
+  CUSTOMER_ACTION          1.000       —         —        —      2        0       332         0      30
+  RISK_BLOCK               1.000       —         —        —      2        0        92         0      30
+
+PER CELL — every distinct question the registered universe can ask
+error_reason / source                         provenance  truth                LLM  consist   k  episodes
+---------------------------------------------------------------------------------------------------------
+payment_failed / gateway                      observed    TRANSIENT          0.000    1.000  15       757
+insufficient_fund / bank                      simulated   LIQUIDITY          1.000    1.000  15       732
+card_declined / bank                          simulated   INSTRUMENT_DEAD    0.727    0.727  11       435
+gateway_technical_error / gateway             simulated   TRANSIENT              —        —   0       356
+payment_timed_out / customer                  simulated   TRANSIENT              —        —   0       314
+payment_failed / bank                         observed    INSTRUMENT_DEAD        —        —   0       284
+payment_cancelled / customer                  simulated   CUSTOMER_ACTION        —        —   0       259
+card_expired / bank                           simulated   INSTRUMENT_DEAD        —        —   0       159
+card_disabled_for_online_payments / bank      simulated   INSTRUMENT_DEAD        —        —   0       104
+card_number_invalid / customer                simulated   CUSTOMER_ACTION        —        —   0        73
+payment_failed / business                     assembled   RISK_BLOCK             —        —   0        56
+payment_risk_check_failed / business          simulated   RISK_BLOCK             —        —   0        36
+
+WHAT THE LLM ACTUALLY SAID, per recorded cell
+  payment_failed / gateway  (truth TRANSIENT, rules action SILENT_RETRY, k=15)
+      classes:       {'CUSTOMER_ACTION': 15}
+      interventions: {'REATTEMPT_LINK': 15}
+  insufficient_fund / bank  (truth LIQUIDITY, rules action TIMED_RETRY, k=15)
+      classes:       {'LIQUIDITY': 15}
+      interventions: {'TIMED_RETRY': 15}
+  card_declined / bank  (truth INSTRUMENT_DEAD, rules action SILENT_RETRY, k=11)
+      classes:       {'INSTRUMENT_DEAD': 8, 'CUSTOMER_ACTION': 3}
+      interventions: {'REAUTH_LINK': 8, 'REATTEMPT_LINK': 3}
+
+SECONDARY
+  Classifier agreement 0.576 — identical to the LLM's accuracy above, and
+  necessarily so while the rules define the truth. A table reporting only
+  agreement could not show where the LLM loses, which is the only thing
+  worth reporting.
+
+  Intervention agreement 0.333 — how often the LLM chose the action §4
+  names for the row, at attempt 1.
+
+  Automated actions proposed on RISK_BLOCK episodes: 0 of 0 recorded.
+  docs/taxonomy.md §4.4: this is the one class where the correct product
+  decision is to do nothing, so the class being right is not enough — the
+  action has to be HUMAN_QUEUE.
+

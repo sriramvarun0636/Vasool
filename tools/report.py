@@ -36,6 +36,18 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         except json.JSONDecodeError:
             shadow_data = {}
 
+    # §3c's holdout, if it has been evaluated. Money recovered is a fact about
+    # the whole population, and the hero quotes it — reporting only the
+    # development cohort's share there while README.md quotes the total is how
+    # two correct numbers turn into one apparent contradiction.
+    holdout_path = json_path.parent.parent / "holdout" / "evaluation.json"
+    holdout_data = {}
+    if holdout_path.exists():
+        try:
+            holdout_data = json.loads(holdout_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            holdout_data = {}
+
     # §2a's adversary. Optional the same way the shadow artifact is.
     redteam_path = json_path.parent.parent / "adversary" / "redteam.json"
     redteam_data = {}
@@ -127,6 +139,10 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             padding: 48px;
             flex-grow: 1;
             max-width: 1200px;
+            /* Without this a flex item's min-width resolves to `auto`, so the
+               container refuses to shrink below its widest child and the whole
+               page scrolls sideways instead of the one wide box inside it. */
+            min-width: 0;
         }}
         
         #fallback-warning {{
@@ -768,6 +784,72 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             white-space: pre-wrap;
         }}
 
+        /* ---------------------------------------------------------------
+           Narrow viewports. A judge opening the Pages link on a phone was
+           getting a 1,273px page in a 390px window: the left rail's 72px
+           margin and 48px padding stayed fixed, and the forest plot's 640px
+           and the sweep grid's 620px min-widths pushed the container past the
+           viewport instead of scrolling inside it.
+
+           Wide content scrolls in its own box; the page itself never does.
+           --------------------------------------------------------------- */
+        .viz-scroll, .world-scroll {{
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }}
+        .exhibit, .card-row, .tiles, .grid-wrap {{ max-width: 100%; min-width: 0; }}
+        .world-table, .forest {{ max-width: none; }}
+        /* Hover tooltips are measured even while transparent, and `max-content`
+           made them the widest thing on the page. They are also useless on a
+           touch device, where there is no hover. */
+        .guard-tooltip {{ max-width: min(260px, 70vw); white-space: normal; }}
+        @media (hover: none) {{ .guard-tooltip {{ display: none; }} }}
+        pre {{ overflow-x: auto; max-width: 100%; }}
+
+        @media (max-width: 900px) {{
+            #spine {{ display: none; }}
+            #content {{
+                margin-left: 0;
+                padding: 28px 16px 48px;
+                max-width: 100%;
+            }}
+            .hero h1, #hero-money {{ font-size: 44px; line-height: 1.1; word-break: break-word; }}
+            .card-row {{ flex-direction: column; }}
+            .card {{ width: 100%; }}
+            .exhibit {{ padding-left: 14px; }}
+            .band-independent, .band-dependent {{ padding-left: 14px; }}
+            .viz-caption {{ font-size: 13.5px; }}
+            .prov-toggle {{
+                top: auto; bottom: 14px; right: 14px;
+                padding: 9px 13px; font-size: 11px;
+            }}
+            /* The labels are rotated -45deg and pinned to each node, so the
+               last one overhangs to the right of the node it belongs to. Extra
+               right padding keeps that overhang inside the board instead of
+               pushing the page 11px wider than the viewport. */
+            .relay-board {{ padding: 24px 48px 24px 12px; }}
+            .guard-label {{ font-size: 10px; }}
+
+            /* The F1–F7 rows are `46px 1fr auto` with a nowrap verdict; at
+               phone width the verdict alone is 300px and drags the row past
+               the viewport. Stack them and let the verdict wrap. */
+            .frow {{ grid-template-columns: 1fr; gap: 8px; }}
+            .frow .fverdict {{ white-space: normal; }}
+
+            /* Hover tooltips are measured even while transparent and are
+               unreachable without a pointer. `@media (hover: none)` is not
+               reliable — some headless and hybrid devices report hover — so
+               the width breakpoint owns this instead. */
+            .guard-tooltip {{ display: none; }}
+        }}
+
+        @media (max-width: 520px) {{
+            .hero h1, #hero-money {{ font-size: 34px; }}
+            .exhibit-title {{ font-size: 15px; }}
+            .tile .tv {{ font-size: 24px; }}
+        }}
+
     </style>
 </head>
 <body>
@@ -781,6 +863,9 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     </script>
     <script type="application/json" id="redteam-data">
 {json.dumps(redteam_data)}
+    </script>
+    <script type="application/json" id="holdout-data">
+{json.dumps(holdout_data)}
     </script>
 
     <div id="spine">
@@ -813,8 +898,9 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <h2><span class="vasool-tag">VASOOL</span></h2>
             </div>
             <h1 id="hero-money">&mdash;</h1>
-            <p id="hero-sub">recovered across the <span id="hero-cohort">&mdash;</span>
-               cohort, 1,000 seeds &middot; <span id="hero-violations">&mdash;</span></p>
+            <p id="hero-sub">recovered across both cohorts &middot;
+               <span id="hero-violations">&mdash;</span></p>
+            <p id="hero-split" style="margin-top: 6px; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">&mdash;</p>
             <p style="margin-top: 10px; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">
                <span id="hero-trajectories">0</span> arm-seed runs &middot; 9,000 base + 151,200 sweep
             </p>
@@ -824,11 +910,13 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <span class="band-tag">&sect;2b &middot; simulator-dependent &mdash; the outcome model decides these</span>
             <div class="exhibit-title">EXHIBIT A &mdash; The Money, and What It Cost</div>
             <p class="viz-caption">
-                The realistic incumbent recovers more money than we do. That is the result, it was
-                registered as falsification criterion <strong>F1</strong> before the first run, and
-                the interval below excludes zero <em>in the baseline's favour</em>. Every figure on
-                this page is rendered from <code>out/development/evaluation.json</code>; nothing is
-                hardcoded, and a value the artifact does not carry renders as a dash.
+                The money above is what the agent recovered. This is what it cost to recover it
+                compliantly: the realistic incumbent recovers <em>more</em>, and that was registered
+                as falsification criterion <strong>F1</strong> before the first run. The interval
+                below excludes zero <em>in the baseline's favour</em> &mdash; a worse result than F1
+                firing, and the artifact says so in its own <code>detail</code> field. Every figure
+                here is read from <code>out/development/evaluation.json</code>; nothing is
+                hardcoded, and a value the manifest does not carry renders as a dash.
             </p>
 
             <div class="card-row">
@@ -931,7 +1019,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </p>
         </div>
 
-        <div class="exhibit band-dependent" id="exhibit-sweep">
+        <div class="exhibit band-dependent" id="exhibit-c">
             <span class="band-tag">&sect;7 &middot; sensitivity</span>
             <div class="exhibit-title">EXHIBIT C &mdash; Does It Survive the Sweep?</div>
             <p class="viz-caption">
@@ -961,7 +1049,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </p>
         </div>
 
-        <div class="exhibit band-dependent" id="exhibit-falsification">
+        <div class="exhibit band-dependent" id="exhibit-d">
             <span class="band-tag">&sect;9 &middot; registered in advance</span>
             <div class="exhibit-title">EXHIBIT D &mdash; What Would Have Killed This</div>
             <p class="viz-caption">
@@ -973,7 +1061,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <div class="fboard" id="fboard"></div>
         </div>
 
-        <div class="exhibit band-independent" id="exhibit-llm">
+        <div class="exhibit band-independent" id="exhibit-e">
             <span class="band-tag">&sect;4.5 &middot; where the LLM lost</span>
             <div class="exhibit-title">EXHIBIT E &mdash; Should the LLM Own This?</div>
             <p class="viz-caption">
@@ -1005,8 +1093,8 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <p class="viz-caption" id="llm-note" style="margin-top: 24px; margin-bottom: 0;"></p>
         </div>
 
-        <div class="exhibit" id="exhibit-c">
-            <div class="exhibit-title">EXHIBIT F — The AI Air-Gap</div>
+        <div class="exhibit" id="exhibit-f">
+            <div class="exhibit-title">EXHIBIT F &mdash; The AI Air-Gap</div>
             <div class="airgap-diagram">
                 <div class="plane-box">
                     <strong>Shadow Plane</strong><br><br>
@@ -1026,7 +1114,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </div>
         </div>
 
-        <div class="exhibit band-independent" id="exhibit-d">
+        <div class="exhibit band-independent" id="exhibit-g">
             <span class="band-tag">&sect;2a &middot; the adversary</span>
             <div class="exhibit-title">EXHIBIT G &mdash; What Still Beats It</div>
             <p class="viz-caption">
@@ -1053,8 +1141,8 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </p>
         </div>
 
-        <div class="exhibit" id="exhibit-e">
-            <div class="exhibit-title">EXHIBIT H — The Audit Trail</div>
+        <div class="exhibit" id="exhibit-h">
+            <div class="exhibit-title">EXHIBIT H &mdash; The Audit Trail</div>
             <div class="verifier-box">
                 <h3 style="margin-bottom: 16px;">Live Cryptographic Verifier</h3>
                 <p style="margin-bottom: 24px; color: #94A3B8; font-family: var(--font-body);">Recompute the deterministic SHA-256 digest live in-browser using Web Crypto API.</p>
@@ -1068,8 +1156,8 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </div>
         </div>
 
-        <div class="exhibit" id="exhibit-f">
-            <div class="exhibit-title">EXHIBIT I — Trajectory Explorer</div>
+        <div class="exhibit" id="exhibit-i">
+            <div class="exhibit-title">EXHIBIT I &mdash; Trajectory Explorer</div>
             <div class="explorer-board">
                 <div class="explorer-list" id="explorer-list">
                     <!-- JS populated -->
@@ -1708,20 +1796,35 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
             // Money first. The run count is effort; this is the result, and it is
             // what Track 03's bar actually asks for.
+            let HOLDOUT = {{}};
+            try {{
+                HOLDOUT = JSON.parse(document.getElementById("holdout-data").textContent) || {{}};
+            }} catch (e) {{ HOLDOUT = {{}}; }}
+
+            const crore = (paise) => "\u20b9" + (paise / 100 / 1e7).toFixed(2) + " Cr";
+            const devPaise = EVAL?.per_arm?.vasool?.recovered_paise_total;
+            const holdPaise = HOLDOUT?.per_arm?.vasool?.recovered_paise_total;
             const heroMoney = document.getElementById("hero-money");
-            const paise = EVAL?.per_arm?.vasool?.recovered_paise_total;
+            const heroSplit = document.getElementById("hero-split");
+
             if (heroMoney) {{
-                if (typeof paise !== "number") {{
+                if (typeof devPaise !== "number") {{
                     heroMoney.innerText = "\u2014";
+                }} else if (typeof holdPaise === "number") {{
+                    trace(heroMoney,
+                          "per_arm.vasool.recovered_paise_total (development + holdout)",
+                          crore(devPaise + holdPaise));
                 }} else {{
-                    trace(heroMoney, "per_arm.vasool.recovered_paise_total",
-                          "\u20b9" + (paise / 100 / 1e7).toFixed(2) + " Cr");
+                    trace(heroMoney, "per_arm.vasool.recovered_paise_total", crore(devPaise));
                 }}
             }}
-
-            const heroCohort = document.getElementById("hero-cohort");
-            if (heroCohort) {{
-                trace(heroCohort, "cohort", EVAL?.cohort || "\u2014");
+            if (heroSplit) {{
+                heroSplit.innerHTML = (typeof devPaise === "number" && typeof holdPaise === "number")
+                    ? `${{crore(devPaise)}} development (40% of customers) &nbsp;+&nbsp; ` +
+                      `${{crore(holdPaise)}} holdout (the sealed 60%, evaluated once) &middot; ` +
+                      `<span style="color: var(--status-good)">every other figure on this page is ` +
+                      `the development cohort</span>`
+                    : `development cohort only &mdash; the holdout has not been evaluated`;
             }}
 
             const heroViolations = document.getElementById("hero-violations");

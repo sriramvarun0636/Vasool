@@ -141,7 +141,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 12 (submission docs). 1381 tests.
+Current stage: 12 (submission docs). 1387 tests.
 Stages 9-12 done 2026-08-29: report card rebuilt with real dataviz and
 provenance mode; holdout unsealed and evaluated once; POSTMORTEM.md,
 ARCHITECTURE.md, COMPLIANCE.md and docs/VIDEO.md written.
