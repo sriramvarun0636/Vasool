@@ -133,7 +133,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 8 (adversary). 1370 tests.
+Current stage: 8 (adversary). 1381 tests.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written

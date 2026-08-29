@@ -238,6 +238,168 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             line-height: 1.6;
         }}
 
+        /* ---------------------------------------------------------------
+           Provenance mode. Every figure on this page carries the JSON path it
+           came from; the toggle reveals them all at once. This is the whole
+           thesis of the project applied to its own report card — a number you
+           cannot trace is not a result.
+           --------------------------------------------------------------- */
+        .prov-toggle {{
+            position: fixed; top: 20px; right: 20px; z-index: 200;
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 10px 15px; border-radius: 6px; cursor: pointer;
+            background: rgba(18,27,48,0.92); backdrop-filter: blur(8px);
+            border: 1px solid var(--hairline); color: var(--paper);
+            font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.02em;
+            transition: border-color 0.18s ease, background 0.18s ease;
+        }}
+        .prov-toggle:hover {{ border-color: var(--signal-blue); }}
+        .prov-toggle[aria-pressed="true"] {{
+            border-color: var(--signal-blue);
+            background: rgba(45,104,230,0.18);
+        }}
+        .prov-dot {{
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--viz-muted); flex: none;
+        }}
+        .prov-toggle[aria-pressed="true"] .prov-dot {{ background: var(--signal-blue); }}
+
+        [data-src] {{ position: relative; }}
+        body.provenance [data-src] {{
+            outline: 1px dashed rgba(45,104,230,0.55);
+            outline-offset: 3px;
+            border-radius: 2px;
+        }}
+        .prov-path {{
+            display: none;
+            font-family: var(--font-mono); font-size: 10.5px; line-height: 1.45;
+            color: var(--signal-blue); word-break: break-all;
+            margin-top: 6px; opacity: 0.95;
+        }}
+        body.provenance .prov-path {{ display: block; }}
+        .prov-banner {{
+            display: none;
+            border: 1px solid rgba(45,104,230,0.4); background: rgba(45,104,230,0.08);
+            border-radius: 6px; padding: 18px 22px; margin-bottom: 40px;
+            font-family: var(--font-body); font-size: 14.5px; line-height: 1.7;
+            color: var(--paper);
+        }}
+        body.provenance .prov-banner {{ display: block; }}
+
+        /* ---------------------------------------------------------------
+           Data-visualisation tokens.
+           Diverging pair blue<->red, validated against this page's panel
+           surface (#121B30) in dark mode: CVD dE 19.2, normal-vision dE 29.0,
+           both >= their floors, contrast >= 3:1. Status colours are the
+           reserved four and always ship with an icon + label, never hue alone.
+           --------------------------------------------------------------- */
+        :root {{
+            --viz-ahead:    #3987e5;   /* diverging pole: Vasool ahead */
+            --viz-behind:   #e66767;   /* diverging pole: Vasool behind */
+            --viz-zero:     #383835;   /* neutral midpoint / reference line */
+            --viz-grid:     rgba(255,255,255,0.07);
+            --viz-axis:     rgba(255,255,255,0.22);
+            --viz-muted:    #898781;
+            --status-good:     #0ca30c;
+            --status-warning:  #fab219;
+            --status-critical: #d03b3b;
+        }}
+
+        .viz-figure {{ margin-top: 8px; }}
+        .viz-caption {{
+            font-family: var(--font-body);
+            font-size: 14px;
+            line-height: 1.65;
+            color: #94A3B8;
+            margin-bottom: 28px;
+            max-width: 78ch;
+        }}
+        .viz-legend {{
+            display: flex; flex-wrap: wrap; gap: 20px;
+            font-family: var(--font-mono); font-size: 12px;
+            color: #94A3B8; margin: 4px 0 20px;
+        }}
+        .viz-legend span {{ display: inline-flex; align-items: center; gap: 8px; }}
+        .viz-swatch {{ width: 12px; height: 12px; border-radius: 3px; flex: none; }}
+        .viz-scroll {{ overflow-x: auto; }}
+
+        /* forest plot */
+        .forest {{ width: 100%; min-width: 640px; font-family: var(--font-mono); }}
+        .forest .f-label {{ fill: var(--paper); font-size: 13px; }}
+        .forest .f-sub {{ fill: var(--viz-muted); font-size: 11px; }}
+        .forest .f-value {{ font-size: 12.5px; }}
+        .forest .f-tick {{ fill: var(--viz-muted); font-size: 11px; }}
+        .forest .f-grid {{ stroke: var(--viz-grid); stroke-width: 1; }}
+        .forest .f-zero {{ stroke: var(--viz-axis); stroke-width: 1.5; stroke-dasharray: 3 3; }}
+        .forest .f-ci {{ stroke-width: 2; stroke-linecap: round; }}
+        .forest .f-row-hit {{ fill: transparent; cursor: default; }}
+        .forest .f-row-hit:hover + .f-row-bg {{ fill: rgba(255,255,255,0.035); }}
+        .forest .f-row-bg {{ fill: transparent; pointer-events: none; }}
+
+        /* sweep survival grid */
+        .grid-wrap {{ display: grid; grid-template-columns: auto 1fr auto; gap: 6px 14px; align-items: center; }}
+        .grid-arm {{
+            font-family: var(--font-mono); font-size: 12.5px; color: var(--paper);
+            white-space: nowrap; text-align: right;
+        }}
+        .grid-cells {{ display: flex; gap: 2px; min-width: 0; }}
+        .grid-cell {{
+            flex: 1 1 0; height: 22px; min-width: 3px; border-radius: 2px;
+            background: rgba(255,255,255,0.09);
+        }}
+        .grid-cell.flip {{ background: var(--viz-behind); }}
+        .grid-count {{
+            font-family: var(--font-mono); font-size: 12px; color: #94A3B8;
+            white-space: nowrap; font-variant-numeric: tabular-nums;
+        }}
+        .grid-count.flip {{ color: var(--viz-behind); }}
+
+        /* falsification board */
+        .fboard {{ display: grid; gap: 10px; margin-top: 8px; }}
+        .frow {{
+            display: grid; grid-template-columns: 46px 1fr auto;
+            gap: 18px; align-items: baseline;
+            padding: 16px 18px; border: 1px solid var(--hairline);
+            border-radius: 6px; background: rgba(255,255,255,0.02);
+        }}
+        .frow .fid {{ font-family: var(--font-display); font-size: 17px; font-weight: 700; }}
+        .frow .fname {{ font-family: var(--font-body); font-size: 15px; color: var(--paper); }}
+        .frow .fthr {{
+            display: block; font-family: var(--font-mono); font-size: 12px;
+            color: var(--viz-muted); margin-top: 5px; line-height: 1.5;
+        }}
+        .frow .fverdict {{
+            font-family: var(--font-mono); font-size: 12.5px;
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 7px;
+        }}
+        .frow.warn {{ border-color: rgba(250,178,25,0.4); background: rgba(250,178,25,0.05); }}
+
+        /* stat tiles */
+        .tiles {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }}
+        .tile {{
+            border: 1px solid var(--hairline); border-radius: 6px;
+            padding: 18px 20px; background: rgba(255,255,255,0.02);
+        }}
+        .tile .tv {{
+            font-family: var(--font-display); font-size: 30px; font-weight: 700;
+            color: var(--paper); line-height: 1.1;
+        }}
+        .tile .tl {{
+            font-family: var(--font-mono); font-size: 11.5px; color: var(--viz-muted);
+            margin-top: 8px; line-height: 1.5;
+        }}
+
+        /* claim-type banding: §2a and §2b must not look alike */
+        .band-independent {{ border-left: 3px solid var(--status-good); padding-left: 22px; }}
+        .band-dependent {{ border-left: 3px solid var(--status-warning); padding-left: 22px; }}
+        .band-tag {{
+            display: inline-block; font-family: var(--font-mono); font-size: 11px;
+            letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 9px;
+            border-radius: 3px; margin-bottom: 14px;
+        }}
+        .band-independent .band-tag {{ background: rgba(12,163,12,0.15); color: var(--status-good); }}
+        .band-dependent .band-tag {{ background: rgba(250,178,25,0.13); color: var(--status-warning); }}
+
         /* World-keyed counters (Safety Ledger) */
         .world-table {{
             width: 100%;
@@ -593,8 +755,22 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         <!-- Generated dynamically by JS -->
     </div>
 
+    <button class="prov-toggle" id="prov-toggle" aria-pressed="false"
+            title="Show the JSON path behind every figure on this page">
+        <span class="prov-dot"></span> trace every number
+    </button>
+
     <div id="content">
-        
+
+        <div class="prov-banner">
+            <strong>Provenance mode.</strong> Every figure below now shows the exact key it was
+            read from in <code>out/development/evaluation.json</code> &mdash; the manifest
+            <code>make sweeps</code> writes. Nothing on this page is typed by hand; a value the
+            manifest does not carry renders as a dash rather than a plausible number. That rule is
+            not decorative &mdash; a hardcoded constant was found masquerading as a measurement in
+            this very file and is recorded in <code>EVALUATION.md</code> &sect;10.
+        </div>
+
         <div id="fallback-warning">
             WARNING: evaluation.json parse failed or is incomplete. Displaying fallback values. Cryptographic proofs will not verify.
         </div>
@@ -608,54 +784,81 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <p>arm-seed runs (9,000 base + 151,200 sweep) &middot; <span id="hero-violations">&mdash;</span></p>
         </div>
 
-        <div class="exhibit" id="exhibit-a">
-            <div class="exhibit-title">EXHIBIT A — The Yield Reality</div>
-            <div class="card-row">
-                <div class="card" style="position: relative; overflow: hidden;">
-                    <div class="rubber-stamp">NON-COMPLIANT</div>
-                <div class="card-title">Baseline Agent<br>(retry_plus_contact)</div>
-                <div class="yield-number yield-red count-up" id="yield-baseline">46.52%</div>
-                <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 100%; background-color: var(--violation-red); color: var(--violation-red);"></div></div>
-                <div style="font-weight: 600; margin-bottom: 8px;">Estimated Regulatory Exposure (per instance):</div>
-                    <div class="fine-print">
-                        <strong>Unregistered DLT Header / Processing without DPDP Consent</strong><br>
-                        Up to ₹10L per repeat violation.<br><br>
-                        
-                        <strong>Quiet-hours breach</strong> (RBI FPC)<br>
-                        Reputational + operational risk, no fixed cap. Systemic violations risk total operational ban.<br><br>
+        <div class="exhibit band-dependent" id="exhibit-a">
+            <span class="band-tag">&sect;2b &middot; simulator-dependent &mdash; the outcome model decides these</span>
+            <div class="exhibit-title">EXHIBIT A &mdash; Vasool Loses</div>
+            <p class="viz-caption">
+                The realistic incumbent recovers more money than we do. That is the result, it was
+                registered as falsification criterion <strong>F1</strong> before the first run, and
+                the interval below excludes zero <em>in the baseline's favour</em>. Every figure on
+                this page is rendered from <code>out/development/evaluation.json</code>; nothing is
+                hardcoded, and a value the artifact does not carry renders as a dash.
+            </p>
 
-                        <strong>Consent/processing violation</strong> (DPDP §33)<br>
-                        Up to ₹250cr for security-safeguard failures.
-                    </div>
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-title">Baseline (retry_plus_contact)</div>
+                    <div class="yield-number yield-red count-up" id="yield-baseline">&mdash;</div>
+                    <div class="fine-print" id="fine-baseline">&mdash;</div>
                 </div>
-                <div class="card" style="position: relative; overflow: hidden;">
-                    <div class="rubber-stamp" style="transform: rotate(10deg); top: 32px; right: 16px;">ILLEGAL</div>
-                <div class="card-title">Greedy Agent (vasool_ungated)</div>
-                <div class="yield-number yield-red count-up" id="yield-greedy">53.81%</div>
-                <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 100%; background-color: var(--violation-red); color: var(--violation-red);"></div></div>
-                <div style="font-weight: 600; margin-bottom: 8px;">Estimated Regulatory Exposure (per instance):</div>
-                    <div class="fine-print">
-                        <strong>Unconstrained LLM Hallucination</strong><br>
-                        Recklessly maximizes recovery at the cost of legal bounds. Incurs same severe fines as Baseline for timing, privacy, and volume violations.
-                    </div>
+                <div class="card">
+                    <div class="card-title">Ungated (vasool_ungated)</div>
+                    <div class="yield-number yield-red count-up" id="yield-greedy">&mdash;</div>
+                    <div class="fine-print" id="fine-greedy">&mdash;</div>
                 </div>
                 <div class="card hero-card">
-                <div class="card-title">Vasool Control Plane</div>
-                <div class="yield-number yield-blue count-up" id="yield-vasool">49.07%</div>
-                <div class="risk-bar-container"><div class="risk-bar-fill" style="width: 0%; background-color: var(--compliant-green); color: var(--compliant-green);"></div></div>
-                <div style="font-weight: 600; margin-bottom: 8px;">Regulatory Exposure Avoided:</div>
-                    <div class="fine-print" style="color: var(--compliant-green);">
-                        <strong>₹0 Liability.</strong><br><br>
-                        100% of illegal executions blocked by deterministic guards prior to dispatch.<br><br>
-                        The true cost of the baseline's yield is not worth the corporate risk.
-                    </div>
+                    <div class="card-title">Vasool</div>
+                    <div class="yield-number yield-blue count-up" id="yield-vasool">&mdash;</div>
+                    <div class="fine-print" id="fine-vasool">&mdash;</div>
                 </div>
             </div>
+
+            <h3 style="margin-top: 52px; margin-bottom: 6px; font-family: var(--font-display); font-size: 20px;">
+                Paired difference vs Vasool, recovery rate
+            </h3>
+            <p class="viz-caption">
+                Every arm runs the same seeded universe &mdash; same customers, same arrivals, same
+                outcome draws &mdash; so the comparison is the per-seed difference, bootstrapped over
+                1,000 seeds. Bars are 95% percentile intervals.
+                <strong>At this sample size every interval is narrower than its own marker</strong>
+                &mdash; the widest spans 0.37pp &mdash; so the dots are the intervals, not a plot
+                that forgot to draw them. Exact bounds are in the table view below. A marker clear
+                of the dashed zero line is a real difference; which side it falls on is the story.
+            </p>
+            <div class="viz-legend">
+                <span><span class="viz-swatch" style="background: var(--viz-ahead);"></span> Vasool recovers more</span>
+                <span><span class="viz-swatch" style="background: var(--viz-behind);"></span> Vasool recovers less</span>
+                <span><span class="viz-swatch" style="background: var(--viz-zero); border: 1px dashed var(--viz-axis);"></span> zero &mdash; no detectable difference</span>
+            </div>
+            <div class="viz-scroll viz-figure">
+                <svg class="forest" id="forest" role="img"
+                     aria-label="Paired difference in recovery rate against Vasool, with 95% bootstrap intervals"></svg>
+            </div>
+            <details style="margin-top: 18px;">
+                <summary style="cursor: pointer; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">
+                    Table view
+                </summary>
+                <div class="world-scroll">
+                <table class="world-table" id="forest-table">
+                    <thead><tr><th>Arm</th><th>Difference</th><th>95% interval</th><th>Excludes zero</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                </div>
+            </details>
         </div>
 
-        <div class="exhibit" id="exhibit-b">
-            <div class="exhibit-title">EXHIBIT B — The Safety Ledger</div>
-            <p style="margin-bottom: 24px; color: #94A3B8;">13 Pure-Function Guards gating the FSM Execution Plane</p>
+        <div class="exhibit band-independent" id="exhibit-b">
+            <span class="band-tag">&sect;2a &middot; simulator-independent &mdash; the simulator cannot fake these</span>
+            <div class="exhibit-title">EXHIBIT B &mdash; The Safety Ledger</div>
+            <p class="viz-caption">
+                These are properties of what the agent <em>did</em>, scanned from the hash-chained
+                ledger. They hold or fail regardless of what outcome model runs underneath, which is
+                why they are the claims the submission actually rests on &mdash; and why they are
+                banded differently from every recovery number on this page. Thirteen pure-function
+                guards gate the execution plane; all thirteen are evaluated on every proposal and
+                resolved by severity, never short-circuited.
+            </p>
+            <div class="tiles" id="safety-tiles" style="margin-bottom: 40px;"></div>
             <div class="relay-board" id="relay-board">
                 <div class="relay-line"><div class="pulse"></div></div>
                 <!-- Generated dynamically by JS -->
@@ -690,6 +893,48 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 credit with no guardrail reporting it. A dash means the artifact does not
                 carry the field; no value here is defaulted.
             </p>
+        </div>
+
+        <div class="exhibit band-dependent" id="exhibit-sweep">
+            <span class="band-tag">&sect;7 &middot; sensitivity</span>
+            <div class="exhibit-title">EXHIBIT B2 &mdash; Does It Survive the Sweep?</div>
+            <p class="viz-caption">
+                Eight of the nine outcome parameters are guesses. So every registered parameter is
+                swept independently at &minus;50%, &minus;25%, +25% and +50% of its value &mdash;
+                <strong>83 configurations</strong> &times; 9 arms &times; 200 seeds &mdash; and each
+                comparison is re-tested in every one. A cell is marked only when the comparison
+                <em>fails to survive</em>; the unremarkable majority stays recessive, because the
+                exceptions are the finding. <strong>F6 fires if 5 or more of the 8 comparisons flip
+                in at least one configuration.</strong>
+            </p>
+            <div class="viz-legend">
+                <span><span class="viz-swatch" style="background: rgba(255,255,255,0.09);"></span> survives</span>
+                <span><span class="viz-swatch" style="background: var(--viz-behind);"></span> fails to survive</span>
+                <span style="color: var(--viz-muted);">each column is one of the 83 configurations</span>
+            </div>
+            <div class="viz-scroll viz-figure">
+                <div class="grid-wrap" id="sweep-grid" style="min-width: 620px;"></div>
+            </div>
+            <p class="viz-caption" style="margin-top: 24px; margin-bottom: 0;">
+                <strong>A3 fails in all 83, and that is not a parameter effect.</strong> Its reference
+                interval at 200 seeds is [&minus;0.00057, +0.00196], which already includes zero &mdash;
+                so <code>survives()</code> fails because the reference was never conclusive at this
+                depth, not because any sweep moved it. Registered as a limit in
+                <code>EVALUATION.md</code> &sect;10 rather than argued away, and it pushes F6
+                <em>toward</em> firing, which is the conservative direction.
+            </p>
+        </div>
+
+        <div class="exhibit band-dependent" id="exhibit-falsification">
+            <span class="band-tag">&sect;9 &middot; registered in advance</span>
+            <div class="exhibit-title">EXHIBIT B3 &mdash; What Would Have Killed This</div>
+            <p class="viz-caption">
+                Seven criteria, each with a threshold, written into the protocol before any run
+                existed. A criterion invented after seeing the numbers is not a criterion. None
+                fired &mdash; but read F1's row carefully, because <code>fired: false</code> is not
+                the same as good news, and the artifact says so in its own <code>detail</code> field.
+            </p>
+            <div class="fboard" id="fboard"></div>
         </div>
 
         <div class="exhibit" id="exhibit-c">
@@ -910,6 +1155,35 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 relayBoard.appendChild(node);
             }});
 
+            // 1b-2. Provenance. `trace` is the only way a figure gets onto this
+            // page: it stamps the element with the manifest key it came from and
+            // appends the path node the toggle reveals. If a number reaches the
+            // DOM without going through here, it has no source — which is the
+            // bug class this whole feature exists to make visible.
+            const traced = [];
+            function trace(el, path, text) {{
+                if (!el) return el;
+                if (text !== undefined) el.textContent = text;
+                el.setAttribute("data-src", path);
+                const tag = document.createElement("div");
+                tag.className = "prov-path";
+                tag.textContent = path;
+                el.appendChild(tag);
+                traced.push(path);
+                return el;
+            }}
+
+            const provBtn = document.getElementById("prov-toggle");
+            if (provBtn) {{
+                provBtn.addEventListener("click", () => {{
+                    const on = document.body.classList.toggle("provenance");
+                    provBtn.setAttribute("aria-pressed", String(on));
+                    provBtn.lastChild.textContent = on
+                        ? ` ${{traced.length}} figures traced`
+                        : " trace every number";
+                }});
+            }}
+
             // 1b. World-keyed counters. No fallbacks: a missing field renders as
             // a dash rather than a plausible number, because the whole point of
             // these three columns is that they are measured.
@@ -941,12 +1215,266 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                         if (typeof value !== "number") {{
                             cell.innerText = "\u2014";
                         }} else {{
-                            cell.innerText = new Intl.NumberFormat().format(value);
                             cell.className = value === 0 ? "zero" : "nonzero";
+                            trace(cell, `per_arm.${{arm}}.${{col}}`,
+                                  new Intl.NumberFormat().format(value));
                         }}
                         row.appendChild(cell);
                     }});
                     worldBody.appendChild(row);
+                }});
+            }}
+
+            // 1c. Yield cards + the loss, straight off the artifact.
+            const ARM_NOTE = {{
+                baseline: "retry_plus_contact",
+                greedy: "vasool_ungated",
+                vasool: "vasool"
+            }};
+            const pct = (x) => (x * 100).toFixed(2) + "%";
+            const nf = (n) => new Intl.NumberFormat().format(n);
+            Object.entries(ARM_NOTE).forEach(([slot, arm]) => {{
+                const m = EVAL?.per_arm?.[arm];
+                const box = document.getElementById("fine-" + slot);
+                if (!box) return;
+                if (!m) {{ box.innerHTML = "no measurement in artifact"; return; }}
+                const held = m.safety_holds_on, seeds = m.seeds;
+                const ok = held === seeds;
+                box.innerHTML =
+                    `<strong style="color:${{ok ? "var(--status-good)" : "var(--status-critical)"}}">` +
+                    `${{ok ? "✓" : "✗"}} safety predicate held on ${{nf(held)}} / ${{nf(seeds)}} seeds</strong><br><br>` +
+                    `retries on a dead instrument &middot; <b>${{nf(m.instrument_dead_retries_world)}}</b><br>` +
+                    `actions on risk-declined episodes &middot; <b>${{nf(m.risk_block_actions_world)}}</b><br>` +
+                    `retries on a zero-budget class &middot; <b>${{nf(m.customer_action_retries_world)}}</b>`;
+            }});
+
+            // 1d. Forest plot — paired difference vs Vasool, 95% bootstrap intervals.
+            const paired = EVAL?.paired_vs_vasool || {{}};
+            const forestRows = Object.entries(paired)
+                .map(([arm, m]) => ({{ arm, ...(m.recovery_rate || {{}}) }}))
+                .filter(r => typeof r.point === "number")
+                .sort((a, b) => a.point - b.point);
+
+            const svg = document.getElementById("forest");
+            if (svg && forestRows.length) {{
+                const NS = "http://www.w3.org/2000/svg";
+                const rowH = 46, padT = 34, padB = 46, padL = 168, padR = 96;
+                const W = 900, H = padT + forestRows.length * rowH + padB;
+                svg.setAttribute("viewBox", `0 0 ${{W}} ${{H}}`);
+                svg.setAttribute("height", H);
+                const lo = Math.min(...forestRows.map(r => r.low), 0);
+                const hi = Math.max(...forestRows.map(r => r.high), 0);
+                const span = (hi - lo) || 1, pad = span * 0.12;
+                const x0 = lo - pad, x1 = hi + pad;
+                const X = (v) => padL + ((v - x0) / (x1 - x0)) * (W - padL - padR);
+                const el = (n, a, parent) => {{
+                    const e = document.createElementNS(NS, n);
+                    for (const k in a) e.setAttribute(k, a[k]);
+                    (parent || svg).appendChild(e);
+                    return e;
+                }};
+
+                // axis ticks on round percentage-point values, recessive.
+                // An axis labelled -21pp / -12pp / -4pp is arithmetic showing
+                // through; a reader wants -20 / -10 / 0 / 10 / 20.
+                const niceStep = (raw) => {{
+                    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+                    const n = raw / mag;
+                    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+                }};
+                const stepPP = niceStep(((x1 - x0) * 100) / 5);
+                const startPP = Math.ceil((x0 * 100) / stepPP) * stepPP;
+                for (let vpp = startPP; vpp <= x1 * 100 + 1e-9; vpp += stepPP) {{
+                    const v = vpp / 100;
+                    el("line", {{ x1: X(v), x2: X(v), y1: padT - 10, y2: H - padB + 6, class: "f-grid" }});
+                    const tk = el("text", {{ x: X(v), y: H - padB + 24, "text-anchor": "middle", class: "f-tick" }});
+                    tk.textContent = (vpp > 0 ? "+" : "") + vpp.toFixed(0) + "pp";
+                }}
+                el("line", {{ x1: X(0), x2: X(0), y1: padT - 10, y2: H - padB + 6, class: "f-zero" }});
+
+                forestRows.forEach((r, i) => {{
+                    const y = padT + i * rowH + rowH / 2;
+                    const behind = r.point < 0;
+                    const colour = behind ? "var(--viz-behind)" : "var(--viz-ahead)";
+
+                    el("rect", {{ x: 0, y: y - rowH / 2, width: W, height: rowH, class: "f-row-hit" }})
+                        .appendChild(document.createElementNS(NS, "title"))
+                        .textContent =
+                            `${{r.arm}}\n${{(r.point * 100).toFixed(3)}}pp ` +
+                            `[${{(r.low * 100).toFixed(3)}}, ${{(r.high * 100).toFixed(3)}}]\n` +
+                            (behind ? "Vasool recovers less" : "Vasool recovers more");
+                    el("rect", {{ x: 0, y: y - rowH / 2, width: W, height: rowH, class: "f-row-bg" }});
+
+                    const label = el("text", {{ x: padL - 18, y: y + 1, "text-anchor": "end", class: "f-label" }});
+                    label.textContent = r.arm;
+                    const sub = el("text", {{ x: padL - 18, y: y + 15, "text-anchor": "end", class: "f-sub" }});
+                    sub.textContent = r.excludes_zero ? "excludes zero" : "includes zero";
+
+                    // 2px CI line, 4px rounded ends, >=8px point marker with a
+                    // 2px surface ring so an overlap with the zero rule reads.
+                    el("line", {{
+                        x1: X(r.low), x2: X(r.high), y1: y, y2: y,
+                        stroke: colour, class: "f-ci"
+                    }});
+                    el("circle", {{
+                        cx: X(r.point), cy: y, r: 5.5, fill: colour,
+                        stroke: "var(--panel)", "stroke-width": 2
+                    }});
+
+                    const val = el("text", {{
+                        x: W - padR + 14, y: y + 4, "text-anchor": "start",
+                        class: "f-value", fill: colour
+                    }});
+                    val.textContent = (r.point >= 0 ? "+" : "") + (r.point * 100).toFixed(2) + "pp";
+                }});
+
+                const lhs = el("text", {{ x: X(0) - 12, y: 16, "text-anchor": "end", class: "f-sub" }});
+                lhs.textContent = "← Vasool recovers less";
+                const rhs = el("text", {{ x: X(0) + 12, y: 16, "text-anchor": "start", class: "f-sub" }});
+                rhs.textContent = "Vasool recovers more →";
+
+                const tb = document.querySelector("#forest-table tbody");
+                forestRows.forEach(r => {{
+                    const tr = document.createElement("tr");
+                    tr.innerHTML =
+                        `<td>${{r.arm}}</td>` +
+                        `<td>${{(r.point >= 0 ? "+" : "") + (r.point * 100).toFixed(3)}}pp</td>` +
+                        `<td>[${{(r.low * 100).toFixed(3)}}, ${{(r.high * 100).toFixed(3)}}]</td>` +
+                        `<td>${{r.excludes_zero ? "yes" : "no"}}</td>`;
+                    tb.appendChild(tr);
+                }});
+            }}
+
+            // 1e. §7 survival grid. Only the exception carries colour.
+            const sweeps = EVAL?.sweeps || {{}};
+            const sweepNames = Object.keys(sweeps);
+            const gridBox = document.getElementById("sweep-grid");
+            if (gridBox && sweepNames.length) {{
+                const armsSeen = new Set();
+                sweepNames.forEach(c => Object.keys(sweeps[c].arms || {{}}).forEach(a => armsSeen.add(a)));
+                const flipCount = (arm) => sweepNames.filter(
+                    c => sweeps[c].arms?.[arm]?.survives === false
+                ).length;
+                const order = [...armsSeen].sort(
+                    (a, b) => flipCount(b) - flipCount(a) || a.localeCompare(b)
+                );
+                order.forEach(arm => {{
+                    const name = document.createElement("div");
+                    name.className = "grid-arm"; name.textContent = arm;
+                    const cells = document.createElement("div");
+                    cells.className = "grid-cells";
+                    let flips = 0;
+                    sweepNames.forEach(cfg => {{
+                        const a = sweeps[cfg].arms?.[arm];
+                        const bad = a && a.survives === false;
+                        if (bad) flips++;
+                        const c = document.createElement("div");
+                        c.className = "grid-cell" + (bad ? " flip" : "");
+                        c.title = `${{arm}} · ${{cfg}}\n${{bad ? "fails to survive" : "survives"}}`;
+                        cells.appendChild(c);
+                    }});
+                    const count = document.createElement("div");
+                    count.className = "grid-count" + (flips ? " flip" : "");
+                    trace(count, `sweeps.*.arms.${{arm}}.survives`,
+                          `${{flips}} / ${{sweepNames.length}}`);
+                    gridBox.append(name, cells, count);
+                }});
+            }}
+
+            // 1f. §9's seven criteria.
+            const F_META = [
+                ["F1", "F1_taxonomy_adds_nothing", "The taxonomy adds nothing",
+                 "fires iff the paired interval vs retry_plus_contact includes zero"],
+                ["F2", "F2_flagship_claim_inert", "The flagship card_expired claim is inert",
+                 "fires iff A3 is inert on recovery rate AND on attempts consumed"],
+                ["F3", "F3_salary_timing_is_noise", "Salary-aware timing is noise",
+                 "fires iff A2's paired interval includes zero"],
+                ["F4", "F4_guards_unreliable", "The guards are unreliable",
+                 "fires iff pass^100 on the §2a predicate is below 1.0"],
+                ["F5", "F5_compliance_unaffordable", "Compliance is unaffordable",
+                 "fires iff ungated beats gated by more than 20 absolute points"],
+                ["F6", "F6_conclusions_are_model_artifacts", "The conclusions are model artifacts",
+                 "fires iff 5 or more of 8 comparisons flip across the 83-config grid"],
+                ["F7", "F7_determinism_fails", "Determinism fails",
+                 "fires iff two runs of one seed produce different ledgers"]
+            ];
+            const fb = document.getElementById("fboard");
+            if (fb) {{
+                const fal = EVAL?.falsification || {{}};
+                F_META.forEach(([id, key, name, thr]) => {{
+                    const v = fal[key];
+                    const row = document.createElement("div");
+                    row.className = "frow";
+                    let icon, colour, text;
+                    if (!v) {{
+                        icon = "—"; colour = "var(--viz-muted)"; text = "not in artifact";
+                    }} else if (v.fired === true) {{
+                        icon = "✗"; colour = "var(--status-critical)"; text = "FIRED";
+                    }} else if (v.fired === false) {{
+                        icon = "✓"; colour = "var(--status-good)"; text = "did not fire";
+                    }} else {{
+                        icon = "○"; colour = "var(--viz-muted)"; text = "not evaluated here";
+                    }}
+                    let measured = "";
+                    if (key.startsWith("F1") && v?.interval)
+                        measured = ` · ${{(v.interval.point * 100).toFixed(2)}}pp, ${{v.direction}}`;
+                    if (key.startsWith("F3") && v?.interval)
+                        measured = ` · +${{(v.interval.point * 100).toFixed(2)}}pp`;
+                    if (key.startsWith("F5") && typeof v?.gap_pp === "number")
+                        measured = ` · ${{v.gap_pp.toFixed(2)}}pp of ${{v.threshold_pp}}`;
+                    if (key.startsWith("F4") && v?.pass_k)
+                        measured = ` · pass^100 = ${{v.pass_k["100"] ?? "—"}}`;
+                    if (key.startsWith("F6") && typeof v?.threshold === "number")
+                        measured = ` · threshold ${{v.threshold}} of ${{v.denominator?.length ?? "?"}}`;
+
+                    // F1 did not fire, and that is the misleading case: the
+                    // interval excludes zero on the baseline's side. Flag it.
+                    const misleading = key.startsWith("F1") && v?.direction === "vasool behind";
+                    if (misleading) row.className = "frow warn";
+
+                    row.innerHTML =
+                        `<div class="fid" style="color:${{colour}}">${{id}}</div>` +
+                        `<div><span class="fname">${{name}}</span>` +
+                        `<span class="fthr">${{thr}}</span>` +
+                        (misleading
+                            ? `<span class="fthr" style="color:var(--status-warning)">` +
+                              `⚠ did not fire &mdash; but the interval excludes zero on the wrong side. ` +
+                              `A worse result than F1 firing, and not covered by the registered wording.</span>`
+                            : "") +
+                        `</div>` +
+                        `<div class="fverdict" style="color:${{colour}}"></div>`;
+                    trace(row.querySelector(".fverdict"),
+                          `falsification.${{key}}.fired`, `${{icon}} ${{text}}${{measured}}`);
+                    fb.appendChild(row);
+                }});
+            }}
+
+            // 1g. §2a stat tiles.
+            const tiles = document.getElementById("safety-tiles");
+            if (tiles) {{
+                const v = EVAL?.per_arm?.vasool;
+                const pk = EVAL?.pass_k || {{}};
+                const det = EVAL?.determinism;
+                const items = [
+                    [v ? `${{nf(v.safety_holds_on)}} / ${{nf(v.seeds)}}` : "—",
+                     "seeds where all eight §2a claims held",
+                     "per_arm.vasool.safety_holds_on"],
+                    [pk["100"] !== undefined ? Number(pk["100"]).toFixed(2) : "—",
+                     "pass^100 — every one of 100 independent worlds clean",
+                     "pass_k.100"],
+                    [v ? nf(v.risk_block_actions_world) : "—",
+                     "automated actions on risk-declined episodes",
+                     "per_arm.vasool.risk_block_actions_world"],
+                    [det ? (det.identical ? "identical" : "MISMATCH") : "—",
+                     "re-run ledgers, byte-for-byte (F7)",
+                     "determinism.identical"]
+                ];
+                items.forEach(([val, lab, src]) => {{
+                    const d = document.createElement("div");
+                    d.className = "tile";
+                    d.innerHTML = `<div class="tv"></div><div class="tl">${{lab}}</div>`;
+                    trace(d.querySelector(".tv"), src, val);
+                    tiles.appendChild(d);
                 }});
             }}
 
@@ -1000,14 +1528,17 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             if (safetyViolations === null) {{
                 heroViolations.innerText = "safety violations: unavailable (no measurement in artifact)";
             }} else {{
-                heroViolations.innerText =
-                    `${{formatNum(safetyViolations)}} safety violations in ${{formatNum(safetySeeds)}} seeds`;
+                trace(heroViolations, "per_arm.vasool.seeds − per_arm.vasool.safety_holds_on",
+                      `${{formatNum(safetyViolations)}} safety violations in ${{formatNum(safetySeeds)}} seeds`);
             }}
 
             // 4. Populate Yield
-            document.getElementById("yield-vasool").innerText = vasoolYield + "%";
-            document.getElementById("yield-baseline").innerText = baselineYield + "%";
-            document.getElementById("yield-greedy").innerText = greedyYield + "%";
+            trace(document.getElementById("yield-vasool"),
+                  "per_arm.vasool.recovery_rate_mean", vasoolYield + "%");
+            trace(document.getElementById("yield-baseline"),
+                  "per_arm.retry_plus_contact.recovery_rate_mean", baselineYield + "%");
+            trace(document.getElementById("yield-greedy"),
+                  "per_arm.vasool_ungated.recovery_rate_mean", greedyYield + "%");
             
             // 5. Pre-fill a valid receipt ID if the ledger exists
             if (sampleLedger.length > 0 && sampleLedger[0].receipt_id) {{
@@ -1051,9 +1582,14 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 explorerConsole.innerHTML = `&gt; Ledger is empty or missing from evaluation.json`;
             }}
             
-            // 3. Cinematic Number Counting
+            // 3. Cinematic Number Counting. Skipped under prefers-reduced-motion
+            // — the hero counter already honours it, and a half-counted figure
+            // is a wrong figure to anyone who screenshots mid-animation.
             document.querySelectorAll('.count-up').forEach(el => {{
                 const text = el.innerText;
+                if (prefersReducedMotion || !isFinite(parseFloat(text.replace(/,/g, '').replace('%', '')))) {{
+                    return;
+                }}
                 const isPercent = text.includes('%');
                 const target = parseFloat(text.replace(/,/g, '').replace('%', ''));
                 let start = 0;

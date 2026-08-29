@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 432" width="900" height="432" role="img" aria-label="Paired difference in recovery rate against Vasool, 95 percent bootstrap intervals">
+<style>
+  .lbl{font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#e6edf3}
+  .sub{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#8b949e}
+  .tick{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#8b949e}
+  .val{font:600 12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .ttl{font:600 14px -apple-system,Segoe UI,sans-serif;fill:#e6edf3}
+  .grid{stroke:#21262d;stroke-width:1}
+  .zero{stroke:#8b949e;stroke-width:2;stroke-dasharray:5 4}
+  .ring{stroke:#0d1117}
+</style>
+<rect width="900" height="432" fill="#0d1117"/>
+<text x="190" y="18" class="ttl">Paired difference vs Vasool — recovery rate, 1,000 seeds</text>
+<line x1="262.9" y1="50" x2="262.9" y2="390" class="grid"/>
+<text x="262.9" y="408" text-anchor="middle" class="tick">-15pp</text>
+<line x1="336.9" y1="50" x2="336.9" y2="390" class="grid"/>
+<text x="336.9" y="408" text-anchor="middle" class="tick">-10pp</text>
+<line x1="410.8" y1="50" x2="410.8" y2="390" class="grid"/>
+<text x="410.8" y="408" text-anchor="middle" class="tick">-5pp</text>
+<line x1="484.7" y1="50" x2="484.7" y2="390" class="grid"/>
+<text x="484.7" y="408" text-anchor="middle" class="tick">0pp</text>
+<line x1="558.6" y1="50" x2="558.6" y2="390" class="grid"/>
+<text x="558.6" y="408" text-anchor="middle" class="tick">+5pp</text>
+<line x1="632.6" y1="50" x2="632.6" y2="390" class="grid"/>
+<text x="632.6" y="408" text-anchor="middle" class="tick">+10pp</text>
+<line x1="706.5" y1="50" x2="706.5" y2="390" class="grid"/>
+<text x="706.5" y="408" text-anchor="middle" class="tick">+15pp</text>
+<line x1="780.4" y1="50" x2="780.4" y2="390" class="grid"/>
+<text x="780.4" y="408" text-anchor="middle" class="tick">+20pp</text>
+<line x1="484.7" y1="50" x2="484.7" y2="390" class="zero"/>
+<text x="474.7" y="40" text-anchor="end" class="sub">&#8592; Vasool recovers less</text>
+<text x="494.7" y="40" text-anchor="start" class="sub">Vasool recovers more &#8594;</text>
+<style>.c0{stroke:#e66767;fill:#e66767}</style>
+<text x="172" y="79.0" text-anchor="end" class="lbl">retry_plus_contact</text>
+<text x="172" y="92.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="240.17" y1="78.0" x2="245.70" y2="78.0" class="c0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="242.94" cy="78.0" r="5.5" class="c0 ring" stroke-width="2"/>
+<text x="808" y="82.0" class="val c0" stroke="none">-16.35pp</text>
+<!-- retry_plus_contact: -16.353pp [-16.540, -16.166] -->
+<style>.c1{stroke:#e66767;fill:#e66767}</style>
+<text x="172" y="119.0" text-anchor="end" class="lbl">vasool_ungated</text>
+<text x="172" y="132.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="413.36" y1="118.0" x2="415.80" y2="118.0" class="c1" stroke-width="2" stroke-linecap="round"/>
+<circle cx="414.60" cy="118.0" r="5.5" class="c1 ring" stroke-width="2"/>
+<text x="808" y="122.0" class="val c1" stroke="none">-4.74pp</text>
+<!-- vasool_ungated: -4.742pp [-4.826, -4.662] -->
+<style>.c2{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="159.0" text-anchor="end" class="lbl">A4</text>
+<text x="172" y="172.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="484.79" y1="158.0" x2="484.87" y2="158.0" class="c2" stroke-width="2" stroke-linecap="round"/>
+<circle cx="484.83" cy="158.0" r="5.5" class="c2 ring" stroke-width="2"/>
+<text x="808" y="162.0" class="val c2" stroke="none">+0.01pp</text>
+<!-- A4: +0.007pp [+0.004, +0.010] -->
+<style>.c3{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="199.0" text-anchor="end" class="lbl">A3</text>
+<text x="172" y="212.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="484.86" y1="198.0" x2="486.48" y2="198.0" class="c3" stroke-width="2" stroke-linecap="round"/>
+<circle cx="485.68" cy="198.0" r="5.5" class="c3 ring" stroke-width="2"/>
+<text x="808" y="202.0" class="val c3" stroke="none">+0.06pp</text>
+<!-- A3: +0.065pp [+0.010, +0.119] -->
+<style>.c4{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="239.0" text-anchor="end" class="lbl">naive_retry</text>
+<text x="172" y="252.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="518.78" y1="238.0" x2="523.82" y2="238.0" class="c4" stroke-width="2" stroke-linecap="round"/>
+<circle cx="521.33" cy="238.0" r="5.5" class="c4 ring" stroke-width="2"/>
+<text x="808" y="242.0" class="val c4" stroke="none">+2.48pp</text>
+<!-- naive_retry: +2.476pp [+2.304, +2.644] -->
+<style>.c5{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="279.0" text-anchor="end" class="lbl">A1</text>
+<text x="172" y="292.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="536.02" y1="278.0" x2="540.06" y2="278.0" class="c5" stroke-width="2" stroke-linecap="round"/>
+<circle cx="538.05" cy="278.0" r="5.5" class="c5 ring" stroke-width="2"/>
+<text x="808" y="282.0" class="val c5" stroke="none">+3.61pp</text>
+<!-- A1: +3.607pp [+3.470, +3.743] -->
+<style>.c6{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="319.0" text-anchor="end" class="lbl">A2</text>
+<text x="172" y="332.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="557.31" y1="318.0" x2="559.53" y2="318.0" class="c6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="558.41" cy="318.0" r="5.5" class="c6 ring" stroke-width="2"/>
+<text x="808" y="322.0" class="val c6" stroke="none">+4.98pp</text>
+<!-- A2: +4.984pp [+4.909, +5.060] -->
+<style>.c7{stroke:#3987e5;fill:#3987e5}</style>
+<text x="172" y="359.0" text-anchor="end" class="lbl">A5</text>
+<text x="172" y="372.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="738.12" y1="358.0" x2="741.83" y2="358.0" class="c7" stroke-width="2" stroke-linecap="round"/>
+<circle cx="739.98" cy="358.0" r="5.5" class="c7 ring" stroke-width="2"/>
+<text x="808" y="362.0" class="val c7" stroke="none">+17.26pp</text>
+<!-- A5: +17.265pp [+17.139, +17.390] -->
+</svg>

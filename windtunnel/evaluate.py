@@ -610,16 +610,55 @@ def determinism_check(seeds: Sequence[int], *, pepper: str) -> dict:
     buys a stronger statement only about compute spent.
     """
     mismatches = []
+    sample: list[dict] = []
     for seed in seeds:
-        first = run_seed(seed, pepper=pepper).ledger_digest()
+        run = run_seed(seed, pepper=pepper)
+        first = run.ledger_digest()
         second = run_seed(seed, pepper=pepper).ledger_digest()
         if first != second:
             mismatches.append({"seed": seed, "first": first, "second": second})
+        if not sample:
+            sample = _receipt_sample(run, limit=SAMPLE_RECEIPTS)
     return {
         "seeds_checked": list(seeds),
         "identical": not mismatches,
         "mismatches": mismatches,
+        "sample_seed": seeds[0] if seeds else None,
+        "sample_receipts": sample,
     }
+
+
+SAMPLE_RECEIPTS = 12
+"""How many receipts the manifest carries for the report card's verifier.
+
+Enough to show the chain linking receipt to receipt, few enough that the
+canonical payloads — which embed a whole Proposal and its verdicts — do not
+dominate the manifest.
+"""
+
+
+def _receipt_sample(run, *, limit: int) -> list[dict]:
+    """The head of one run's ledger, in the shape a verifier needs.
+
+    `canonical_payload` is the exact preimage `_compute_hash` digested, so a
+    reader can recompute sha256 over it and compare to `hash` without trusting
+    this file, the report card, or anything else here. That is the point: the
+    report card asserts the chain verifies, and this is what lets someone
+    check the assertion instead of believing it.
+    """
+    out = []
+    for r in run.ledger()[:limit]:
+        out.append({
+            "receipt_id": r.receipt_id,
+            "entity_id": r.entity_id,
+            "outcome": r.outcome.value,
+            "executed": r.executed,
+            "at": r.at.isoformat(),
+            "prev_hash": r.prev_hash,
+            "hash": r.hash,
+            "canonical_payload": r.canonical_payload,
+        })
+    return out
 
 
 # ---------------------------------------------------------------------------
