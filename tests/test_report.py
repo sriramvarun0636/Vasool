@@ -171,6 +171,23 @@ class TestReadmeDoesNotDrift:
                 rate = manifest["per_arm"][arm]["recovery_rate_mean"] * 100
                 allowed.update({f"{rate:.2f}%", f"{rate:.1f}%"})
 
+        # The closure block's shares are percentages of a different denominator
+        # -- non-recoveries, not episodes -- so they are legitimate and the
+        # recovery-rate set does not contain them. Derive them the same way the
+        # exhibit does rather than whitelisting the literals, so a drifted
+        # closure figure still fails.
+        for manifest in manifests:
+            for arm_block in manifest["per_arm"].values():
+                closure = arm_block.get("closure")
+                if not closure:
+                    continue
+                unrecovered = closure["episodes"] - closure["recovered"]
+                if unrecovered <= 0:
+                    continue
+                for bucket in ("blocked", "escalated", "exhausted", "awaiting"):
+                    share = closure[bucket] / unrecovered * 100
+                    allowed.update({f"{share:.2f}%", f"{share:.1f}%"})
+
         # §4.5's shadow comparison prints its rates as percentages too. They
         # are measurements from a different artifact, not recovery rates, and
         # they are held to the same rule: quotable only if something produced

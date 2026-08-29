@@ -24,7 +24,15 @@
       "instrument_dead_retries_world": 64321,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 174103,
+        "blocked": 29118,
+        "escalated": 13014,
+        "exhausted": 0,
+        "awaiting": 138591
+      }
     },
     "naive_retry": {
       "recovery_rate_mean": 0.465936313481441,
@@ -33,7 +41,15 @@
       "instrument_dead_retries_world": 292256,
       "risk_block_actions_world": 18541,
       "customer_action_retries_world": 66040,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 165330,
+        "blocked": 20,
+        "escalated": 0,
+        "exhausted": 189476,
+        "awaiting": 0
+      }
     },
     "retry_plus_contact": {
       "recovery_rate_mean": 0.6542272536430769,
@@ -42,7 +58,15 @@
       "instrument_dead_retries_world": 292256,
       "risk_block_actions_world": 20988,
       "customer_action_retries_world": 66040,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 232133,
+        "blocked": 1629,
+        "escalated": 0,
+        "exhausted": 0,
+        "awaiting": 121064
+      }
     },
     "vasool_ungated": {
       "recovery_rate_mean": 0.5381228185488008,
@@ -51,7 +75,15 @@
       "instrument_dead_retries_world": 69311,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 190933,
+        "blocked": 2154,
+        "escalated": 8910,
+        "exhausted": 0,
+        "awaiting": 152829
+      }
     },
     "A1": {
       "recovery_rate_mean": 0.45462745255392173,
@@ -60,7 +92,15 @@
       "instrument_dead_retries_world": 90191,
       "risk_block_actions_world": 16366,
       "customer_action_retries_world": 29672,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 161301,
+        "blocked": 23423,
+        "escalated": 5234,
+        "exhausted": 0,
+        "awaiting": 164868
+      }
     },
     "A2": {
       "recovery_rate_mean": 0.4408558736806403,
@@ -69,7 +109,15 @@
       "instrument_dead_retries_world": 64315,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 156419,
+        "blocked": 37127,
+        "escalated": 13014,
+        "exhausted": 0,
+        "awaiting": 148266
+      }
     },
     "A3": {
       "recovery_rate_mean": 0.4900490437590267,
@@ -78,7 +126,15 @@
       "instrument_dead_retries_world": 90292,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 173871,
+        "blocked": 29384,
+        "escalated": 13342,
+        "exhausted": 0,
+        "awaiting": 138229
+      }
     },
     "A4": {
       "recovery_rate_mean": 0.4906251981415578,
@@ -87,7 +143,15 @@
       "instrument_dead_retries_world": 64318,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 174077,
+        "blocked": 29302,
+        "escalated": 12860,
+        "exhausted": 0,
+        "awaiting": 138587
+      }
     },
     "A5": {
       "recovery_rate_mean": 0.31805263398237127,
@@ -96,7 +160,15 @@
       "instrument_dead_retries_world": 64446,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000
+      "seeds": 1000,
+      "closure": {
+        "episodes": 354826,
+        "recovered": 112865,
+        "blocked": 16906,
+        "escalated": 4191,
+        "exhausted": 220864,
+        "awaiting": 0
+      }
     }
   },
   "paired_vs_vasool": {

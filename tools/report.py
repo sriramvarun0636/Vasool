@@ -497,6 +497,14 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         .world-table tr.is-vasool td {{
             color: var(--compliant-green);
         }}
+        /* The closure table is a partition, not a scorecard. `.is-vasool`
+           paints a whole row green, which on this table would render 138,591
+           censored episodes and 29,118 refusals as good news -- the exact
+           editorialising the block exists to remove. Only the arm name keeps
+           the highlight; the numbers stay neutral and are read, not judged. */
+        #closure-table tr.is-vasool td {{ color: inherit; }}
+        #closure-table tr.is-vasool td:first-child {{ color: var(--compliant-green); }}
+
         .world-table td.zero {{
             color: var(--compliant-green);
         }}
@@ -1052,6 +1060,37 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 credit with no guardrail reporting it. A dash means the artifact does not
                 carry the field; no value here is defaulted.
             </p>
+
+            <p style="margin-top: 48px; margin-bottom: 4px; font-weight: 600;">
+                Where every episode ended
+            </p>
+            <p style="margin-bottom: 0; color: #94A3B8; font-size: 14px; line-height: 1.6;">
+                A recovery rate reports one bucket and leaves the rest as a single
+                undifferentiated failure. <strong>Restraint is not a failure, and neither is an
+                episode the horizon cut short.</strong> The four terminal states are absorbing,
+                so this is a partition: every episode appears exactly once, and the row sums to
+                the episode count. <code>blocked</code> is the agent declining to act;
+                <code>escalated</code> is a human taking it; <code>awaiting</code> is
+                <em>right-censored</em> &mdash; still in flight when the horizon ended, neither
+                won nor lost.
+            </p>
+            <div class="world-scroll">
+            <table class="world-table" id="closure-table">
+                <thead>
+                    <tr>
+                        <th>Arm</th>
+                        <th>Episodes</th>
+                        <th>Recovered</th>
+                        <th>Blocked<br><span style="font-weight:400">declined by policy</span></th>
+                        <th>Escalated<br><span style="font-weight:400">to a human</span></th>
+                        <th>Exhausted<br><span style="font-weight:400">budget burned</span></th>
+                        <th>Awaiting<br><span style="font-weight:400">censored</span></th>
+                    </tr>
+                </thead>
+                <tbody><!-- Generated dynamically by JS --></tbody>
+            </table>
+            </div>
+            <p class="viz-caption" id="closure-note" style="margin-top: 16px; margin-bottom: 0;"></p>
         </div>
 
         <div class="exhibit band-dependent" id="exhibit-c">
@@ -1454,6 +1493,71 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                     }});
                     worldBody.appendChild(row);
                 }});
+            }}
+
+            // 1b-ii. The closure partition. Every cell is traced; a missing
+            // block renders as dashes rather than a plausible split, and the
+            // note below the table refuses to state a percentage it cannot
+            // compute. No colour is applied to `blocked` or `escalated`: they
+            // are neither good nor bad on their own, which is the point of
+            // separating them from `recovered` in the first place.
+            const CLOSURE_COLUMNS = [
+                "episodes", "recovered", "blocked", "escalated", "exhausted", "awaiting"
+            ];
+            const closureBody = document.querySelector("#closure-table tbody");
+            if (closureBody) {{
+                const armRows = EVAL?.per_arm || {{}};
+                const order = Object.keys(ARM_LABELS).filter(a => a in armRows)
+                    .concat(Object.keys(armRows).filter(a => !(a in ARM_LABELS)));
+                order.forEach(arm => {{
+                    const row = document.createElement("tr");
+                    if (arm === "vasool") {{ row.className = "is-vasool"; }}
+                    const name = document.createElement("td");
+                    name.innerText = ARM_LABELS[arm] || arm;
+                    row.appendChild(name);
+                    CLOSURE_COLUMNS.forEach(col => {{
+                        const cell = document.createElement("td");
+                        const value = armRows[arm]?.closure?.[col];
+                        if (typeof value !== "number") {{
+                            cell.innerText = "\u2014";
+                        }} else {{
+                            trace(cell, `per_arm.${{arm}}.closure.${{col}}`,
+                                  new Intl.NumberFormat().format(value));
+                        }}
+                        row.appendChild(cell);
+                    }});
+                    closureBody.appendChild(row);
+                }});
+            }}
+
+            const closureNote = document.getElementById("closure-note");
+            const vc = EVAL?.per_arm?.vasool?.closure;
+            if (closureNote) {{
+                if (!vc || typeof vc.episodes !== "number") {{
+                    closureNote.innerHTML =
+                        "The artifact carries no closure block, so this split cannot be stated.";
+                }} else {{
+                    const nf = v => new Intl.NumberFormat().format(v);
+                    const un = vc.episodes - vc.recovered;
+                    const terminal = vc.blocked + vc.escalated + vc.exhausted;
+                    const pct = v => (v / un * 100).toFixed(1) + "%";
+                    closureNote.innerHTML =
+                        `<strong>Read Vasool's row against its recovery rate.</strong> ` +
+                        `${{nf(un)}} episodes did not recover, and reporting that as one number ` +
+                        `is what this table exists to stop. ${{nf(vc.blocked)}} of them ` +
+                        `(${{pct(vc.blocked)}}) are the guards declining to act &mdash; the ` +
+                        `behaviour EVALUATION.md &sect;2a scans for, counted here as an outcome ` +
+                        `rather than a shortfall. ${{nf(vc.escalated)}} (${{pct(vc.escalated)}}) ` +
+                        `went to a human. <strong>${{nf(vc.awaiting)}} (${{pct(vc.awaiting)}}) ` +
+                        `are still in flight at the horizon</strong> &mdash; right-censored, not ` +
+                        `failed, and the largest bucket by far. That leaves ` +
+                        `${{nf(terminal)}} terminal non-recoveries, not ${{nf(un)}}. ` +
+                        `<strong>The comparison worth making is the exhausted column:</strong> ` +
+                        `Vasool burns an attempt budget to nothing ` +
+                        `${{nf(vc.exhausted)}} times; <code>naive_retry</code> does it ` +
+                        `${{nf(EVAL?.per_arm?.naive_retry?.closure?.exhausted ?? 0)}} times. ` +
+                        `That is the taxonomy, measured.`;
+                }}
             }}
 
             // 1c. Yield cards + the loss, straight off the artifact.

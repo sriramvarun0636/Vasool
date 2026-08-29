@@ -93,6 +93,33 @@ seconds of your video.")*
 > from a closed enum, and the guards run downstream regardless of what it says.
 > Not a filter. A design."
 
+**Then the measurement, immediately.** The architecture is a claim; this is the
+evidence for it, and the incompleteness is the point rather than an apology.
+Say the coverage *first*, in the same breath as the result:
+
+> "That's the architecture. Here's why I'd defend it. I put the model in shadow
+> against the deterministic classifier and scored it. **I've measured three of
+> the twelve cells so far** — free-tier quota, not a design choice — and on
+> those three it gets the failure class right zero percent of the time on
+> `TRANSIENT`, a hundred on `LIQUIDITY`, and seventy-three on `INSTRUMENT_DEAD`.
+>
+> The zero is the interesting one. On the most common failure on the platform,
+> seven hundred and fifty-seven episodes, it answered `CUSTOMER_ACTION` every
+> single time — a hundred percent consistent and a hundred percent wrong. A
+> stable wrong answer is worse than an unstable one, and you only see that if
+> you print consistency next to accuracy instead of either alone.
+>
+> The rules column reads 1.000 and I want to be clear that it's **1.000 by
+> construction, not by measurement** — ground truth resolves through the same
+> lookup the rules read. The artifact says so in its own header."
+
+*If the corpus completes before you record, state the full twelve-cell shape and
+drop "three of the twelve". If it does not, say three and say so — the
+incompleteness is more credible than a clean claim, because it shows you
+reporting what you measured rather than what you hoped. Do not round it up, and
+do not use the design spec's §18 phrasing ("on three of five classes it lost"),
+which describes a measurement that was never taken.*
+
 ---
 
 ## 2:30 — 3:10 · The bug the simulator found

@@ -94,6 +94,22 @@ The incumbent is not a worse agent that happens to score higher. It is an agent 
 
 **The honest one-line summary:** the taxonomy did not buy recovery. It bought a deployable system, and the 16 points are what that cost in this simulator.
 
+### What "didn't recover" actually means
+
+A recovery rate reports one bucket and leaves everything else as a single undifferentiated failure. It isn't one. The four terminal states are absorbing, so this is a partition — every episode appears exactly once:
+
+| Vasool · 1,000 seeds · 354,826 episodes | Count | Share of the 180,723 that did not recover |
+| :--- | ---: | ---: |
+| **Recovered** | **174,103** | — |
+| `awaiting` — still in flight when the horizon ended | 138,591 | **76.7%** |
+| `blocked` — the guards declined to act | **29,118** | 16.1% |
+| `escalated` — handed to a human | 13,014 | 7.2% |
+| `exhausted` — attempt budget burned to nothing | **0** | 0% |
+
+Three things a reader should take from that. **`awaiting` is right-censored, not failed** — the horizon ended mid-episode, and folding it into "failure" is the blur this table removes; terminal non-recoveries are **42,132**, not 180,723. **29,118 refusals are an outcome, not a shortfall** — they are the behaviour [`docs/EVALUATION.md` §2a](docs/EVALUATION.md) scans for, and until now the dashboard reported every one of them as a miss. And the last row is the taxonomy, measured: **Vasool exhausts an attempt budget 0 times; `naive_retry` does it 189,476 times** — 53% of every episode it sees.
+
+Added 2026-08-29 and logged in §10. It is a subtraction over fields the shards already carried, not a re-run: `awaiting = episodes − recovered − blocked − escalated − exhausted`, valid because the three receipt-derived counters are disjoint — checked over 25 seeds, zero overlap in all three pairs.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/forest-dark.svg">
   <img src="docs/assets/forest-light.svg" width="100%" alt="Paired difference in recovery rate against Vasool across eight comparison arms, with 95% bootstrap intervals. Vasool trails retry_plus_contact by 16.35 percentage points and vasool_ungated by 4.74, and leads the remaining six.">
@@ -398,7 +414,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers 3 of 12 cells** — 41 of 180 classifications. Free-tier quota, not a design choice, and the artifact carries the `_partial` suffix so it cannot be read as a full run. Nine more classifications complete it at k=1.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — thirty-four of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — thirty-five of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 

@@ -835,6 +835,34 @@ def _base_protocol(
                 "customer_action_retries_world": sum(
                     r["customer_action_retries_world"] for r in rows.values()
                 ),
+                # §10's report card asks for an "honest exceptions" block: the
+                # episodes that did not recover, split by *why*. The four
+                # terminal states are absorbing and their receipts are written
+                # at the terminal transition, so the three receipt-derived
+                # counters are disjoint from each other and from `recovered` --
+                # verified over 25 seeds, zero overlap in all three pairs. That
+                # makes the fifth bucket a subtraction rather than a new
+                # measurement, which is why this closes without a re-run:
+                #
+                #   awaiting = episodes - recovered - blocked - escalated - exhausted
+                #
+                # `awaiting` is right-censored, not failed: the horizon ended
+                # while the episode was still in flight. Reporting it inside
+                # "did not recover" is the blur this block exists to remove.
+                "closure": {
+                    "episodes": sum(r["episodes"] for r in rows.values()),
+                    "recovered": sum(r["recovered"] for r in rows.values()),
+                    "blocked": sum(r["blocked"] for r in rows.values()),
+                    "escalated": sum(r["escalated"] for r in rows.values()),
+                    "exhausted": sum(r["exhausted"] for r in rows.values()),
+                    "awaiting": (
+                        sum(r["episodes"] for r in rows.values())
+                        - sum(r["recovered"] for r in rows.values())
+                        - sum(r["blocked"] for r in rows.values())
+                        - sum(r["escalated"] for r in rows.values())
+                        - sum(r["exhausted"] for r in rows.values())
+                    ),
+                },
                 "seeds": len(rows),
             }
             for arm, rows in base.items()
