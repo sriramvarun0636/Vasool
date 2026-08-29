@@ -6,7 +6,7 @@
     <title>Vasool | AI Safety Control Plane</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
     <style>
         :root {
             --ink: #0B1221;
@@ -17,7 +17,7 @@
             --violation-red: #D13B3B;
             --caution-amber: #F4C430;
             --paper: #EDEAE0;
-            --font-display: 'Space Grotesk', sans-serif;
+            --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
             --font-body: 'IBM Plex Sans', sans-serif;
             --font-mono: 'IBM Plex Mono', monospace;
         }
@@ -66,6 +66,42 @@
             justify-content: center;
         }
         
+        .spine-mark {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: #64748B;
+            text-decoration: none;
+            width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 3px 0;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            transition: color .18s ease, border-color .18s ease, background-color .18s ease;
+        }
+        .spine-mark:hover { color: #CBD5E1; border-color: var(--hairline); }
+        .spine-mark:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
+        .spine-mark.is-here {
+            color: var(--paper);
+            border-color: var(--signal-blue);
+            background: rgba(45, 104, 230, 0.14);
+        }
+        .spine-progress {
+            margin-top: auto;
+            width: 2px;
+            height: 84px;
+            background: var(--hairline);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+        .spine-progress-fill {
+            width: 100%; height: 0%;
+            background: var(--signal-blue);
+            transition: height .12s linear;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .spine-mark, .spine-progress-fill { transition: none; }
+        }
         .spine-line {
             width: 1px;
             background-color: var(--hairline);
@@ -104,10 +140,16 @@
         
         .hero h1 {
             font-family: var(--font-display);
-            font-size: 64px;
-            font-weight: 700;
-            letter-spacing: -1px;
-            margin-bottom: 8px;
+            font-size: 68px;
+            font-weight: 600;
+            /* Retuned for the serif. -1px was set for a geometric sans, where
+               tight tracking reads as precision; on Newsreader's wider fitting
+               it collides the numerals. The optical-size axis is pinned high so
+               the face uses its display cut rather than its text cut. */
+            letter-spacing: -0.015em;
+            font-variation-settings: "opsz" 60;
+            line-height: 1.02;
+            margin-bottom: 10px;
             font-variant-numeric: tabular-nums;
         }
         
@@ -183,7 +225,7 @@
         .yield-number {
             font-family: var(--font-display);
             font-size: 48px;
-            font-weight: 700;
+            font-weight: 600;
             margin-bottom: 8px;
         }
         
@@ -248,6 +290,26 @@
             outline-offset: 3px;
             border-radius: 2px;
         }
+        .airgap-svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+        .ag-h { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+                fill: #94A3B8; }
+        .ag-c { font-family: var(--font-mono); font-size: 10.5px; fill: #64748B; }
+        .ag-t { font-family: var(--font-mono); font-size: 12px; fill: #E2E8F0; }
+        .ag-dim { fill: #7C8798; }
+        .ag-node { fill: rgba(255,255,255,0.03); stroke: var(--hairline); }
+        .ag-llm { stroke: var(--violation-red); fill: rgba(209,59,59,0.07); }
+        .ag-shared { stroke: var(--caution-amber); fill: rgba(244,196,48,0.06); }
+        .ag-act { stroke: var(--compliant-green); fill: rgba(0,201,109,0.05); }
+        .ag-edge { stroke: var(--hairline); stroke-width: 1; }
+        .ag-gap { stroke: #475569; stroke-width: 1; stroke-dasharray: 3 5; }
+        .ag-legend {
+            font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
+            color: #64748B; text-align: center; max-width: 62ch; margin: 8px auto 0;
+        }
+        .ag-legend code { color: #94A3B8; }
+        .ag-gaplabel { font-family: var(--font-mono); font-size: 10.5px; fill: #64748B;
+                       letter-spacing: 0.04em; }
+
         /* No-JavaScript fallback. Deliberately styled rather than left bare:
            a reader who gets here is the one least able to work out what they
            are looking at. */
@@ -414,7 +476,7 @@
             padding: 16px 18px; border: 1px solid var(--hairline);
             border-radius: 6px; background: rgba(255,255,255,0.02);
         }
-        .frow .fid { font-family: var(--font-display); font-size: 17px; font-weight: 700; }
+        .frow .fid { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
         .frow .fname { font-family: var(--font-body); font-size: 15px; color: var(--paper); }
         .frow .fthr {
             display: block; font-family: var(--font-mono); font-size: 12px;
@@ -433,7 +495,7 @@
             padding: 18px 20px; background: rgba(255,255,255,0.02);
         }
         .tile .tv {
-            font-family: var(--font-display); font-size: 30px; font-weight: 700;
+            font-family: var(--font-display); font-size: 32px; font-weight: 600;
             color: var(--paper); line-height: 1.1;
         }
         .tile .tl {
@@ -722,7 +784,7 @@
             right: 24px;
             font-family: var(--font-display);
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 600;
             color: rgba(209, 59, 59, 0.95);
             border: 4px solid rgba(209, 59, 59, 0.95);
             padding: 8px 16px;
@@ -745,7 +807,7 @@
         .brand-header h2 {
             font-family: var(--font-display);
             font-size: 24px;
-            font-weight: 700;
+            font-weight: 600;
             color: #E2E8F0;
             letter-spacing: -0.5px;
             display: flex;
@@ -1189,34 +1251,54 @@
 
         <div class="exhibit" id="exhibit-f">
             <div class="exhibit-title">EXHIBIT F &mdash; The AI Air-Gap</div>
-            <div class="airgap-diagram">
-                <div class="plane-box">
-                    <strong>Shadow Plane</strong><br><br>
-                    LLM classification<br>
-                    emits <code>LLMVerdict</code><br>
-                    <em>inert &mdash; not a Proposal</em>
-                </div>
-                <div class="flow-line"></div>
-                <div class="firewall"></div>
-                <div class="flow-line"></div>
-                <div class="plane-box" style="border-style: solid; border-color: var(--compliant-green);">
-                    <strong>Execution Plane</strong><br><br>
-                    Deterministic FSM<br>
-                    13 guards &middot; 9 statutory<br>
-                    <em>Immutable Ledger</em>
-                </div>
-            </div>
+            <p class="viz-caption" style="margin-bottom: 18px;">
+                Not a drawing of the claim &mdash; the claim itself.
+                <code>tests/test_shadow_boundary.py</code> proves invariant 1 by walking the
+                import graph with <code>ast</code>; this is that same graph, parsed at build
+                time and rendered. Arrows run from importer to imported, so both planes point
+                <em>into</em> the shared vocabulary: they agree on the type definitions and
+                share no path.
+            </p>
+            <svg viewBox="0 0 940 372" class="airgap-svg" role="img"
+     aria-label="Import graph: the LLM module and the execution plane both import three shared
+     data modules, and no edge connects them in either direction.">
+  <text x="150" y="34" class="ag-h" text-anchor="middle">SHADOW PLANE</text>
+  <text x="470" y="34" class="ag-h" text-anchor="middle">SHARED VOCABULARY</text>
+  <text x="800" y="34" class="ag-h" text-anchor="middle">EXECUTION PLANE</text>
+  <text x="150" y="52" class="ag-c" text-anchor="middle">1 module</text>
+  <text x="470" y="52" class="ag-c" text-anchor="middle">3 modules &middot; pure data</text>
+  <text x="800" y="52" class="ag-c" text-anchor="middle">45 modules</text>
+
+  <line x1="310" y1="72" x2="310" y2="300" class="ag-gap"/>
+  <line x1="630" y1="72" x2="630" y2="300" class="ag-gap"/>
+
+  <rect x="352" y="111" width="236" height="34" rx="2" class="ag-node ag-shared"/><text x="470" y="133" class="ag-t" text-anchor="middle">diagnosis.taxonomy</text><line x1="252" y1="174" x2="346" y2="128" class="ag-edge"/><line x1="688" y1="128" x2="594" y2="128" class="ag-edge"/><rect x="352" y="157" width="236" height="34" rx="2" class="ag-node ag-shared"/><text x="470" y="179" class="ag-t" text-anchor="middle">events.schemas</text><line x1="252" y1="174" x2="346" y2="174" class="ag-edge"/><line x1="688" y1="174" x2="594" y2="174" class="ag-edge"/><rect x="352" y="203" width="236" height="34" rx="2" class="ag-node ag-shared"/><text x="470" y="225" class="ag-t" text-anchor="middle">events.settlement</text><line x1="252" y1="174" x2="346" y2="220" class="ag-edge"/><line x1="688" y1="220" x2="594" y2="220" class="ag-edge"/>
+  <rect x="44" y="157" width="212" height="34" rx="2" class="ag-node ag-llm"/>
+  <text x="150" y="179" class="ag-t" text-anchor="middle">diagnosis.llm</text>
+  <text x="150" y="228" class="ag-c ag-dim" text-anchor="middle">imported by 2</text>
+  <text x="150" y="246" class="ag-t ag-dim" text-anchor="middle">tools.shadow &middot; wt.shadow</text>
+  <text x="150" y="266" class="ag-c ag-dim" text-anchor="middle">neither is an actor</text>
+  <rect x="694" y="89" width="212" height="32" rx="2" class="ag-node ag-act"/><text x="800" y="109" class="ag-t" text-anchor="middle">actions.executor</text><rect x="694" y="135" width="212" height="32" rx="2" class="ag-node ag-act"/><text x="800" y="155" class="ag-t" text-anchor="middle">actions.razorpay_client</text><rect x="694" y="181" width="212" height="32" rx="2" class="ag-node ag-act"/><text x="800" y="201" class="ag-t" text-anchor="middle">actions.comms</text><rect x="694" y="227" width="212" height="32" rx="2" class="ag-node ag-act"/><text x="800" y="247" class="ag-t" text-anchor="middle">ledger.receipts</text><text x="800" y="295" class="ag-t ag-dim" text-anchor="middle">+ 41 more modules</text>
+</svg>
+<p class="ag-legend">No edge crosses either dashed rule, in either direction &mdash;
+0 paths from <code>diagnosis.llm</code> to anything that acts,
+and it is unreachable from all 10 execution roots.
+74 modules parsed.</p>
             <p class="viz-caption" style="margin-top: 24px; margin-bottom: 0;">
-                The firewall is not a filter. The LLM emits an <code>LLMVerdict</code>; the policy
-                plane consumes a <code>Proposal</code>; these are different types and
-                <strong>no function in the repository converts one into the other</strong>. For the
-                model to move money someone would have to write a conversion that does not exist,
-                and <code>tests/test_shadow_boundary.py</code> walks the import graph in both
-                directions to keep it that way. On the right, <strong>nine of the thirteen guards
-                rest on a statute</strong>; the other four &mdash; idempotency, the retry cap, the
-                spend cap, the human handoff &mdash; are platform constraints and house rules whose
-                <code>statute</code> attribute is <code>None</code>. Calling all thirteen statutory
-                would be the cheapest way to make this diagram look stronger than it is.
+                <strong>The two planes share types, not paths.</strong> That is why the gap holds
+                without a filter in it: the LLM emits an <code>LLMVerdict</code>, the policy plane
+                consumes a <code>Proposal</code>, and no function in the repository converts one
+                into the other. For the model to move money someone would have to write a
+                conversion that does not exist &mdash; and an absence cannot have a bug in it,
+                which a validator can.
+                <br><br>
+                The only two modules importing the classifier are the shadow harnesses that score
+                it, and neither can act. Note what the execution plane&rsquo;s modules include:
+                thirteen guards, of which <strong>nine rest on a statute</strong>. The other four
+                &mdash; idempotency, the retry cap, the spend cap, the human handoff &mdash; are
+                platform constraints and house rules whose <code>statute</code> attribute is
+                <code>None</code>. Calling all thirteen statutory would be the cheapest way to
+                make this page look stronger than it is.
             </p>
         </div>
 
@@ -1855,7 +1937,10 @@ ${bad ? "fails to survive" : "survives"}`;
                     [pctOf(ov.rules_accuracy), "rules classifier — by construction, not measured"],
                     [pctOf(ov.llm_accuracy), "LLM picked the right failure class"],
                     [pctOf(ov.intervention_agreement), "LLM picked the action §4 names for the row"],
-                    [`${SHADOW.covered_cells} / ${SHADOW.total_cells}`, "cells recorded — free-tier quota, not a design choice"]
+                    [`${SHADOW.covered_cells} / ${SHADOW.total_cells}`,
+                     SHADOW.covered_cells === SHADOW.total_cells
+                       ? `cells, every one asked ${SHADOW.repeats}× — the free tier caps depth, not coverage`
+                       : "cells recorded — free-tier quota, not a design choice"]
                 ].forEach(([v, l]) => {
                     const d = document.createElement("div");
                     d.className = "tile";
@@ -1898,8 +1983,13 @@ ${bad ? "fails to survive" : "survives"}`;
                       `than an unstable one: it is confidently, reproducibly incorrect about the most ` +
                       `common failure on the platform, and either column alone would have hidden it. ` +
                       `That is the measurement behind keeping this component in shadow.`
-                    : `Every recorded cell is shown. A dash means the cell has no recording and ` +
-                      `contributes to no rate.`;
+                    : SHADOW.complete
+                      ? `Every cell in the corpus is here. The dashes are the consistency ` +
+                        `column: at k=1 one answer per cell measures whether it was right, ` +
+                        `never whether the model would repeat it, so stability is reported ` +
+                        `as — rather than as the 1.000 the arithmetic would produce.`
+                      : `Every recorded cell is shown. A dash means the cell has no recording ` +
+                        `and contributes to no rate.`;
             } else if (llmNote) {
                 llmNote.textContent =
                     "No comparison artifact on disk — run `make shadow` to build one.";
@@ -1952,29 +2042,71 @@ ${bad ? "fails to survive" : "survives"}`;
             }
 
             // 2. Generate Data-Driven Spine
+            // The spine used to render five SHA-256 prefixes, two of them
+            // hashes of hardcoded strings like "EXHIBIT_C_AIRGAP_TOPOLOGY".
+            // They read as content fingerprints on a page whose entire claim is
+            // that its figures are real, which is a small dishonesty in the one
+            // place that could least afford one. It is now an index: one mark
+            // per exhibit, the current one lit, click to jump. Same furniture,
+            // real function, nothing pretending to be evidence.
             const spine = document.getElementById("spine");
-            const exhibitData = [
-                JSON.stringify(EVAL.per_arm || "exhibit-a-fallback"),
-                JSON.stringify(guards),
-                "EXHIBIT_C_AIRGAP_TOPOLOGY",
-                "EXHIBIT_D_QUEUE_SURVIVAL_A15_A19",
-                ledgerHead
-            ];
+            if (spine) {
+                const exhibits = [...document.querySelectorAll(".exhibit[id^='exhibit-']")];
+                const marks = new Map();
 
-            for (let i = 0; i < exhibitData.length; i++) {
-                const hash = await hashString(exhibitData[i]);
-                const hexStr = hash.substring(0, 8);
-                
-                const node = document.createElement("div");
-                node.className = "hash-node";
-                node.innerText = hexStr;
-                spine.appendChild(node);
-                
-                if (i < exhibitData.length - 1) {
-                    const line = document.createElement("div");
-                    line.className = "spine-line";
-                    spine.appendChild(line);
+                for (const ex of exhibits) {
+                    const letter = ex.id.split("-")[1].toUpperCase();
+                    const titleEl = ex.querySelector(".exhibit-title");
+                    const full = titleEl ? titleEl.textContent.trim() : `Exhibit ${letter}`;
+
+                    const mark = document.createElement("a");
+                    mark.className = "spine-mark";
+                    mark.href = `#${ex.id}`;
+                    mark.textContent = letter;
+                    mark.title = full;
+                    mark.setAttribute("aria-label", `Jump to ${full}`);
+                    spine.appendChild(mark);
+                    marks.set(ex.id, mark);
                 }
+
+                const progress = document.createElement("div");
+                progress.className = "spine-progress";
+                progress.innerHTML = '<div class="spine-progress-fill"></div>';
+                spine.appendChild(progress);
+                const fill = progress.firstElementChild;
+
+                // Highlight whichever exhibit owns the upper third of the
+                // viewport, which is where a reader is actually looking.
+                const seen = new Set();
+                let lastActive = exhibits.length ? exhibits[0].id : null;
+                const observer = new IntersectionObserver((entries) => {
+                    for (const e of entries) {
+                        if (e.isIntersecting) seen.add(e.target.id);
+                        else seen.delete(e.target.id);
+                    }
+                    let active = null;
+                    for (const ex of exhibits) if (seen.has(ex.id)) { active = ex.id; break; }
+                    // Sticky. At the hero, and in the gaps between exhibits, no
+                    // section owns the band -- clearing the mark there makes the
+                    // spine flicker off and read as broken. Hold the last one.
+                    if (active) lastActive = active;
+                    for (const [id, mark] of marks)
+                        mark.classList.toggle("is-here", id === lastActive);
+                }, { rootMargin: "-12% 0px -68% 0px", threshold: 0 });
+                exhibits.forEach((ex) => observer.observe(ex));
+                // Light the first mark up front. If IntersectionObserver is
+                // unavailable or slow to deliver its first record, an unlit
+                // spine reads as broken furniture rather than as an index.
+                if (lastActive) marks.get(lastActive)?.classList.add("is-here");
+
+                const setProgress = () => {
+                    const max = document.documentElement.scrollHeight - innerHeight;
+                    fill.style.height = max > 0
+                        ? `${Math.min(100, Math.max(0, (scrollY / max) * 100))}%` : "0%";
+                };
+                addEventListener("scroll", setProgress, { passive: true });
+                addEventListener("resize", setProgress);
+                setProgress();
             }
 
             // 3. Animate Hero Counters

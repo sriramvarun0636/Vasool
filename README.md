@@ -3,20 +3,23 @@
 <h1>⚖️ Vasool</h1>
 
 <p>
-  <strong>Recovers ₹116 Cr of failed payments with zero compliance violations —<br/>
+  <strong>Recovers ₹116 Cr of failed payments with zero compliance violations &mdash;<br/>
   and a hash-chained receipt for every rupee, including the ones it refused to chase.</strong>
-  <br/><br/>
-  <em>The LLM never touches money: it has no tools, and emits a type nothing can execute.<br/>
-  A deterministic state machine decides. Thirteen guards gate every rupee.</em>
+</p>
+
+<h3>A dumber baseline beats it by 16 percentage points.</h3>
+
+<p>
+  It also breaks policy in <b>1,000 of 1,000</b> seeded worlds. Vasool breaks it in <b>none</b>.<br/>
+  That trade is the entire submission &mdash; registered as falsification criterion <b>F1</b>
+  before the first run,<br/>and reported <a href="#and-now-the-uncomfortable-part">two sections
+  down</a> rather than in an appendix.
 </p>
 
 <p>
   <a href="#the-result"><img src="https://img.shields.io/badge/Recovered-%E2%82%B9116.09_Cr-0ca30c?style=for-the-badge" alt="Recovered Rs 116.09 Cr"></a>
   <a href="#the-result"><img src="https://img.shields.io/badge/Safety_predicate-1%2C000_%2F_1%2C000_seeds-0ca30c?style=for-the-badge" alt="Safety predicate held on 1000 of 1000 seeds"></a>
-  <a href="#the-holdout-agrees"><img src="https://img.shields.io/badge/Holdout-sealed%2C_evaluated_once%2C_replicated-2D68E6?style=for-the-badge" alt="Holdout replicated"></a>
   <a href="#and-now-the-uncomfortable-part"><img src="https://img.shields.io/badge/Cost_of_compliance-16.4pp_of_recovery-c1443c?style=for-the-badge" alt="Compliance costs 16.4 percentage points of recovery"></a>
-  <a href="#f1f7--the-criteria-that-could-have-killed-this"><img src="https://img.shields.io/badge/Falsification-7_criteria%2C_registered_first-6E7681?style=for-the-badge" alt="Seven falsification criteria registered first"></a>
-  <a href="https://razorpay.com/buildathon/"><img src="https://img.shields.io/badge/Track_03-AI_Revenue_Recovery-005571?style=for-the-badge" alt="Track 03"></a>
 </p>
 
 <p>
@@ -26,28 +29,19 @@
     <a href="#and-now-the-uncomfortable-part"><b>Where it loses</b></a> &nbsp;·&nbsp;
     <a href="#verify-it-yourself"><b>Verify it yourself</b></a> &nbsp;·&nbsp;
     <a href="#the-air-gap"><b>The air gap</b></a> &nbsp;·&nbsp;
-    <a href="#f1f7--the-criteria-that-could-have-killed-this"><b>F1–F7</b></a> &nbsp;·&nbsp;
+    <a href="#f1f7--the-criteria-that-could-have-killed-this"><b>F1&ndash;F7</b></a> &nbsp;·&nbsp;
     <a href="#what-broke"><b>What broke</b></a>
   </sub>
 </p>
-
-> 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from [`out/development/evaluation.json`](out/development/evaluation.json), which **ships in this repo** — open it and check any number here without running anything.<br/>
-> 🔧 **[Six incidents, in full →](POSTMORTEM.md)** · four of them cases where the system was silent about being wrong and an artifact caught it.
 
 <a href="https://sriramvarun0636.github.io/Vasool">
   <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout. Three arm cards below it: the baseline at 65.42% with the safety predicate holding on 0 of 1,000 seeds, the ungated variant at 53.81% also on 0 of 1,000, and Vasool at 49.07% holding on 1,000 of 1,000." onerror="this.style.display='none'">
 </a>
 
-<sub><i>The top of the live dashboard. Nine exhibits below it, every figure traced to
-a manifest key &mdash; <a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
-
-<h3>A dumber baseline beats it by 16 percentage points.</h3>
-
-<p>
-  It also breaks policy in <b>1,000 of 1,000</b> seeded worlds. Vasool breaks it in <b>none</b>.<br/>
-  That trade is the entire submission. It was registered as falsification criterion <b>F1</b><br/>
-  before the first run, and it is reported <a href="#and-now-the-uncomfortable-part">two sections down</a> &mdash; not in an appendix.
-</p>
+<sub><i>The top of <a href="https://sriramvarun0636.github.io/Vasool">the live dashboard</a> &mdash;
+nine exhibits, every figure traced to a key in
+<a href="out/development/evaluation.json"><code>out/development/evaluation.json</code></a>,
+which <b>ships in this repo</b>. Open it and check any number here without running anything.</i></sub>
 
 </div>
 

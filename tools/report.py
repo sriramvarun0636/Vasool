@@ -62,6 +62,158 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         except json.JSONDecodeError:
             redteam_data = {}
 
+    # --- Exhibit F's data ------------------------------------------------
+    # Invariant 1 is a property of the import graph, and tests/test_shadow_
+    # boundary.py already proves it by walking that graph with `ast`. Until now
+    # the exhibit *illustrated* the claim with two boxes and a bar; this walks
+    # the same graph the test walks and renders what is actually there, so the
+    # picture is a measurement rather than a drawing of one.
+    def _import_graph():
+        import ast as _ast
+
+        roots = ("vasool", "windtunnel", "tools")
+        repo = pathlib.Path(__file__).resolve().parent.parent
+
+        def name_of(path):
+            parts = list(path.relative_to(repo).with_suffix("").parts)
+            if parts[-1] == "__init__":
+                parts.pop()
+            return ".".join(parts)
+
+        def imports_of(path):
+            found = set()
+            for node in _ast.walk(_ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, _ast.Import):
+                    for alias in node.names:
+                        found.add(alias.name)
+                elif isinstance(node, _ast.ImportFrom):
+                    if node.level or node.module is None:
+                        continue
+                    found.add(node.module)
+                    for alias in node.names:
+                        found.add(f"{node.module}.{alias.name}")
+            return {n for n in found if n.split(".")[0] in roots}
+
+        graph = {}
+        for root in roots:
+            base = repo / root
+            if not base.is_dir():
+                continue
+            for path in base.rglob("*.py"):
+                if "__pycache__" in path.parts:
+                    continue
+                try:
+                    graph[name_of(path)] = imports_of(path)
+                except SyntaxError:
+                    continue
+
+        modules = set(graph)
+
+        def reach(start):
+            seen, frontier = set(), [start]
+            while frontier:
+                for nxt in graph.get(frontier.pop(), ()):
+                    if nxt not in seen:
+                        seen.add(nxt)
+                        frontier.append(nxt)
+            return seen
+
+        llm = "vasool.diagnosis.llm"
+        acting = (
+            "vasool.actions.executor", "vasool.actions.razorpay_client",
+            "vasool.actions.comms", "vasool.ledger.receipts",
+            "vasool.policy.machine", "vasool.events.receiver",
+            "windtunnel.runner", "windtunnel.adversary.arena",
+            "windtunnel.adversary.harness", "vasool.demo",
+        )
+        llm_side = ((reach(llm) | {llm}) & modules) if llm in graph else set()
+        act_side = set()
+        for m in acting:
+            if m in graph:
+                act_side |= (reach(m) | {m}) & modules
+        shared = sorted(llm_side & act_side)
+        return {
+            "total": len(modules),
+            "llm_only": sorted(llm_side - act_side),
+            "shared": shared,
+            "acting_only": sorted(act_side - llm_side),
+            "acting_roots": [m for m in acting if m in graph],
+            "llm_importers": sorted(m for m, i in graph.items() if llm in i),
+            "llm_reaches_actor": sorted(llm_side & set(acting)),
+            "actor_reaches_llm": llm in act_side,
+        }
+
+    try:
+        airgap = _import_graph()
+    except Exception:
+        airgap = None
+
+    def _airgap_svg(g):
+        """Two cones converging on shared data, and a gap with nothing in it.
+
+        The arrows point from importer to imported, so both planes point *into*
+        the shared vocabulary: they agree on the type definitions and share no
+        path. The dashed rule is drawn because the finding is an absence, and an
+        absence is otherwise invisible.
+        """
+        if not g:
+            return "<p class='viz-caption'>Import graph unavailable at build time.</p>"
+
+        short = lambda m: m.replace("vasool.", "").replace("windtunnel.", "wt.")
+        mid = g["shared"][:3]
+        acts = g["acting_roots"][:4]
+        extra = len(g["acting_only"]) - len(acts)
+
+        rows = []
+        for i, m in enumerate(mid):
+            y = 128 + i * 46
+            rows.append(
+                f'<rect x="352" y="{y - 17}" width="236" height="34" rx="2" class="ag-node ag-shared"/>'
+                f'<text x="470" y="{y + 5}" class="ag-t" text-anchor="middle">{short(m)}</text>'
+                f'<line x1="252" y1="174" x2="346" y2="{y}" class="ag-edge"/>'
+                f'<line x1="688" y1="{174 if i == 1 else 128 + i * 46}" x2="594" y2="{y}" class="ag-edge"/>'
+            )
+
+        right = []
+        for i, m in enumerate(acts):
+            y = 105 + i * 46
+            right.append(
+                f'<rect x="694" y="{y - 16}" width="212" height="32" rx="2" class="ag-node ag-act"/>'
+                f'<text x="800" y="{y + 4}" class="ag-t" text-anchor="middle">{short(m)}</text>'
+            )
+        if extra > 0:
+            right.append(f'<text x="800" y="{105 + len(acts) * 46 + 6}" class="ag-t ag-dim" '
+                         f'text-anchor="middle">+ {extra} more modules</text>')
+
+        imp = " &middot; ".join(short(m) for m in g["llm_importers"])
+        return f"""<svg viewBox="0 0 940 372" class="airgap-svg" role="img"
+     aria-label="Import graph: the LLM module and the execution plane both import three shared
+     data modules, and no edge connects them in either direction.">
+  <text x="150" y="34" class="ag-h" text-anchor="middle">SHADOW PLANE</text>
+  <text x="470" y="34" class="ag-h" text-anchor="middle">SHARED VOCABULARY</text>
+  <text x="800" y="34" class="ag-h" text-anchor="middle">EXECUTION PLANE</text>
+  <text x="150" y="52" class="ag-c" text-anchor="middle">{len(g['llm_only'])} module</text>
+  <text x="470" y="52" class="ag-c" text-anchor="middle">{len(g['shared'])} modules &middot; pure data</text>
+  <text x="800" y="52" class="ag-c" text-anchor="middle">{len(g['acting_only'])} modules</text>
+
+  <line x1="310" y1="72" x2="310" y2="300" class="ag-gap"/>
+  <line x1="630" y1="72" x2="630" y2="300" class="ag-gap"/>
+
+  {''.join(rows)}
+  <rect x="44" y="157" width="212" height="34" rx="2" class="ag-node ag-llm"/>
+  <text x="150" y="179" class="ag-t" text-anchor="middle">diagnosis.llm</text>
+  <text x="150" y="228" class="ag-c ag-dim" text-anchor="middle">imported by {len(g['llm_importers'])}</text>
+  <text x="150" y="246" class="ag-t ag-dim" text-anchor="middle">{imp}</text>
+  <text x="150" y="266" class="ag-c ag-dim" text-anchor="middle">neither is an actor</text>
+  {''.join(right)}
+</svg>
+<p class="ag-legend">No edge crosses either dashed rule, in either direction &mdash;
+{len(g['llm_reaches_actor'])} paths from <code>diagnosis.llm</code> to anything that acts,
+and it is unreachable from all {len(g['acting_roots'])} execution roots.
+{g['total']} modules parsed.</p>"""
+
+    airgap_svg = _airgap_svg(airgap)
+
     # A no-JavaScript rendering of the headline figures, generated here rather
     # than written by hand. Every figure on this page is drawn client-side from
     # the embedded JSON, which means a reader -- or an evaluating agent -- that
@@ -113,7 +265,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     <title>Vasool | AI Safety Control Plane</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
     <style>
         :root {{
             --ink: #0B1221;
@@ -124,7 +276,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             --violation-red: #D13B3B;
             --caution-amber: #F4C430;
             --paper: #EDEAE0;
-            --font-display: 'Space Grotesk', sans-serif;
+            --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
             --font-body: 'IBM Plex Sans', sans-serif;
             --font-mono: 'IBM Plex Mono', monospace;
         }}
@@ -173,6 +325,42 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             justify-content: center;
         }}
         
+        .spine-mark {{
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: #64748B;
+            text-decoration: none;
+            width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 3px 0;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            transition: color .18s ease, border-color .18s ease, background-color .18s ease;
+        }}
+        .spine-mark:hover {{ color: #CBD5E1; border-color: var(--hairline); }}
+        .spine-mark:focus-visible {{ outline: 2px solid var(--signal-blue); outline-offset: 2px; }}
+        .spine-mark.is-here {{
+            color: var(--paper);
+            border-color: var(--signal-blue);
+            background: rgba(45, 104, 230, 0.14);
+        }}
+        .spine-progress {{
+            margin-top: auto;
+            width: 2px;
+            height: 84px;
+            background: var(--hairline);
+            border-radius: 1px;
+            overflow: hidden;
+        }}
+        .spine-progress-fill {{
+            width: 100%; height: 0%;
+            background: var(--signal-blue);
+            transition: height .12s linear;
+        }}
+        @media (prefers-reduced-motion: reduce) {{
+            .spine-mark, .spine-progress-fill {{ transition: none; }}
+        }}
         .spine-line {{
             width: 1px;
             background-color: var(--hairline);
@@ -211,10 +399,16 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         
         .hero h1 {{
             font-family: var(--font-display);
-            font-size: 64px;
-            font-weight: 700;
-            letter-spacing: -1px;
-            margin-bottom: 8px;
+            font-size: 68px;
+            font-weight: 600;
+            /* Retuned for the serif. -1px was set for a geometric sans, where
+               tight tracking reads as precision; on Newsreader's wider fitting
+               it collides the numerals. The optical-size axis is pinned high so
+               the face uses its display cut rather than its text cut. */
+            letter-spacing: -0.015em;
+            font-variation-settings: "opsz" 60;
+            line-height: 1.02;
+            margin-bottom: 10px;
             font-variant-numeric: tabular-nums;
         }}
         
@@ -290,7 +484,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         .yield-number {{
             font-family: var(--font-display);
             font-size: 48px;
-            font-weight: 700;
+            font-weight: 600;
             margin-bottom: 8px;
         }}
         
@@ -355,6 +549,26 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             outline-offset: 3px;
             border-radius: 2px;
         }}
+        .airgap-svg {{ width: 100%; height: auto; display: block; margin: 8px 0 4px; }}
+        .ag-h {{ font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+                fill: #94A3B8; }}
+        .ag-c {{ font-family: var(--font-mono); font-size: 10.5px; fill: #64748B; }}
+        .ag-t {{ font-family: var(--font-mono); font-size: 12px; fill: #E2E8F0; }}
+        .ag-dim {{ fill: #7C8798; }}
+        .ag-node {{ fill: rgba(255,255,255,0.03); stroke: var(--hairline); }}
+        .ag-llm {{ stroke: var(--violation-red); fill: rgba(209,59,59,0.07); }}
+        .ag-shared {{ stroke: var(--caution-amber); fill: rgba(244,196,48,0.06); }}
+        .ag-act {{ stroke: var(--compliant-green); fill: rgba(0,201,109,0.05); }}
+        .ag-edge {{ stroke: var(--hairline); stroke-width: 1; }}
+        .ag-gap {{ stroke: #475569; stroke-width: 1; stroke-dasharray: 3 5; }}
+        .ag-legend {{
+            font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
+            color: #64748B; text-align: center; max-width: 62ch; margin: 8px auto 0;
+        }}
+        .ag-legend code {{ color: #94A3B8; }}
+        .ag-gaplabel {{ font-family: var(--font-mono); font-size: 10.5px; fill: #64748B;
+                       letter-spacing: 0.04em; }}
+
         /* No-JavaScript fallback. Deliberately styled rather than left bare:
            a reader who gets here is the one least able to work out what they
            are looking at. */
@@ -521,7 +735,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             padding: 16px 18px; border: 1px solid var(--hairline);
             border-radius: 6px; background: rgba(255,255,255,0.02);
         }}
-        .frow .fid {{ font-family: var(--font-display); font-size: 17px; font-weight: 700; }}
+        .frow .fid {{ font-family: var(--font-display); font-size: 18px; font-weight: 600; }}
         .frow .fname {{ font-family: var(--font-body); font-size: 15px; color: var(--paper); }}
         .frow .fthr {{
             display: block; font-family: var(--font-mono); font-size: 12px;
@@ -540,7 +754,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             padding: 18px 20px; background: rgba(255,255,255,0.02);
         }}
         .tile .tv {{
-            font-family: var(--font-display); font-size: 30px; font-weight: 700;
+            font-family: var(--font-display); font-size: 32px; font-weight: 600;
             color: var(--paper); line-height: 1.1;
         }}
         .tile .tl {{
@@ -829,7 +1043,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             right: 24px;
             font-family: var(--font-display);
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 600;
             color: rgba(209, 59, 59, 0.95);
             border: 4px solid rgba(209, 59, 59, 0.95);
             padding: 8px 16px;
@@ -852,7 +1066,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         .brand-header h2 {{
             font-family: var(--font-display);
             font-size: 24px;
-            font-weight: 700;
+            font-weight: 600;
             color: #E2E8F0;
             letter-spacing: -0.5px;
             display: flex;
@@ -1286,34 +1500,30 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
         <div class="exhibit" id="exhibit-f">
             <div class="exhibit-title">EXHIBIT F &mdash; The AI Air-Gap</div>
-            <div class="airgap-diagram">
-                <div class="plane-box">
-                    <strong>Shadow Plane</strong><br><br>
-                    LLM classification<br>
-                    emits <code>LLMVerdict</code><br>
-                    <em>inert &mdash; not a Proposal</em>
-                </div>
-                <div class="flow-line"></div>
-                <div class="firewall"></div>
-                <div class="flow-line"></div>
-                <div class="plane-box" style="border-style: solid; border-color: var(--compliant-green);">
-                    <strong>Execution Plane</strong><br><br>
-                    Deterministic FSM<br>
-                    13 guards &middot; 9 statutory<br>
-                    <em>Immutable Ledger</em>
-                </div>
-            </div>
+            <p class="viz-caption" style="margin-bottom: 18px;">
+                Not a drawing of the claim &mdash; the claim itself.
+                <code>tests/test_shadow_boundary.py</code> proves invariant 1 by walking the
+                import graph with <code>ast</code>; this is that same graph, parsed at build
+                time and rendered. Arrows run from importer to imported, so both planes point
+                <em>into</em> the shared vocabulary: they agree on the type definitions and
+                share no path.
+            </p>
+            {airgap_svg}
             <p class="viz-caption" style="margin-top: 24px; margin-bottom: 0;">
-                The firewall is not a filter. The LLM emits an <code>LLMVerdict</code>; the policy
-                plane consumes a <code>Proposal</code>; these are different types and
-                <strong>no function in the repository converts one into the other</strong>. For the
-                model to move money someone would have to write a conversion that does not exist,
-                and <code>tests/test_shadow_boundary.py</code> walks the import graph in both
-                directions to keep it that way. On the right, <strong>nine of the thirteen guards
-                rest on a statute</strong>; the other four &mdash; idempotency, the retry cap, the
-                spend cap, the human handoff &mdash; are platform constraints and house rules whose
-                <code>statute</code> attribute is <code>None</code>. Calling all thirteen statutory
-                would be the cheapest way to make this diagram look stronger than it is.
+                <strong>The two planes share types, not paths.</strong> That is why the gap holds
+                without a filter in it: the LLM emits an <code>LLMVerdict</code>, the policy plane
+                consumes a <code>Proposal</code>, and no function in the repository converts one
+                into the other. For the model to move money someone would have to write a
+                conversion that does not exist &mdash; and an absence cannot have a bug in it,
+                which a validator can.
+                <br><br>
+                The only two modules importing the classifier are the shadow harnesses that score
+                it, and neither can act. Note what the execution plane&rsquo;s modules include:
+                thirteen guards, of which <strong>nine rest on a statute</strong>. The other four
+                &mdash; idempotency, the retry cap, the spend cap, the human handoff &mdash; are
+                platform constraints and house rules whose <code>statute</code> attribute is
+                <code>None</code>. Calling all thirteen statutory would be the cheapest way to
+                make this page look stronger than it is.
             </p>
         </div>
 
@@ -1949,7 +2159,10 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                     [pctOf(ov.rules_accuracy), "rules classifier — by construction, not measured"],
                     [pctOf(ov.llm_accuracy), "LLM picked the right failure class"],
                     [pctOf(ov.intervention_agreement), "LLM picked the action §4 names for the row"],
-                    [`${{SHADOW.covered_cells}} / ${{SHADOW.total_cells}}`, "cells recorded — free-tier quota, not a design choice"]
+                    [`${{SHADOW.covered_cells}} / ${{SHADOW.total_cells}}`,
+                     SHADOW.covered_cells === SHADOW.total_cells
+                       ? `cells, every one asked ${{SHADOW.repeats}}\u00d7 — the free tier caps depth, not coverage`
+                       : "cells recorded — free-tier quota, not a design choice"]
                 ].forEach(([v, l]) => {{
                     const d = document.createElement("div");
                     d.className = "tile";
@@ -1992,8 +2205,13 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                       `than an unstable one: it is confidently, reproducibly incorrect about the most ` +
                       `common failure on the platform, and either column alone would have hidden it. ` +
                       `That is the measurement behind keeping this component in shadow.`
-                    : `Every recorded cell is shown. A dash means the cell has no recording and ` +
-                      `contributes to no rate.`;
+                    : SHADOW.complete
+                      ? `Every cell in the corpus is here. The dashes are the consistency ` +
+                        `column: at k=1 one answer per cell measures whether it was right, ` +
+                        `never whether the model would repeat it, so stability is reported ` +
+                        `as \u2014 rather than as the 1.000 the arithmetic would produce.`
+                      : `Every recorded cell is shown. A dash means the cell has no recording ` +
+                        `and contributes to no rate.`;
             }} else if (llmNote) {{
                 llmNote.textContent =
                     "No comparison artifact on disk — run `make shadow` to build one.";
@@ -2046,29 +2264,71 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             }}
 
             // 2. Generate Data-Driven Spine
+            // The spine used to render five SHA-256 prefixes, two of them
+            // hashes of hardcoded strings like "EXHIBIT_C_AIRGAP_TOPOLOGY".
+            // They read as content fingerprints on a page whose entire claim is
+            // that its figures are real, which is a small dishonesty in the one
+            // place that could least afford one. It is now an index: one mark
+            // per exhibit, the current one lit, click to jump. Same furniture,
+            // real function, nothing pretending to be evidence.
             const spine = document.getElementById("spine");
-            const exhibitData = [
-                JSON.stringify(EVAL.per_arm || "exhibit-a-fallback"),
-                JSON.stringify(guards),
-                "EXHIBIT_C_AIRGAP_TOPOLOGY",
-                "EXHIBIT_D_QUEUE_SURVIVAL_A15_A19",
-                ledgerHead
-            ];
+            if (spine) {{
+                const exhibits = [...document.querySelectorAll(".exhibit[id^='exhibit-']")];
+                const marks = new Map();
 
-            for (let i = 0; i < exhibitData.length; i++) {{
-                const hash = await hashString(exhibitData[i]);
-                const hexStr = hash.substring(0, 8);
-                
-                const node = document.createElement("div");
-                node.className = "hash-node";
-                node.innerText = hexStr;
-                spine.appendChild(node);
-                
-                if (i < exhibitData.length - 1) {{
-                    const line = document.createElement("div");
-                    line.className = "spine-line";
-                    spine.appendChild(line);
+                for (const ex of exhibits) {{
+                    const letter = ex.id.split("-")[1].toUpperCase();
+                    const titleEl = ex.querySelector(".exhibit-title");
+                    const full = titleEl ? titleEl.textContent.trim() : `Exhibit ${{letter}}`;
+
+                    const mark = document.createElement("a");
+                    mark.className = "spine-mark";
+                    mark.href = `#${{ex.id}}`;
+                    mark.textContent = letter;
+                    mark.title = full;
+                    mark.setAttribute("aria-label", `Jump to ${{full}}`);
+                    spine.appendChild(mark);
+                    marks.set(ex.id, mark);
                 }}
+
+                const progress = document.createElement("div");
+                progress.className = "spine-progress";
+                progress.innerHTML = '<div class="spine-progress-fill"></div>';
+                spine.appendChild(progress);
+                const fill = progress.firstElementChild;
+
+                // Highlight whichever exhibit owns the upper third of the
+                // viewport, which is where a reader is actually looking.
+                const seen = new Set();
+                let lastActive = exhibits.length ? exhibits[0].id : null;
+                const observer = new IntersectionObserver((entries) => {{
+                    for (const e of entries) {{
+                        if (e.isIntersecting) seen.add(e.target.id);
+                        else seen.delete(e.target.id);
+                    }}
+                    let active = null;
+                    for (const ex of exhibits) if (seen.has(ex.id)) {{ active = ex.id; break; }}
+                    // Sticky. At the hero, and in the gaps between exhibits, no
+                    // section owns the band -- clearing the mark there makes the
+                    // spine flicker off and read as broken. Hold the last one.
+                    if (active) lastActive = active;
+                    for (const [id, mark] of marks)
+                        mark.classList.toggle("is-here", id === lastActive);
+                }}, {{ rootMargin: "-12% 0px -68% 0px", threshold: 0 }});
+                exhibits.forEach((ex) => observer.observe(ex));
+                // Light the first mark up front. If IntersectionObserver is
+                // unavailable or slow to deliver its first record, an unlit
+                // spine reads as broken furniture rather than as an index.
+                if (lastActive) marks.get(lastActive)?.classList.add("is-here");
+
+                const setProgress = () => {{
+                    const max = document.documentElement.scrollHeight - innerHeight;
+                    fill.style.height = max > 0
+                        ? `${{Math.min(100, Math.max(0, (scrollY / max) * 100))}}%` : "0%";
+                }};
+                addEventListener("scroll", setProgress, {{ passive: true }});
+                addEventListener("resize", setProgress);
+                setProgress();
             }}
 
             // 3. Animate Hero Counters
