@@ -21,6 +21,7 @@ import pytest
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPORT = REPO_ROOT / "tools" / "report.py"
 MANIFEST = REPO_ROOT / "out" / "development" / "evaluation.json"
+HOLDOUT = REPO_ROOT / "out" / "holdout" / "evaluation.json"
 
 SOURCE = REPORT.read_text()
 
@@ -146,19 +147,28 @@ class TestReadmeDoesNotDrift:
     HEADLINE_ARMS = ("vasool", "retry_plus_contact", "vasool_ungated")
 
     def test_no_recovery_percentage_in_the_readme_is_stale(self, report, readme):
-        """Every percentage the README prints must be one the manifest supports.
+        """Every percentage the README prints must be one a manifest supports.
 
         Asserting "the right number appears somewhere" is too weak — it passes
         while a stale copy of the same figure sits three paragraphs down. This
         inverts it: collect every percentage in the document and require each
-        to be a value the manifest actually produces, at either precision the
-        README uses. A drifted figure fails even if a correct one survives
-        elsewhere.
+        to be a value some cohort's manifest actually produces, at either
+        precision the README uses. A drifted figure fails even if a correct one
+        survives elsewhere.
+
+        Both cohorts count. §3c's holdout is evaluated once and the README
+        quotes it beside the development figures, so a percentage is legitimate
+        if either manifest produces it — and stale if neither does.
         """
+        manifests = [report]
+        if HOLDOUT.exists():
+            manifests.append(json.loads(HOLDOUT.read_text()))
+
         allowed = set()
-        for arm in self.HEADLINE_ARMS:
-            rate = report["per_arm"][arm]["recovery_rate_mean"] * 100
-            allowed.update({f"{rate:.2f}%", f"{rate:.1f}%"})
+        for manifest in manifests:
+            for arm in self.HEADLINE_ARMS:
+                rate = manifest["per_arm"][arm]["recovery_rate_mean"] * 100
+                allowed.update({f"{rate:.2f}%", f"{rate:.1f}%"})
 
         printed = set(re.findall(r"\d{1,3}\.\d{1,2}%", readme))
         stale = sorted(printed - allowed)

@@ -10,3 +10,4 @@ out/
 .pytest_cache/
 .hypothesis/
 data/cassettes/*.json
+.DS_Store

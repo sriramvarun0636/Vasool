@@ -521,7 +521,11 @@ def _direction(interval: dict | None) -> str:
     return "vasool ahead" if interval["point"] > 0 else "vasool behind"
 
 
-def falsification(results: dict[str, dict[int, dict]], comparisons: dict) -> dict:
+def falsification(
+    results: dict[str, dict[int, dict]],
+    comparisons: dict,
+    determinism: dict | None = None,
+) -> dict:
     """§9's criteria, evaluated. Registered in advance, with thresholds.
 
     Each entry says whether the criterion *fired* — i.e. whether the thing that
@@ -594,10 +598,22 @@ def falsification(results: dict[str, dict[int, dict]], comparisons: dict) -> dic
             "fired": None,
             "detail": "needs §7's sweep grid — run with --sweeps",
         },
-        "F7_determinism_fails": {
-            "fired": None,
-            "detail": "reported by the determinism check, see manifest",
-        },
+        "F7_determinism_fails": (
+            {
+                "fired": not determinism["identical"],
+                "detail": (
+                    "two runs of one seed must produce byte-identical ledgers "
+                    f"(§6b/F7); checked on seeds {determinism['seeds_checked']}"
+                ),
+                "seeds_checked": determinism["seeds_checked"],
+                "mismatches": determinism["mismatches"],
+            }
+            if determinism is not None
+            else {
+                "fired": None,
+                "detail": "reported by the determinism check, see manifest",
+            }
+        ),
     }
 
 
@@ -795,6 +811,10 @@ def _base_protocol(
     )[BASE_CONFIG]
 
     comparisons = compare(base)
+    # Computed before `falsification` rather than beside it: F7 *is* this
+    # result, and a manifest that reports `F7: null` while carrying the answer
+    # three keys away reads as a criterion nobody evaluated.
+    determinism = determinism_check(seeds[:3], pepper=pepper)
     report.update({
         "seeds": {"first": seeds[0], "last": seeds[-1], "count": len(seeds)},
         "per_arm": {
@@ -824,7 +844,7 @@ def _base_protocol(
             [row["safety_holds"] for _, row in sorted(base["vasool"].items())],
             [k for k in PASS_K_VALUES if k <= len(seeds)],
         ),
-        "determinism": determinism_check(seeds[:3], pepper=pepper),
-        "falsification": falsification(base, comparisons),
+        "determinism": determinism,
+        "falsification": falsification(base, comparisons, determinism),
         "pepper_configured": True,
     })

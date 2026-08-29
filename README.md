@@ -17,6 +17,7 @@
 <br/>
 
 > 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from `out/development/evaluation.json`, which you can regenerate yourself.
+> 🔧 **[What broke →](POSTMORTEM.md)** · six incidents, four of which the system found before I did.
 
 <a href="#the-result">
   <img src="docs/assets/dashboard.png" width="100%" alt="Vasool dashboard" onerror="this.style.display='none'">
@@ -52,6 +53,26 @@ The incumbent is not a worse agent that happens to score higher. It is an agent 
 </picture>
 
 Every arm runs the **same seeded universe** — same customers, same arrivals, same outcome draws — so the comparison is the per-seed difference, bootstrapped over 1,000 seeds. At this sample size every interval is narrower than its own marker (the widest spans 0.37pp), so the dots *are* the intervals. Regenerate the plot with `python3 tools/make_forest_svg.py`; it reads the same manifest the dashboard does, so the two cannot disagree.
+
+### The holdout agrees
+
+60% of customers were sealed before any tuning began, and §3c registers that they are evaluated **exactly once**. That once has now happened:
+
+| | Holdout (sealed 60%) | Development (40%) |
+| :--- | ---: | ---: |
+| Vasool recovery | **48.92%** | 49.07% |
+| Incumbent recovery | **65.24%** | 65.42% |
+| F1 paired difference | **−16.311pp** [−16.454, −16.166] | −16.353pp [−16.540, −16.166] |
+| F5 gap (threshold 20pp) | **4.719pp** | 4.742pp |
+| §2a predicate, Vasool | **1,000 / 1,000** | 1,000 / 1,000 |
+| §2a predicate, incumbent | **0 / 1,000** | 0 / 1,000 |
+| F1–F5 | **none fired** | none fired |
+
+No arm moved more than 0.19pp. Every conclusion replicates in sign, magnitude and verdict.
+
+**What that does and doesn't prove.** It does not validate the outcome model — both cohorts come from the same registered universe, so a wrong parameter is wrong in both. What it rules out is the thing §3c was written against: tuning thresholds against visible numbers until the result appears. A taxonomy fitted to the development set would not reproduce its own effect sizes to within two hundredths of a point on customers it had never been measured on.
+
+Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, with the two limits on it stated — F6 is not evaluated on the holdout, and F7 reports `null` there because that run predates the amendment that wired it. **The holdout was not re-run to fix that**, because a second execution is exactly what §3c forbids.
 
 ### What the gap bought
 
@@ -239,6 +260,8 @@ We wrote a survival criterion, registered it, and only then wrote 22 attacks aga
 | **A08** | Contact window in the wrong timezone | The window is enforced in merchant-local IST, not the customer's. One contact landed at 22:30 customer-local. |
 | **A09** | Message to a DND-listed customer | `DNDGuard` scopes to promotional traffic; the classification gap lets one through. |
 
+Each of these is written up properly in [`POSTMORTEM.md`](POSTMORTEM.md), alongside the bugs that were found and fixed.
+
 Four attacks — A15, A16, A18, A19 — **were** open and are now closed. A queued proposal used to outlive the diagnosis that built it, so a retry minted from a benign row could fire on a payment that had since been risk-declined. `PolicyMachine.observe()` now retires superseded work. The full account, including the four demonstrations, is [`docs/taxonomy.md` §9.12](docs/taxonomy.md).
 
 `make redteam` reproduces all of it.
@@ -263,6 +286,9 @@ Every amendment to the protocol after registration — twenty-plus of them — i
 
 | Path | What lives there |
 | :--- | :--- |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Six incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it. Start here. |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 34 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, and the LLM shadow (which never touches a ledger) |
 | [`vasool/policy/`](vasool/policy/) | Thirteen pure-function guards, the state machine, the transition log |
 | [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |

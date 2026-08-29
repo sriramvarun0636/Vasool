@@ -188,7 +188,16 @@ post-fix. Full §7 grid run. F1 does **not** fire — its interval excludes zero
 but it excludes it on the wrong side: Vasool is behind `retry_plus_contact` by
 −0.164, which the artifact's own `detail` field flags as a worse result than F1
 firing, so `fired: false` must not be read as "good". Holds across the sweep
-range. No criterion fires; F6 false. Holdout sealed.
+range. No criterion fires; F6 false, F7 false.
+
+**Holdout unsealed and evaluated 2026-08-29 — once, as §3c registers.**
+`out/holdout/evaluation.json`, 9 arms × 1000 seeds. Every conclusion replicates:
+Vasool 48.92% (dev 49.07%), F1 −16.311pp (dev −16.353pp), F5 4.719 (dev 4.742),
+§2a on 1000/1000 with the baselines on 0/1000, F1–F5 identical verdicts, no arm
+moving more than 0.19pp. F6 is not evaluated on the holdout (§7's grid is
+dev-cohort by registration) and F7 reads null there because the run predates the
+amendment wiring it — `determinism.identical` answers it in the same file.
+**Do not re-run the holdout.** §3c says once, and it has been spent.
 
 **The model is pinned**: `windtunnel/shadow.py::PINNED_MODEL`. Cassettes are
 keyed by model, so changing that string orphans every recording at once and a

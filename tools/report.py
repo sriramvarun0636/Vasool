@@ -1426,6 +1426,8 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                         measured = ` · pass^100 = ${{v.pass_k["100"] ?? "—"}}`;
                     if (key.startsWith("F6") && typeof v?.threshold === "number")
                         measured = ` · threshold ${{v.threshold}} of ${{v.denominator?.length ?? "?"}}`;
+                    if (key.startsWith("F7") && Array.isArray(v?.seeds_checked))
+                        measured = ` · ledgers identical on seeds ${{v.seeds_checked.join(", ")}}`;
 
                     // F1 did not fire, and that is the misleading case: the
                     // interval excludes zero on the baseline's side. Flag it.
