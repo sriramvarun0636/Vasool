@@ -35,11 +35,11 @@
 > 🔧 **[Six incidents, in full →](POSTMORTEM.md)** · four of them cases where the system was silent about being wrong and an artifact caught it.
 
 <a href="https://sriramvarun0636.github.io/Vasool">
-  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout; three arm cards reading 65.42%, 53.81% and 49.07%; and a forest plot of paired differences against eight comparison arms." onerror="this.style.display='none'">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout. Three arm cards below it: the baseline at 65.42% with the safety predicate holding on 0 of 1,000 seeds, the ungated variant at 53.81% also on 0 of 1,000, and Vasool at 49.07% holding on 1,000 of 1,000." onerror="this.style.display='none'">
 </a>
 
-<sub><i>Nine exhibits, every figure traced to a manifest key &mdash;
-<a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
+<sub><i>The top of the live dashboard. Nine exhibits below it, every figure traced to
+a manifest key &mdash; <a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
 
 <h3>A dumber baseline beats it by 16 percentage points.</h3>
 
