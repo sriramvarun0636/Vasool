@@ -3,8 +3,11 @@
 <h1>⚖️ Vasool</h1>
 
 <p>
-  <strong>Recovers ₹116 Cr of failed payments across a 1,000-batch — with zero compliance violations, and a hash-chained receipt for every rupee.</strong><br/>
-  <em>An untrusted LLM proposes. A deterministic state machine disposes. The only agent in the comparison that could legally be switched on.</em>
+  <strong>Recovers ₹116 Cr of failed payments with zero compliance violations —<br/>
+  and a hash-chained receipt for every rupee, including the ones it refused to chase.</strong>
+  <br/><br/>
+  <em>The LLM never touches money: it has no tools, and emits a type nothing can execute.<br/>
+  A deterministic state machine decides. Thirteen guards gate every rupee.</em>
 </p>
 
 <p>
@@ -16,9 +19,20 @@
   <a href="https://razorpay.com/buildathon/"><img src="https://img.shields.io/badge/Track_03-AI_Revenue_Recovery-005571?style=for-the-badge" alt="Track 03"></a>
 </p>
 
+<p>
+  <sub>
+    <a href="#the-result"><b>The result</b></a> &nbsp;·&nbsp;
+    <a href="#and-now-the-uncomfortable-part"><b>Where it loses</b></a> &nbsp;·&nbsp;
+    <a href="#verify-it-yourself"><b>Verify it yourself</b></a> &nbsp;·&nbsp;
+    <a href="#the-air-gap"><b>The air gap</b></a> &nbsp;·&nbsp;
+    <a href="#f1f7--the-criteria-that-could-have-killed-this"><b>F1–F7</b></a> &nbsp;·&nbsp;
+    <a href="#what-broke"><b>What broke</b></a>
+  </sub>
+</p>
+
 <br/>
 
-> 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from [`out/development/evaluation.json`](out/development/evaluation.json), which **ships in this repo** — open it and check any number here without running anything.
+> 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from [`out/development/evaluation.json`](out/development/evaluation.json), which **ships in this repo** — open it and check any number here without running anything.<br/>
 > 🔧 **[What broke →](POSTMORTEM.md)** · six incidents, four of which the system found before I did.
 
 <a href="https://sriramvarun0636.github.io/Vasool">
@@ -27,6 +41,12 @@
 
 <sub><i>Nine exhibits, every figure traced to a manifest key &mdash;
 <a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
+
+<br/><br/>
+
+<strong>A dumber baseline beats it by 16 percentage points.</strong><br/>
+<sub>Registered as falsification criterion <b>F1</b> before the first run, and reported
+<a href="#and-now-the-uncomfortable-part">two sections down</a> &mdash; not in an appendix.</sub>
 
 </div>
 
@@ -97,7 +117,7 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 - **1,000 / 1,000 seeds** satisfy the [§2a safety predicate](docs/EVALUATION.md) — eight ledger-scanned claims covering contact windows, DLT templates, risk blocks, consent withdrawal, dead-instrument retries, contact caps, hash-chain integrity and receipt uniqueness.
 - **pass^k = 1.0** at every registered k ∈ {1, 5, 10, 25, 50, 100}. A system safe in 99 of 100 worlds is not safe; `pass^k` is what makes an intermittent violation visible where a mean would bury it.
 - **4.7 percentage points** is the measured price of the guard chain — `vasool_ungated` (identical taxonomy, no guards) recovers 53.8%. F5 was registered at a 20-point threshold. It did not fire.
-- **Byte-identical ledgers** on re-run. Same seed → same SHA-256 chain, asserted in CI.
+- **Byte-identical ledgers** on re-run. Same seed → same SHA-256 chain, asserted by [`tests/test_replay.py`](tests/test_replay.py) for one episode and [`tests/windtunnel/test_runner.py`](tests/windtunnel/test_runner.py) for a whole 500-customer run, and recomputed as `determinism.identical` in the manifest.
 
 ---
 
@@ -229,7 +249,11 @@ flowchart TD
 
     A["<b>1. EVENT INGRESS</b><br/>payment.failed · HMAC verified · deduped on event_id"]:::plane
 
-    B["<b>2. THE QUARANTINE</b><br/>• LLM reads the failure, emits an LLMVerdict<br/>• Inert data. Not a Proposal. No adapter exists.<br/>⚠️ ZERO network access, ZERO SDK execution"]:::quarantine
+    B["<b>2. DIAGNOSIS — deterministic</b><br/>failure_class from the registered taxonomy<br/>builds the Proposal the policy plane consumes"]:::plane
+
+    Q["<b>THE QUARANTINE — LLM, shadow only</b><br/>• emits an LLMVerdict. Inert data, not a Proposal.<br/>• no adapter exists, so no edge reaches the policy plane<br/>⚠️ ZERO network access, ZERO SDK execution"]:::quarantine
+
+    S["<b>OFFLINE COMPARISON</b><br/>rules vs LLM, replayed from cassettes<br/>writes no ledger, moves no money"]:::quarantine
 
     C["<b>3. THE POLICY MACHINE (13 guards)</b><br/>[G03] DPDP Act s.6 · [G07] anti-harassment cap<br/>[G08] RBI FPC ¶55 contact window<br/>[G09] RBI e-mandate pre-debit notice<br/>all evaluated, resolved by severity"]:::policy
 
@@ -239,7 +263,9 @@ flowchart TD
     F["<b>6. HASH-CHAINED LEDGER</b><br/>EXECUTED · BLOCKED · ESCALATED · RECOVERED<br/>Block_N = SHA256(Block_N-1 + canonical payload)"]:::ledger
 
     A --> B
-    B -->|Inert verdict| C
+    A -.->|same event, read-only| Q
+    Q -.->|verdict| S
+    B -->|Proposal| C
     C -->|ALLOW| D
     C -->|BLOCK| F
     C -->|ESCALATE| F
@@ -283,7 +309,7 @@ coverage: 3 of 12 cells, 41 of 180 classifications recorded
 
 Two depths, and they cost very differently. **Breadth** — every cell answered once — needs **9 more classifications**, one day of Gemini's 20-request free tier, and yields a complete comparison the tool will write without the `_partial` suffix. **Depth** — the registered 15 repeats per cell, which is what makes consistency measurable across the corpus rather than on three cells — needs 139 more, about a week of quota.
 
-Every rate above is computed over recorded cells only; an unrecorded cell contributes to no numerator and no denominator. Reproduce with `make shadow` (replay, no network), or resume recording at the first missing cell:
+Every rate above is computed over recorded cells only; an unrecorded cell contributes to no numerator and no denominator. Reproduce with `PARTIAL=1 make shadow` (replay, no network — bare `make shadow` exits 3 rather than quietly filling a gap), or resume recording at the first missing cell:
 
 ```bash
 RECORD=1 REPEATS=1 make shadow   # 9 requests -> complete at k=1
@@ -340,7 +366,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers 3 of 12 cells** — 41 of 180 classifications. Free-tier quota, not a design choice, and the artifact carries the `_partial` suffix so it cannot be read as a full run. Nine more classifications complete it at k=1.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — twenty-plus of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — thirty-four of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
