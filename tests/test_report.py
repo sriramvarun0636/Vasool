@@ -181,7 +181,13 @@ class TestReadmeDoesNotDrift:
                 if isinstance(value, float) and 0.0 < value <= 1.0:
                     allowed.update({f"{value * 100:.2f}%", f"{value * 100:.1f}%"})
 
-        printed = set(re.findall(r"\d{1,3}\.\d{1,2}%", readme))
+        # Both spellings. "49.07 percent" in an alt attribute is the same
+        # claim as "49.07%" and drifts the same way, so the pattern
+        # normalises the written-out form rather than walking past it.
+        printed = {
+            m if m.endswith("%") else m.split()[0] + "%"
+            for m in re.findall(r"\d{1,3}\.\d{1,2}(?:%|\s+percent\b)", readme)
+        }
         stale = sorted(printed - allowed)
         assert not stale, (
             f"README prints {stale}, which no arm's recovery rate supports. "
@@ -210,3 +216,134 @@ class TestReadmeDoesNotDrift:
             f"README's attack count disagrees with the artifact "
             f"({result['survived']} of {result['attacks']} survive)"
         )
+
+
+    def test_no_rupee_figure_in_the_readme_is_stale(self, report, readme):
+        """Money figures must come from the manifests, including the total.
+
+        This exists because the total was briefly wrong: ₹46.50 Cr and
+        ₹69.60 Cr were added as *displayed* figures to give ₹116.10 Cr, when
+        summing the underlying paise gives ₹116.09 Cr. Adding rounded numbers
+        manufactures a figure no artifact produced — the exact class of claim
+        this repository exists to make impossible.
+
+        The pattern matches ``Rs`` as well as ``\u20b9`` because that is how the
+        stale ₹116.10 survived its first fix: the badge *alt* text spelled it
+        ``Rs 116.10 Cr``, so a ₹-only regex walked straight past it. Alt text
+        is exactly where a figure hides — it is read by screen readers and by
+        anything parsing the raw markdown, and never by the person eyeballing
+        the rendered page.
+        """
+        allowed = set()
+        dev = report["per_arm"]["vasool"]["recovered_paise_total"]
+        allowed.add(f"{dev / 100 / 1e7:.2f}")
+        total = dev
+        if HOLDOUT.exists():
+            hold = json.loads(HOLDOUT.read_text())["per_arm"]["vasool"]["recovered_paise_total"]
+            allowed.add(f"{hold / 100 / 1e7:.2f}")
+            total = dev + hold
+        allowed.add(f"{total / 100 / 1e7:.2f}")
+        allowed.add(f"{total / 100 / 1e7:.0f}")          # the tagline rounds to whole crore
+
+        printed = set(re.findall(r"(?:\u20b9|\bRs\.?)\s?(\d+(?:\.\d+)?)\s*Cr", readme))
+        stale = sorted(printed - allowed)
+        assert not stale, (
+            f"README prints \u20b9{stale} Cr, which no manifest produces. "
+            f"Manifest figures are {sorted(allowed)}."
+        )
+
+
+class TestTestCountDoesNotDrift:
+    """The suite's own size is quoted in README.md and CLAUDE.md.
+
+    It went stale three times in one week — every time a test was added, the
+    two documents claiming a count became wrong, and nothing noticed. A number
+    that only a human remembers to update is a number that will be wrong, so
+    it is checked here against what pytest actually collected.
+    """
+
+    DOCS = {
+        "README.md": re.compile(r"#\s*([\d,]+)\s*tests"),
+        "CLAUDE.md": re.compile(r"\b([\d,]+)\s*tests\."),
+    }
+
+    def test_the_documents_quote_the_real_count(self, request):
+        collected = request.session.testscollected
+        # A filtered run (-k, a single file) collects a subset; comparing that
+        # to a whole-suite figure would fail for the wrong reason.
+        if request.config.option.keyword or request.config.option.file_or_dir != [str(REPO_ROOT)]:
+            if collected < 500:
+                pytest.skip(f"partial run collected {collected} — not the whole suite")
+
+        for name, pattern in self.DOCS.items():
+            text = (REPO_ROOT / name).read_text()
+            match = pattern.search(text)
+            assert match, f"{name} no longer quotes a test count"
+            claimed = int(match.group(1).replace(",", ""))
+            assert claimed == collected, (
+                f"{name} says {claimed} tests; pytest collected {collected}"
+            )
+
+
+class TestExhibitsAreOrdered:
+    """The report card is a numbered argument; the numbering has to hold.
+
+    Exhibits were once labelled A, B, B2, B3, B4, C, D, E, F — additions
+    announcing themselves as bolt-ons — and after renumbering the titles the
+    HTML ids still said `exhibit-c` on the block displaying "EXHIBIT F". An
+    anchor that lands on the wrong section is a small thing that reads as a
+    careless one.
+    """
+
+    BLOCK = re.compile(r'<div class="exhibit[^"]*" id="(exhibit-[a-z]+)">')
+    TITLE = re.compile(r'exhibit-title">EXHIBIT ([A-Z]) &mdash; ')
+
+    @pytest.fixture(scope="class")
+    def exhibits(self):
+        blocks = re.split(r'<div class="exhibit[^"]*" id="', SOURCE)[1:]
+        out = []
+        for b in blocks:
+            eid = b.split('"')[0]
+            m = re.search(r'exhibit-title">EXHIBIT ([A-Z])', b)
+            if m:
+                out.append((eid, m.group(1)))
+        return out
+
+    def test_every_id_matches_its_letter(self, exhibits):
+        assert exhibits, "no exhibits found — has the markup changed?"
+        for eid, letter in exhibits:
+            assert eid == f"exhibit-{letter.lower()}", (
+                f'block id="{eid}" displays "EXHIBIT {letter}"'
+            )
+
+    def test_the_letters_are_consecutive_in_document_order(self, exhibits):
+        letters = [l for _, l in exhibits]
+        expected = [chr(ord("A") + i) for i in range(len(letters))]
+        assert letters == expected, f"exhibits run {letters}, expected {expected}"
+
+    def test_titles_use_one_dash_style(self):
+        stray = re.findall(r"exhibit-title\">EXHIBIT [A-Z] —", SOURCE)
+        assert not stray, f"{len(stray)} exhibit title(s) use a literal em dash, not &mdash;"
+
+
+class TestDocsCiteRealExhibits:
+    """Prose that names an exhibit must name one that exists.
+
+    The exhibits were renumbered mid-build and three references went stale —
+    two of them in the video script, which is recorded from. A judge following
+    "Exhibit B3" to a page that has no B3 is a small error that reads as
+    nobody having checked.
+    """
+
+    DOCS = ("README.md", "SUBMISSION.md", "docs/VIDEO.md", "ARCHITECTURE.md", "COMPLIANCE.md")
+
+    def test_every_named_exhibit_exists(self):
+        live = {m.group(1) for m in re.finditer(r'exhibit-title">EXHIBIT ([A-Z]) ', SOURCE)}
+        assert live, "no exhibits found in the report source"
+        bad = []
+        for name in self.DOCS:
+            text = (REPO_ROOT / name).read_text()
+            for m in re.finditer(r"\bExhibit ([A-Z]\d?)\b", text):
+                if m.group(1) not in live:
+                    bad.append(f"{name} cites Exhibit {m.group(1)}")
+        assert not bad, f"stale exhibit references: {bad}. Live exhibits: {sorted(live)}"
