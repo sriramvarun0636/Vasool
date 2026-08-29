@@ -8,20 +8,25 @@
 </p>
 
 <p>
-  <a href="#the-result"><img src="https://img.shields.io/badge/Recovery-49.1%25_(baseline_65.4%25)-c1443c?style=for-the-badge" alt="Recovery"></a>
-  <a href="#what-the-gap-bought"><img src="https://img.shields.io/badge/Safety_predicate-1%2C000_%2F_1%2C000_seeds-0ca30c?style=for-the-badge" alt="Safety"></a>
-  <a href="#f1f7--the-criteria-that-could-have-killed-this"><img src="https://img.shields.io/badge/Falsification-7_criteria,_registered_first-2D68E6?style=for-the-badge" alt="Falsification"></a>
+  <a href="#the-result"><img src="https://img.shields.io/badge/Recovered-%E2%82%B9116.09_Cr-0ca30c?style=for-the-badge" alt="Recovered Rs 116.09 Cr"></a>
+  <a href="#the-result"><img src="https://img.shields.io/badge/Safety_predicate-1%2C000_%2F_1%2C000_seeds-0ca30c?style=for-the-badge" alt="Safety predicate held on 1000 of 1000 seeds"></a>
+  <a href="#the-holdout-agrees"><img src="https://img.shields.io/badge/Holdout-sealed%2C_evaluated_once%2C_replicated-2D68E6?style=for-the-badge" alt="Holdout replicated"></a>
+  <a href="#and-now-the-uncomfortable-part"><img src="https://img.shields.io/badge/Cost_of_compliance-16.4pp_of_recovery-c1443c?style=for-the-badge" alt="Compliance costs 16.4 percentage points of recovery"></a>
+  <a href="#f1f7--the-criteria-that-could-have-killed-this"><img src="https://img.shields.io/badge/Falsification-7_criteria%2C_registered_first-6E7681?style=for-the-badge" alt="Seven falsification criteria registered first"></a>
   <a href="https://razorpay.com/buildathon/"><img src="https://img.shields.io/badge/Track_03-AI_Revenue_Recovery-005571?style=for-the-badge" alt="Track 03"></a>
 </p>
 
 <br/>
 
-> 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from `out/development/evaluation.json`, which you can regenerate yourself.
+> 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from [`out/development/evaluation.json`](out/development/evaluation.json), which **ships in this repo** — open it and check any number here without running anything.
 > 🔧 **[What broke →](POSTMORTEM.md)** · six incidents, four of which the system found before I did.
 
-<a href="#the-result">
-  <img src="docs/assets/dashboard.png" width="100%" alt="Vasool dashboard" onerror="this.style.display='none'">
+<a href="https://sriramvarun0636.github.io/Vasool">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout; three arm cards reading 65.42%, 53.81% and 49.07%; and a forest plot of paired differences against eight comparison arms." onerror="this.style.display='none'">
 </a>
+
+<sub><i>Nine exhibits, every figure traced to a manifest key &mdash;
+<a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
 
 </div>
 
@@ -33,12 +38,12 @@ Across 1,000 seeded universes of 500 customers each, Vasool detected revenue at 
 
 | | Development set (40%) | Holdout (60%, sealed) | Total |
 | :--- | ---: | ---: | ---: |
-| **Money recovered** | **₹46.50 Cr** | **₹69.60 Cr** | **₹116.10 Cr** |
+| **Money recovered** | **₹46.50 Cr** | **₹69.60 Cr** | **₹116.09 Cr** |
 | Episodes recovered | 49.07% | 48.92% | — |
 | **§2a safety predicate held** | **1,000 / 1,000 seeds** | **1,000 / 1,000 seeds** | — |
 | Automated actions on risk-declined payments | **0** | **0** | — |
 
-Every rupee in that column is summed from hash-chained receipts, not from the simulator's own bookkeeping — the two records are compared and every disagreement is reported rather than reconciled away.
+The component figures are rounded to two decimals; **the total is the sum of the underlying paise, not of the rounded numbers** — which is why it reads 116.09 rather than 116.10. Every rupee in that column is summed from hash-chained receipts, not from the simulator's own bookkeeping — the two records are compared and every disagreement is reported rather than reconciled away.
 
 ### And now the uncomfortable part
 
@@ -106,19 +111,34 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 
-pytest                        # 1,381 tests
+pytest                        # 1,387 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds  (~20 min)
 make report                   # builds out/report.html from the manifest
+PARTIAL=1 make shadow         # rules vs LLM, replayed from committed cassettes -- no network
 make replay                   # points at where determinism is asserted (make eval + tests)
 ```
 
+Nothing above needs a key or a network. `make demo` and `make shadow` replay by
+default — `LIVE=1` and `RECORD=1` are the only ways to reach Razorpay or a model
+provider, and without them a missing recording is a hard failure rather than a
+silent live call. `PARTIAL=1` is there because the recorded corpus is
+incomplete: it replays the cells that exist, renders the rest as `—`, and
+writes to `classifier_comparison_partial.*` so a partial run can never
+impersonate a full one.
+
 `make sweeps` runs the full §7 sensitivity grid — 83 configurations × 9 arms × 200 seeds. It takes about nine hours and resumes if interrupted.
+
+> ⚠️ `make eval` **overwrites the committed manifest** with a base-protocol-only
+> run. The values reproduce, but the `sweeps` block and F6's verdict do not
+> exist in it — only `make sweeps` writes those — so the dashboard's sensitivity
+> grid would render as dashes afterwards. `git checkout out/` puts the shipped
+> one back.
 
 ### Every claim, and where it comes from
 
-No figure in this README is typed by hand. Each one is a key in `out/development/evaluation.json`, the manifest `make sweeps` writes:
+No figure in this README is typed by hand. Each one is a key in [`out/development/evaluation.json`](out/development/evaluation.json), the manifest `make sweeps` writes — **committed, so you can check the right-hand column yourself in about ten seconds**:
 
 | Claim in this README | Manifest key | Value |
 | :--- | :--- | ---: |
@@ -134,7 +154,7 @@ No figure in this README is typed by hand. Each one is a key in `out/development
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
 | 18 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `18` |
 
-The dashboard makes this checkable without leaving the page: **click _trace every number_ and each of its 50 figures displays the exact manifest key it was read from.** A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
+The dashboard makes this checkable without leaving the page: **click _trace every number_ and every figure on it displays the exact manifest key it was read from** — the button reports how many, so the count is never a number this README can get wrong. A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
 
 That rule is enforced, not merely stated. [`tests/test_report.py`](tests/test_report.py) fails the build if a `|| <number>` fallback is reintroduced on any expression reading from the manifest. It exists because one was found in this repository, rendering a hardcoded constant as a measurement; the incident is recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md).
 
@@ -155,7 +175,7 @@ EOF
 # chain links: True
 ```
 
-Exhibit E on the dashboard does the same computation in your browser with the Web Crypto API.
+Exhibit H on the dashboard does the same computation in your browser with the Web Crypto API.
 
 ---
 

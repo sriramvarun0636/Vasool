@@ -29,7 +29,7 @@ re-auth link needed.
 Vasool detects revenue at risk from payment.failed webhooks, classifies
 each failure into one of five classes, chooses the intervention that class
 warrants, and executes it through a bounded workflow. Across 1,000 seeded
-universes of 500 customers it recovered ₹116.10 Cr, with the §2a safety
+universes of 500 customers it recovered ₹116.09 Cr, with the §2a safety
 predicate holding on 1,000 of 1,000 seeds and zero automated actions taken
 on risk-declined payments.
 
@@ -120,8 +120,8 @@ limitations verbatim line; close on 18 of 22 with the four named failures.
 ## Pre-submit checklist
 
 - [ ] Repo public — verify in incognito
-- [ ] `out/holdout/evaluation.json` backed up **outside the repo** (gitignored, and it cannot be regenerated — §3c allows one run)
-- [ ] `pytest` green on a fresh clone (9 tests skip without `out/`, cassettes and the webhook secret — expected, they skip with reasons)
+- [ ] `out/holdout/evaluation.json` pushed — it now ships in the repo, and it **cannot be regenerated**: §3c allows the holdout one run and it has been spent. Keep a copy off this machine until the push lands.
+- [ ] `pytest` green on a fresh clone — 1,387 pass, **1 skips** (`test_real_captured_signature_verifies`, which needs `RAZORPAY_WEBHOOK_SECRET`). The manifests and cassettes ship, so the drift guards and the cassette pin actually run rather than skipping silently.
 - [ ] `docs/index.html` renders on GitHub Pages
 - [ ] Video uploaded, link works logged out
 - [ ] `.env` **not** committed — `git log --all -- .env` returns nothing

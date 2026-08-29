@@ -2,27 +2,33 @@
 
 Design spec §16 stage 12: *"Video, rehearsed 8×. Graded most."* This is the
 script to rehearse against. Timings are targets, not limits; the only hard rule
-is that **the loss goes in the first thirty seconds**, because everything after
-it is more persuasive once the audience knows you are not selling.
+is that **the money goes first and the loss goes second** &mdash; the track's bar
+asks for measured money recovered, so lead with it, then spend the loss as proof
+that the restraint is real rather than claimed.
 
 Three lines are marked **VERBATIM**. The spec asks for two of them by name; the
 third is the one that makes the result honest. Say them exactly.
 
 ---
 
-## 0:00 — 0:30 · Open with the loss
+## 0:00 — 0:30 · The money, then the catch
 
-**On screen:** the dashboard hero, then Exhibit A's three cards side by side.
+**On screen:** the dashboard hero — ₹116.09 Cr, zero violations — then Exhibit A's
+three cards side by side.
 
-> "This is a revenue-recovery agent for Razorpay. Over a thousand seeded
-> universes it recovers **49.1%** of failed payments. The realistic incumbent —
-> retry everything, then send a link — recovers **65.4%**.
+> "This is a revenue-recovery agent for Razorpay. Across a thousand seeded
+> universes of five hundred customers it recovered **₹116 crore** of failed
+> payments, with **zero compliance violations** — the safety predicate held on
+> a thousand seeds out of a thousand, on both the development set and a holdout
+> I sealed before I started.
 >
-> So it loses by sixteen points. I registered that as falsification criterion
-> F1 before I ran anything, and I'm opening with it, because the interesting
-> part is what the sixteen points bought."
+> Now the catch, because it's the interesting part. A dumber agent recovers
+> more. Retry everything, then send a link: **65.4%** to my **49.1%**. I lose by
+> sixteen points, and I registered that as falsification criterion F1 before I
+> ran anything."
 
-**Beat.** Let it sit. Nobody else in the competition opens by losing.
+**Beat.** Let it sit. You have just met the bar and then volunteered your worst
+number — nobody else does that in the first thirty seconds.
 
 ---
 
@@ -120,7 +126,7 @@ seconds of your video.")*
 
 ## 3:10 — 3:50 · Falsification and the sweep
 
-**On screen:** Exhibit B3 (the F1–F7 board), then Exhibit B2 (the sweep grid).
+**On screen:** Exhibit D (the F1–F7 board), then Exhibit C (the sweep grid).
 
 > "Seven criteria, thresholds fixed before any run. None fired — but read F1's
 > row. It didn't fire because F1 as written fires when the interval *includes*
@@ -142,11 +148,13 @@ seconds of your video.")*
 
 ## 3:50 — 4:20 · Provenance, live
 
-**On screen:** click **trace every number**. Let all fifty paths appear at once.
-Then Exhibit E — paste a receipt id, hit verify, show the SHA-256 match.
+**On screen:** click **trace every number**. Let every path appear at once, and
+let the button's own count land on screen.
+Then Exhibit H — paste a receipt id, hit verify, show the SHA-256 match.
 
-> "Every figure on this page shows the exact key it came from in the manifest.
-> Fifty of them. A value the manifest doesn't carry renders as a dash, never as
+> "Every figure on this page shows the exact key it came from in the manifest —
+> the button counts them as it turns them on. A value the manifest doesn't carry
+> renders as a dash, never as
 > a plausible number — and a test fails the build if anyone reintroduces a
 > fallback, because I found a hardcoded constant in here rendering as a
 > measurement and that's in the postmortem too.
@@ -198,15 +206,19 @@ named failures.
 
 ## Rehearsal notes
 
-- **The loss is the hook.** If you soften it in take three because it feels bad
-  to open by losing, start again.
+- **The money is the hook; the loss is the hook that follows it.** The bar asks
+  for measured money recovered — meet it in sentence one, then volunteer the
+  gap. Opening on the loss alone risks a judge deciding you missed the bar.
 - **Run the terminal commands live.** `make demo` and `make redteam` both
   complete fast enough. Pre-recorded terminal reads as fake, and this whole
   submission is about the difference.
 - **Don't explain the architecture before the result.** Judges who have watched
   forty of these will thank you.
-- **Numbers to say precisely, from the manifest:** 49.07 / 65.42 / −16.35pp /
-  1,000 of 1,000 / pass^100 = 1.0 / 4.74pp of a 20pp threshold / 18 of 22.
-  Everything else can be rounded out loud.
+- **Numbers to say precisely, from the manifests:** ₹116.09 Cr total
+  (₹46.50 development + ₹69.60 holdout) / 49.07 vs 65.42 / −16.35pp /
+  1,000 of 1,000 on both cohorts / pass^100 = 1.0 / 4.74pp against a 20pp
+  threshold / 18 of 22. Everything else can be rounded out loud.
+- **The loss is not an apology.** Say it flat, then move straight to what it
+  bought. If a take has you softening it, do the take again.
 - The three **VERBATIM** blocks are the ones to over-rehearse. Everything else
   should sound like you're thinking, because you are.
