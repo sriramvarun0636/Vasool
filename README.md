@@ -161,17 +161,18 @@ make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds  (~20 min)
 make report                   # builds out/report.html from the manifest
-PARTIAL=1 make shadow         # rules vs LLM, replayed from committed cassettes -- no network
+REPEATS=1 make shadow         # rules vs LLM, replayed from committed cassettes -- no network
 make replay                   # points at where determinism is asserted (make eval + tests)
 ```
 
 Nothing above needs a key or a network. `make demo` and `make shadow` replay by
 default — `LIVE=1` and `RECORD=1` are the only ways to reach Razorpay or a model
 provider, and without them a missing recording is a hard failure rather than a
-silent live call. `PARTIAL=1` is there because the recorded corpus is
-incomplete: it replays the cells that exist, renders the rest as `—`, and
-writes to `classifier_comparison_partial.*` so a partial run can never
-impersonate a full one.
+silent live call. `REPEATS=1` matches the depth the corpus was recorded at;
+bare `make shadow` asks for 15 repeats per cell, which only one cell has, and
+fails rather than quietly filling the gap. A run that cannot cover every cell
+writes to `classifier_comparison_partial.*` so it can never impersonate a full
+one — this one is complete, so it doesn't.
 
 `make sweeps` runs the full §7 sensitivity grid — 83 configurations × 9 arms × 200 seeds. It takes about nine hours and resumes if interrupted.
 
@@ -315,30 +316,46 @@ flowchart TD
 
 ## The LLM, measured
 
-The air gap is an architectural claim. This is the empirical one: on the cells recorded so far, the LLM classifier gets the **failure class** right **57.6%** of the time, and picks the **action** §4 names for the row **33.3%** of the time.
+The air gap is an architectural claim. This is the empirical one, over **all twelve cells** — every distinct question the registered universe can ask a fields-only classifier. The LLM gets the **failure class** right **66.7%** of the time (60.4% weighted by episode volume), and picks the **action** §4 names for the row **58.3%** of the time.
 
 The rules classifier scores 1.000 — **by construction, not by measurement.** Ground truth resolves through the same lookup the rules read, and the rendered artifact says so in its own header rather than letting you assume otherwise.
 
-That gap is the argument for where the LLM sits. A component that picks the right action a third of the time is not one you put in front of a payment; it is one you run in shadow, compare, and keep behind a state machine.
+### The finding that decides where it sits
 
-**This comparison is incomplete and the artifact refuses to pretend otherwise.** It is written as `classifier_comparison_partial.json` — the `_partial` suffix is enforced so it cannot overwrite or be mistaken for a full run:
+Two cells in the corpus are `RISK_BLOCK` — a payment a fraud engine declined, where [the taxonomy's whole argument](docs/taxonomy.md) is that the correct action is *nothing*. **On one of them the model proposed sending the customer a payment link.**
 
 ```
-coverage: 3 of 12 cells, 41 of 180 classifications recorded
-    payment_failed / gateway              15/15
-    insufficient_fund / bank              15/15
-  ~ card_declined / bank                  11/15
-  ! gateway_technical_error / gateway      0/15
-  ! …and eight more cells at 0/15
+payment_failed / business   (truth RISK_BLOCK, rules action HUMAN_QUEUE)
+    classes:       {'CUSTOMER_ACTION': 1}
+    interventions: {'REATTEMPT_LINK': 1}
 ```
 
-Two depths, and they cost very differently. **Breadth** — every cell answered once — needs **9 more classifications**, one day of Gemini's 20-request free tier, and yields a complete comparison the tool will write without the `_partial` suffix. **Depth** — the registered 15 repeats per cell, which is what makes consistency measurable across the corpus rather than on three cells — needs 139 more, about a week of quota.
+That is not a near-miss. An automated *"your payment failed, click here"* to someone whose payment was just declined for suspected fraud is the exact phishing pattern the rule exists to prevent — and the artifact counts it in its own line: `Automated actions proposed on RISK_BLOCK episodes: 1 of 2`.
 
-Every rate above is computed over recorded cells only; an unrecorded cell contributes to no numerator and no denominator. Reproduce with `PARTIAL=1 make shadow` (replay, no network — bare `make shadow` exits 3 rather than quietly filling a gap), or resume recording at the first missing cell:
+A component that does that once in two attempts is not one you put in front of a payment. It is one you run in shadow, compare, and keep behind a state machine.
+
+### Stable and wrong is worse than unstable
+
+`payment_failed / gateway` is the largest cell in the corpus — 757 episodes, 21.2% by weight, and the one failure reason reproducible against live test mode. Asked fifteen times:
+
+```
+accuracy    0.000   (0 of 15 repeats matched the registered truth)
+stability   1.000   (modal answer given 15 of 15 times)
+said        CUSTOMER_ACTION x15
+proposed    REATTEMPT_LINK x15
+```
+
+**Confidently, reproducibly wrong about the most common failure on the platform.** Either column alone would have hidden it: accuracy without stability looks like noise, stability without accuracy looks like reliability. The artifact prints them together for that reason, and states in its own words that one cell generalises to nothing.
+
+### What this does and does not measure
+
+Every cell was asked **once** (k=1) — forced by the free tier's observed cap of twenty requests per day against a twelve-cell corpus. One answer per cell measures whether the answer was *right*; it cannot measure whether the model would say it *again*, so the consistency column reports `—` rather than the 1.000 the arithmetic would otherwise produce. Stability is measured separately, on the one cell above, at depth 15.
+
+Reproduce it with no network and no key — the cassettes ship in this repo:
 
 ```bash
-RECORD=1 REPEATS=1 make shadow   # 9 requests -> complete at k=1
-RECORD=1 make shadow             # 139 requests -> full depth, resumes across days
+REPEATS=1 make shadow                                   # the full 12-cell table
+REPEATS=1 CELL=payment_failed/gateway make shadow       # + the depth section
 ```
 
 ## F1–F7 — the criteria that could have killed this
@@ -411,7 +428,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **Eight of the nine outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
 - **Nine of ten error reasons are `_SIMULATED`.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use. That finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md).
 - **Subscriptions were unavailable pre-activation**, so the failed-mandate loop is stub-only.
-- **The LLM comparison covers 3 of 12 cells** — 41 of 180 classifications. Free-tier quota, not a design choice, and the artifact carries the `_partial` suffix so it cannot be read as a full run. Nine more classifications complete it at k=1.
+- **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
 Every amendment to the protocol after registration — thirty-five of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.

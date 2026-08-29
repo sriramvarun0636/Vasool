@@ -22,7 +22,21 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPORT = REPO_ROOT / "tools" / "report.py"
 MANIFEST = REPO_ROOT / "out" / "development" / "evaluation.json"
 HOLDOUT = REPO_ROOT / "out" / "holdout" / "evaluation.json"
-SHADOW = REPO_ROOT / "out" / "shadow" / "classifier_comparison_partial.json"
+def _shadow_path() -> pathlib.Path:
+    """Complete beats partial, always.
+
+    This constant used to name the `_partial` artifact outright, which is the
+    same defect tools/report.py carried: it dated from when partial was the
+    only artifact that existed, so the moment a full run landed the guard was
+    reading a superseded file -- or, once the stale partial was deleted,
+    reading nothing at all and silently allowing no shadow figure through.
+    """
+    shadow = REPO_ROOT / "out" / "shadow"
+    complete = shadow / "classifier_comparison.json"
+    return complete if complete.exists() else shadow / "classifier_comparison_partial.json"
+
+
+SHADOW = _shadow_path()
 
 SOURCE = REPORT.read_text()
 
@@ -193,10 +207,19 @@ class TestReadmeDoesNotDrift:
         # they are held to the same rule: quotable only if something produced
         # them.
         if SHADOW.exists():
-            overall = json.loads(SHADOW.read_text()).get("overall", {})
-            for value in overall.values():
+            shadow = json.loads(SHADOW.read_text())
+            for value in shadow.get("overall", {}).values():
                 if isinstance(value, float) and 0.0 < value <= 1.0:
                     allowed.update({f"{value * 100:.2f}%", f"{value * 100:.1f}%"})
+            # §4.5's depth section reports one cell's share of the corpus by
+            # episode volume, and the README quotes it. It is derived rather
+            # than stored, so the guard has to derive it the same way or a
+            # real measurement gets rejected as drift.
+            stability = shadow.get("stability") or {}
+            corpus = shadow.get("covered_episodes") or shadow.get("episodes")
+            if stability.get("episodes") and corpus:
+                share = stability["episodes"] / corpus * 100
+                allowed.update({f"{share:.2f}%", f"{share:.1f}%"})
 
         # Both spellings. "49.07 percent" in an alt attribute is the same
         # claim as "49.07%" and drifts the same way, so the pattern

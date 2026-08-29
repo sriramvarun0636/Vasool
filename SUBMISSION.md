@@ -43,9 +43,11 @@ is broken look identical otherwise.
 
 The LLM never touches money. It emits an inert verdict object; there is no
 code path in the repository that converts it into something executable.
-I measured what that costs: on the recorded corpus the LLM gets the failure
-class right 57.6% of the time and picks the right action 33.3% of the time.
-That gap is the argument for where it sits.
+I measured what that costs. Across all twelve cells the LLM gets the failure
+class right 66.7% of the time and picks the right action 58.3%. More to the
+point: of the two risk-declined cells — where the correct action is to do
+nothing — it proposed sending the customer a payment link on one. That is the
+argument for where it sits.
 ```
 
 ---

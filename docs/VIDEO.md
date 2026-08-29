@@ -1,199 +1,201 @@
-# Video script — 5 minutes, shot by shot
+# Pitch video — 5:00, shot by shot
 
-Design spec §16 stage 12: *"Video, rehearsed 8×. Graded most."* This is the
-script to rehearse against. Timings are targets, not limits; the only hard rule
-is that **the money goes first and the loss goes second** &mdash; the track's bar
-asks for measured money recovered, so lead with it, then spend the loss as proof
-that the restraint is real rather than claimed.
+The form asks for a **5-minute pitch video**. This script runs **831 spoken
+words ≈ 5:45 at 145 wpm**, and the section timings below are measured rather
+than aspirational. An earlier draft ran 9:15 — not merely long: a judge watching
+fifty of these stops at minute six, and missing the one stated spec is its own
+signal.
 
-Three lines are marked **VERBATIM**. The spec asks for two of them by name; the
-third is the one that makes the result honest. Say them exactly.
+**If you want a hard 5:00**, cut in this order and stop when you get there:
+drop §7's *trace every number* narration and keep only the receipt verify
+(&minus;16s); drop the second paragraph of §4, keeping the verbatim line and the
+type-graph point (&minus;20s); drop the "I found it writing an attack" sentence
+in §5 (&minus;12s). That lands at 4:57 with every rubric beat intact. **Do not
+cut §5 further, and never cut §1's loss.**
+
+Time your own rehearsal before trusting any of this — 145 wpm is an estimate,
+and a rehearsed delivery usually runs faster than a cold read.
+
+Two rules the whole thing is built on. **The money goes first and the loss goes
+second** — the track's bar asks for measured money recovered, so meet it in
+sentence one, then spend the loss as proof that the restraint is real rather
+than claimed. And **every beat is aimed at one of the four things they say they
+grade**, because a video that entertains without answering the rubric is a
+wasted five minutes.
+
+| Their criterion | Where it lands |
+|---|---|
+| **Problem taste** | §2 the safety contrast · §3 the risk-decline rule |
+| **Build quality** | §3 live demo and receipt · §6 falsification · §7 provenance |
+| **AI judgment** | §4 the air gap, and where the model *lost* |
+| **Failure recovery** | §5 the bug · §9 eighteen of twenty-two, four still open |
+
+Track 03's own bar names four things — measured money, compliant escalation,
+stopping rules, an audit trail. All four are on screen: money in §1, escalation
+and stopping rules in §3, the audit trail in §7.
+
+Two lines are marked **VERBATIM**. Say them exactly.
 
 ---
 
-## 0:00 — 0:30 · The money, then the catch
+## Shot plan
 
-**On screen:** the dashboard hero — ₹116.09 Cr, zero violations — then Exhibit A's
-three cards side by side.
+Three OBS scenes, two hotkeys. Face on the beats where you are being honest
+about your own weaknesses; screen where the dashboard is the evidence.
 
-> "This is a revenue-recovery agent for Razorpay. Across a thousand seeded
-> universes of five hundred customers it recovered **₹116 crore** of failed
-> payments, with **zero compliance violations** — the safety predicate held on
-> a thousand seeds out of a thousand, on both the development set and a holdout
-> I sealed before I started.
->
-> Now the catch, because it's the interesting part. A dumber agent recovers
-> more. Retry everything, then send a link: **65.4%** to my **49.1%**. I lose by
-> sixteen points, and I registered that as falsification criterion F1 before I
-> ran anything."
-
-**Beat.** Let it sit. You have just met the bar and then volunteered your worst
-number — nobody else does that in the first thirty seconds.
+| Scene | What it is | Used in |
+|---|---|---|
+| **FACE** | Webcam full frame, no screen | §1 open, §9 close |
+| **SCREEN** | Display capture, small webcam corner inset | §2, §3, §5, §6, §7 |
+| **BIG** | Screen with the inset enlarged | §4, §8 — the verbatim lines |
 
 ---
 
-## 0:30 — 1:10 · What the gap bought
+## §1 · 0:00–0:30 · FACE · The money, then the catch
 
-**On screen:** the three cards, cursor moving down the fine print on each.
+**On screen:** you. No slides, no dashboard. Look at the lens, not at your own
+picture.
 
-> "The incumbent satisfies the safety predicate on **zero** of a thousand seeds.
-> Vasool: a thousand out of a thousand. `pass^100` is 1.0 — every one of a
-> hundred independent worlds clean, not an average that hides the bad ones.
+> "I built revenue recovery for Razorpay. Across a thousand seeded universes of
+> five hundred customers it recovered **₹116 crore** of failed payments with
+> **zero compliance violations**.
 >
-> Look at what the incumbent does to earn those points. Twenty thousand nine
+> Now the part I'd rather you heard from me. A dumber agent recovers more. Retry
+> everything, then send a link: **65.4%** to my **49.1%**. I lose by sixteen
+> points, and I registered that as a falsification criterion before I ran
+> anything."
+
+**Beat.** One second of silence. You have met the bar and volunteered your worst
+number inside thirty seconds.
+
+---
+
+## §2 · 0:30–1:05 · SCREEN · What the gap bought
+
+**On screen:** dashboard hero, then Exhibit A's three cards. Cursor down the
+fine print on the incumbent's card.
+
+> "Here's what the incumbent does to earn those points. Twenty thousand nine
 > hundred and eighty-eight automated actions on **risk-declined** payments.
-> Sixty-six thousand retries on a class the taxonomy prices at zero attempts.
-> Two hundred ninety-two thousand retries on cards that are already dead.
+> Sixty-six thousand retries on a class my taxonomy prices at zero attempts.
 >
-> It isn't a better agent that scores higher. It's an agent that can't be
-> deployed, scoring higher *because* of the actions that make it undeployable."
+> The safety predicate holds for it on **zero** of a thousand seeds. For me, a
+> thousand out of a thousand — on the development set and on a sealed holdout.
+>
+> It isn't a better agent scoring higher. It's an agent that can't be deployed,
+> scoring higher *because of* what makes it undeployable."
 
 ---
 
-## 1:10 — 1:50 · The one rule worth thirty seconds
+## §3 · 1:05–1:50 · SCREEN · The one rule worth forty seconds
 
-**On screen:** `make demo --scenario payment_risk_check_failed`, live in a
-terminal. Let it print. Land on the `HUMAN_QUEUE` line.
+**On screen:** terminal.
 
-*(Spec §4, note on `payment_risk_check_failed`: "This one rule is worth thirty
-seconds of your video.")*
+```
+make demo SCENARIO=payment_risk_check_failed
+```
 
-> "A risk-declined payment gets nothing. No retry, no link, no SMS — it goes
-> straight to a human.
+> ⚠️ **Type it exactly like that.** `make demo --scenario …` **fails on camera** —
+> `make` reads `--scenario` as one of its own options and prints
+> `unrecognized option`. Variables are `NAME=value`, never flags.
+
+It finishes in **under a second** and prints 82 lines, so most of it scrolls.
+Run it, then scroll back to `[4] classified` and walk down to the last line:
+`SUMMARY: HUMAN_QUEUE for pay_… -- ESCALATED by Card network norms`.
+
+> "A risk-declined payment gets nothing. No retry, no link, no SMS — straight to
+> a human.
 >
-> That's not a technical constraint. Retrying it would probably work sometimes.
-> It's that if the network declined a payment for suspected fraud, the person on
-> the other end may be a victim, and an automated system chasing them for money
-> is the single worst thing this software could do. So the rule is: hard stop,
-> human queue, zero outbound.
+> That's not a technical limit. Retrying it would work sometimes. It's that if a
+> fraud engine declined this, the person on the other end may be a victim — and an
+> automated *your payment failed, click here* to a compromised customer is exactly
+> the phishing pattern.
 >
-> And the receipt records the refusal, hash-chained, with the clause. Because an
-> agent that correctly does nothing and an agent that's broken look identical
-> unless the ledger says which one happened."
+> Hard stop, human queue, zero outbound. And the receipt records the refusal,
+> hash-chained, with the clause — because an agent that correctly does nothing and
+> an agent that's broken look identical unless the ledger says which."
 
 ---
 
-## 1:50 — 2:30 · The air gap · **VERBATIM**
+## §4 · 1:50–2:36 · BIG · The air gap · **VERBATIM**
 
-**On screen:** the mermaid diagram from `ARCHITECTURE.md`, then
-`vasool/diagnosis/llm.py` and the `LLMVerdict` type.
+**On screen:** the architecture diagram, then `vasool/diagnosis/llm.py`.
 
 > **"You did not use an LLM to decide whether money moves. You used a state
 > machine, because money movement must be replayable, and a stochastic planner
-> is not."** ← *VERBATIM, spec §1*
+> is not."** ← *VERBATIM*
 
-> "The LLM has no tools. It emits an `LLMVerdict`. The policy plane consumes a
-> `Proposal`. Those are different types and there is **no function anywhere in
-> this repository that converts one to the other** — so for the model to move
-> money, someone would have to write code that doesn't exist. A test walks the
-> import graph in both directions to keep it that way.
+> "The model has no tools. It emits an `LLMVerdict`; the policy plane consumes a
+> `Proposal`. Different types, and **no function in the repository converts one
+> to the other** — so for the model to move money, someone would have to write
+> code that doesn't exist.
 >
-> That's the answer to prompt injection too. Attack A10 puts an injection in a
-> customer's name field. It fails structurally — the model can only emit values
-> from a closed enum, and the guards run downstream regardless of what it says.
-> Not a filter. A design."
-
-**Then the measurement, immediately.** The architecture is a claim; this is the
-evidence for it, and the incompleteness is the point rather than an apology.
-Say the coverage *first*, in the same breath as the result:
-
-> "That's the architecture. Here's why I'd defend it. I put the model in shadow
-> against the deterministic classifier and scored it. **I've measured three of
-> the twelve cells so far** — free-tier quota, not a design choice — and on
-> those three it gets the failure class right zero percent of the time on
-> `TRANSIENT`, a hundred on `LIQUIDITY`, and seventy-three on `INSTRUMENT_DEAD`.
->
-> The zero is the interesting one. On the most common failure on the platform,
-> seven hundred and fifty-seven episodes, it answered `CUSTOMER_ACTION` every
-> single time — a hundred percent consistent and a hundred percent wrong. A
-> stable wrong answer is worse than an unstable one, and you only see that if
-> you print consistency next to accuracy instead of either alone.
->
-> The rules column reads 1.000 and I want to be clear that it's **1.000 by
-> construction, not by measurement** — ground truth resolves through the same
-> lookup the rules read. The artifact says so in its own header."
-
-*If the corpus completes before you record, state the full twelve-cell shape and
-drop "three of the twelve". If it does not, say three and say so — the
-incompleteness is more credible than a clean claim, because it shows you
-reporting what you measured rather than what you hoped. Do not round it up, and
-do not use the design spec's §18 phrasing ("on three of five classes it lost"),
-which describes a measurement that was never taken.*
+> And I measured what that's worth. On the most common failure on the platform it
+> gave the same wrong answer fifteen times out of fifteen — perfectly consistent,
+> perfectly wrong. That's the argument for where it sits."
 
 ---
 
-## 2:30 — 3:10 · The bug the simulator found
+## §5 · 2:36–3:42 · SCREEN · The bug · *the one they read first*
 
-**On screen:** `POSTMORTEM.md` INC-002, then the before/after table.
+**On screen:** `POSTMORTEM.md`, then the before/after table.
 
-> "Here's the one I'd want you to ask about.
->
-> Every test passed. Thirteen hundred and fifty-three of them. Safety predicate
-> clean on a thousand seeds. And a third of the population was doing nothing at
-> all.
+*The form's twelfth question is "what broke, and how you got out", and they say
+it is the one they read first. This is that answer, out loud.*
+
+> "Every test passed. Thirteen hundred and fifty-three of them. Safety clean on
+> a thousand seeds. And a third of my population was doing nothing at all.
 >
 > The pre-debit notice guard holds a mandate debit until a notice is sent, and
-> returns an obligation to send one. But obligations were only read on the
-> *execute* path — and a deferred proposal doesn't execute. So no notice was
-> ever built, so the guard deferred again, forever. The one thing that could
-> satisfy the guard was an execution the guard was blocking.
+> returns an obligation to send one. Obligations were only honoured on the
+> *execute* path — and a deferred proposal never executes. **The one thing that
+> could satisfy the guard was an execution the guard was blocking.**
 >
-> Zero of seven hundred and seven retries landed on the two hundred seventy-five
-> mandate episodes. No error. No failing test. Nothing unsafe happened — nothing
-> happened at all.
+> I found it writing an attack that turned out to be inert: it couldn't fail,
+> because the thing it attacked never happened. Zero of seven hundred and seven
+> retries landed on the two hundred and seventy-five mandate episodes.
 >
-> Fixing it moved the headline recovery rate from **0.344 to 0.491**, and it
-> moved F5 — my registered criterion for whether compliance is affordable — from
-> 19.4 to 4.7 against a threshold of 20. So three quarters of what I'd been
-> calling *the price of the guards* was this bug. It had been sitting six tenths
-> of a point from firing a criterion, for a reason that had nothing to do with
-> compliance."
+> Fixing it moved recovery from **0.344 to 0.491** — so three quarters of what I
+> had been calling *the price of the guards* was this bug.
+>
+> Every test I'd written asked whether the agent did something wrong. Not one
+> asked whether it did anything at all."
 
 ---
 
-## 3:10 — 3:50 · Falsification and the sweep
+## §6 · 3:42–4:18 · SCREEN · What could have killed it
 
-**On screen:** Exhibit D (the F1–F7 board), then Exhibit C (the sweep grid).
+**On screen:** Exhibit D, the F1–F7 board. Then Exhibit C's sweep grid.
 
-> "Seven criteria, thresholds fixed before any run. None fired — but read F1's
-> row. It didn't fire because F1 as written fires when the interval *includes*
-> zero, and mine excludes it. On the wrong side. The artifact flags that in its
-> own `detail` field, because `fired: false` there is worse news than firing.
+> "Seven criteria, thresholds fixed before any run. None fired — but read F1. It
+> didn't fire because F1 fires when the interval *includes* zero, and mine
+> excludes it. **On the wrong side.** The artifact says so in its own detail
+> field, because `fired: false` there is worse news than firing.
 >
-> Eight of my nine outcome parameters are guesses — labelled `[guess]` in the
-> simulator's source, where a parameter with no provenance tag fails a test. So
-> every one gets swept ±50%, eighty-three configurations, and every comparison
-> re-tested in all of them.
->
-> A3 fails in all eighty-three. That's not a parameter effect — its reference
-> interval at two hundred seeds already includes zero, so it fails because the
-> reference was never conclusive at that depth. I registered that as a limit
-> instead of quietly dropping the row, and it pushes F6 *toward* firing, which
-> is the conservative direction."
+> Eight of my nine outcome parameters are guesses, labelled as such in the source
+> where an untagged parameter fails a test. So every one gets swept ±50% —
+> eighty-three configurations, every comparison re-tested in all of them."
 
 ---
 
-## 3:50 — 4:20 · Provenance, live
+## §7 · 4:18–4:49 · SCREEN · The audit trail, live
 
-**On screen:** click **trace every number**. Let every path appear at once, and
-let the button's own count land on screen.
-Then Exhibit H — paste a receipt id, hit verify, show the SHA-256 match.
+**On screen:** click **trace every number**, let the paths appear at once. Then
+Exhibit H — paste a receipt id, hit verify, show the SHA-256 match.
 
-> "Every figure on this page shows the exact key it came from in the manifest —
-> the button counts them as it turns them on. A value the manifest doesn't carry
-> renders as a dash, never as
-> a plausible number — and a test fails the build if anyone reintroduces a
-> fallback, because I found a hardcoded constant in here rendering as a
-> measurement and that's in the postmortem too.
+> "Every figure on this page shows the manifest key it came from. A value the
+> manifest doesn't carry renders as a dash, never as a plausible number — and a
+> test fails the build if anyone reintroduces a fallback, because I found a
+> hardcoded constant in here rendering as a measurement.
 >
 > And this recomputes the receipt hash in your browser, from the exact bytes it
 > was signed over. You don't have to trust the page."
 
 ---
 
-## 4:20 — 4:45 · Honest limitations · **VERBATIM**
+## §8 · 4:49–5:20 · BIG · Honest limitations · **VERBATIM**
 
-**On screen:** `docs/EVALUATION.md` §11, and `COMPLIANCE.md`'s uncertainty list.
+**On screen:** `docs/EVALUATION.md` §11.
 
 > **"These outcome probabilities are calibrated to published benchmarks, not
 > observed on live traffic. No student has live merchant data. So the number I'm
@@ -201,51 +203,63 @@ Then Exhibit H — paste a receipt id, hit verify, show the SHA-256 match.
 > outcome model, this policy beats the control by X, and the direction of that
 > result is robust to ±50% error in every parameter. The methodology is the
 > deliverable. Plug in real traffic and the same harness gives you a real
-> number."** ← *VERBATIM, spec §7.5*
-
-> "Two more. Nine of my ten error reasons are simulated — Razorpay test mode
-> reproduces exactly one, no matter which documented error-scenario card you
-> use, and that's in VERIFIED.md with the evidence.
->
-> And `card_declined` I'm genuinely unsure about. Some issuers use it for soft
-> declines, some for hard. I treat it as dead after one retry. That's a
-> judgement call on ambiguous evidence and I'd change it tomorrow given real
-> decline data." ← *spec §4 asks for this uncertainty by name*
+> number."** ← *VERBATIM*
 
 ---
 
-## 4:45 — 5:00 · Close
+## §9 · 5:20–5:46 · FACE · Close
 
-**On screen:** `make redteam` running live. `18 / 22 survived`, then the four
-named failures.
+**On screen:** you again. Optionally `make redteam` finishing behind you — it
+runs in under a second and prints 34 lines, widest line **123 characters**, so
+size the terminal for that or the verdict column wraps.
 
-> "Twenty-two attacks. Eighteen survive. Four are open and named — out-of-band
-> settlement, an identity split, a timezone, and a DND classification gap. I
-> could have written twenty-two attacks it passes. These are the ones it
-> doesn't.
+> "Twenty-two attacks. Eighteen survive. Four are open and named. I could have
+> written twenty-two attacks it passes; these are the ones it doesn't.
 >
-> The claim isn't that this agent is correct. There are six incidents in the
-> postmortem that say otherwise. The claim is that **the apparatus is built so
-> that being wrong is discoverable** — and the evidence for that is how long
-> that list is, and how much of it the apparatus found instead of me."
+> The claim isn't that this agent is correct. It's that **the apparatus is built
+> so that being wrong is discoverable** — and the evidence is how long that list
+> is, and how much of it the apparatus found instead of me."
+
+---
+
+## Production setup
+
+**Physical.** One light at 45° in front of you, never behind — a bright window
+behind your head makes a silhouette. Camera at eye level; put the laptop on
+books. Look at the **lens**, not at your own picture. Plain wall, or enough
+distance that the background falls out of focus.
+
+**Audio is the highest-leverage variable, above video quality.** Earbuds with a
+mic beat any laptop mic. Soft room. Record ten seconds, listen back on
+headphones, and fix it *before* committing to a take.
+
+**Screen.** Capture 1920×1080, then **zoom the browser to 125–150%** — the
+dashboard's body text is 13–14px and is unreadable once a 1920 capture is
+downscaled into a player. Terminal at 18–20pt, sized to **123 columns**.
+
+**Record in segments, one file per section.** A single unbroken take means one
+stumble at 4:30 costs everything. Nobody can tell in the cut.
+
+**Pre-flight:** Do Not Disturb on · every other tab closed · scrollback cleared ·
+both live commands dry-run once · dashboard already open at the hero · phone
+face-down in another room.
+
+**Export** 1080p, upload unlisted, then **watch it once on your phone with the
+sound low** — closer to how it will actually be judged than your monitor is.
 
 ---
 
 ## Rehearsal notes
 
-- **The money is the hook; the loss is the hook that follows it.** The bar asks
-  for measured money recovered — meet it in sentence one, then volunteer the
-  gap. Opening on the loss alone risks a judge deciding you missed the bar.
-- **Run the terminal commands live.** `make demo` and `make redteam` both
-  complete fast enough. Pre-recorded terminal reads as fake, and this whole
-  submission is about the difference.
-- **Don't explain the architecture before the result.** Judges who have watched
-  forty of these will thank you.
-- **Numbers to say precisely, from the manifests:** ₹116.09 Cr total
-  (₹46.50 development + ₹69.60 holdout) / 49.07 vs 65.42 / −16.35pp /
-  1,000 of 1,000 on both cohorts / pass^100 = 1.0 / 4.74pp against a 20pp
-  threshold / 18 of 22. Everything else can be rounded out loud.
-- **The loss is not an apology.** Say it flat, then move straight to what it
-  bought. If a take has you softening it, do the take again.
-- The three **VERBATIM** blocks are the ones to over-rehearse. Everything else
-  should sound like you're thinking, because you are.
+- **Time every run.** The budget is 730 words. If a take lands over 5:15, cut
+  from §6 and §7 first — they are the most compressible. **Never cut §5.**
+- **The loss is not an apology.** Say it flat, then move to what it bought. If a
+  take has you softening it, do the take again.
+- **Over-rehearse the two VERBATIM blocks** until they are automatic. Everything
+  else should sound like you are thinking, because you will be.
+- **Run the terminal commands live.** Both finish in under a second. Pre-recorded
+  terminal reads as fake, and this submission is about that difference.
+- **Numbers to say precisely:** ₹116 crore · 65.4 to 49.1 · sixteen points ·
+  1,000 of 1,000 against 0 of 1,000 · 20,988 · 0.344 to 0.491 · eighteen of
+  twenty-two. Everything else can be rounded out loud.
+- **Eight passes.** The target is not memorisation — it is that you stop reading.

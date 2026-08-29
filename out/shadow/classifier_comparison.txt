@@ -1,0 +1,125 @@
+CLASSIFIER COMPARISON — deterministic rules vs LLM, shadow mode
+provider=gemini  model=gemini-3.6-flash  repeats=1  cells=12  episodes=3565
+
+READ THIS FIRST
+  Every cell was asked once (k=1). That is not a judgement about
+  statistical power — k=1 was forced by the free-tier quota, whose observed
+  cap is twenty requests per day against a twelve-cell corpus. One answer
+  per cell measures whether the answer was right; it cannot measure whether
+  the model would give the same answer again, so the consistency column is
+  reported as — rather than as the 1.000 the arithmetic would otherwise
+  produce. Stability is measured separately, on one cell, at depth.
+
+  The LLM arm runs on a model chosen for cost — a free tier is the budget
+  this comparison had. A stronger model might close the gap, and nothing
+  measured here bounds one that was not run.
+
+  Nine of the ten error reasons are _SIMULATED stubs, documentation-derived
+  rather than captured; only payment_failed is reproducible against live
+  test mode (docs/VERIFIED.md). EVALUATION.md §11 registers that this
+  comparison does not generalise beyond these ten.
+
+  The Rules column is 1.000 by construction, not by measurement: the
+  registered truth is PlannedEpisode.failure_class, which resolves through
+  the same taxonomy lookup the rules classifier reads. Read it as the
+  definition of truth in this world, never as evidence the table is right.
+
+                           Rules     LLM   LLM(wt)  consist  cells  covered  episodes  rejected  absent
+-------------------------------------------------------------------------------------------------------
+Overall                    1.000   0.667     0.604        —     12       12      3565         0       0
+  TRANSIENT                1.000   0.333     0.249        —      3        3      1427         0       0
+  LIQUIDITY                1.000   1.000     1.000        —      1        1       732         0       0
+  INSTRUMENT_DEAD          1.000   0.750     0.711        —      4        4       982         0       0
+  CUSTOMER_ACTION          1.000   1.000     1.000        —      2        2       332         0       0
+  RISK_BLOCK               1.000   0.500     0.391        —      2        2        92         0       0
+
+PER CELL — every distinct question the registered universe can ask
+error_reason / source                         provenance  truth                LLM  consist   k  episodes
+---------------------------------------------------------------------------------------------------------
+payment_failed / gateway                      observed    TRANSIENT          0.000        —   1       757
+insufficient_fund / bank                      simulated   LIQUIDITY          1.000        —   1       732
+card_declined / bank                          simulated   INSTRUMENT_DEAD    1.000        —   1       435
+gateway_technical_error / gateway             simulated   TRANSIENT          1.000        —   1       356
+payment_timed_out / customer                  simulated   TRANSIENT          0.000        —   1       314
+payment_failed / bank                         observed    INSTRUMENT_DEAD    0.000        —   1       284
+payment_cancelled / customer                  simulated   CUSTOMER_ACTION    1.000        —   1       259
+card_expired / bank                           simulated   INSTRUMENT_DEAD    1.000        —   1       159
+card_disabled_for_online_payments / bank      simulated   INSTRUMENT_DEAD    1.000        —   1       104
+card_number_invalid / customer                simulated   CUSTOMER_ACTION    1.000        —   1        73
+payment_failed / business                     assembled   RISK_BLOCK         0.000        —   1        56
+payment_risk_check_failed / business          simulated   RISK_BLOCK         1.000        —   1        36
+
+WHAT THE LLM ACTUALLY SAID, per recorded cell
+  payment_failed / gateway  (truth TRANSIENT, rules action SILENT_RETRY, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  insufficient_fund / bank  (truth LIQUIDITY, rules action TIMED_RETRY, k=1)
+      classes:       {'LIQUIDITY': 1}
+      interventions: {'TIMED_RETRY': 1}
+  card_declined / bank  (truth INSTRUMENT_DEAD, rules action SILENT_RETRY, k=1)
+      classes:       {'INSTRUMENT_DEAD': 1}
+      interventions: {'REAUTH_LINK': 1}
+  gateway_technical_error / gateway  (truth TRANSIENT, rules action SILENT_RETRY, k=1)
+      classes:       {'TRANSIENT': 1}
+      interventions: {'SILENT_RETRY': 1}
+  payment_timed_out / customer  (truth TRANSIENT, rules action SILENT_RETRY, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  payment_failed / bank  (truth INSTRUMENT_DEAD, rules action SILENT_RETRY, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  payment_cancelled / customer  (truth CUSTOMER_ACTION, rules action REATTEMPT_LINK, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  card_expired / bank  (truth INSTRUMENT_DEAD, rules action REAUTH_LINK, k=1)
+      classes:       {'INSTRUMENT_DEAD': 1}
+      interventions: {'REAUTH_LINK': 1}
+  card_disabled_for_online_payments / bank  (truth INSTRUMENT_DEAD, rules action REAUTH_LINK, k=1)
+      classes:       {'INSTRUMENT_DEAD': 1}
+      interventions: {'REAUTH_LINK': 1}
+  card_number_invalid / customer  (truth CUSTOMER_ACTION, rules action REATTEMPT_LINK, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  payment_failed / business  (truth RISK_BLOCK, rules action HUMAN_QUEUE, k=1)
+      classes:       {'CUSTOMER_ACTION': 1}
+      interventions: {'REATTEMPT_LINK': 1}
+  payment_risk_check_failed / business  (truth RISK_BLOCK, rules action HUMAN_QUEUE, k=1)
+      classes:       {'RISK_BLOCK': 1}
+      interventions: {'HUMAN_QUEUE': 1}
+
+STABILITY AT DEPTH — payment_failed / gateway, k=15
+
+  Stability is not correctness, and the two are printed together because
+  separating them loses the point. A model that gives the same answer every
+  time is stable whether or not the answer is right — and a stable wrong
+  answer is worse than an unstable one, because nothing about it looks like
+  a problem.
+
+  truth               TRANSIENT
+  rules action        SILENT_RETRY
+  accuracy            0.000   (0 of 15 repeats matched the registered truth)
+  stability           1.000   (modal answer given 15 of 15 times)
+  rejected            0
+  said                CUSTOMER_ACTION x15
+  proposed            REATTEMPT_LINK x15
+  episodes            757 (21.2% of the corpus by weight)
+
+  This is one cell. It generalises to nothing — not to the class it belongs
+  to, not to the corpus, and not to the model. It is a statement about this
+  question asked at this depth, and it is reported separately from the
+  table for exactly that reason.
+
+SECONDARY
+  Classifier agreement 0.667 — identical to the LLM's accuracy above, and
+  necessarily so while the rules define the truth. A table reporting only
+  agreement could not show where the LLM loses, which is the only thing
+  worth reporting.
+
+  Intervention agreement 0.583 — how often the LLM chose the action §4
+  names for the row, at attempt 1.
+
+  Automated actions proposed on RISK_BLOCK episodes: 1 of 2 recorded.
+  docs/taxonomy.md §4.4: this is the one class where the correct product
+  decision is to do nothing, so the class being right is not enough — the
+  action has to be HUMAN_QUEUE.
+

@@ -145,10 +145,25 @@ Current stage: 12 (submission docs). 1387 tests.
 Stages 9-12 done 2026-08-29: report card rebuilt with real dataviz and
 provenance mode; holdout unsealed and evaluated once; POSTMORTEM.md,
 ARCHITECTURE.md, COMPLIANCE.md and docs/VIDEO.md written.
-**Stage 7's LLM comparison is partial — 3 of 12 cells, 41 of 180
-classifications.** `RECORD=1 REPEATS=1 make shadow` needs 9 requests and
-completes it at k=1 (drops the `_partial` suffix); full 15-deep needs 139,
-about a week at the free tier's 20/day. Quota for 2026-08-29 is spent.
+**Stage 7's LLM comparison is complete — 12 of 12 cells at k=1**, recorded
+2026-08-30. Class accuracy 0.667 (0.604 weighted), intervention agreement
+0.583, `complete: true`, artifact at `out/shadow/classifier_comparison.json`
+without the `_partial` suffix. Consistency reports `—` corpus-wide because k=1
+cannot measure it; stability is measured at depth 15 on `payment_failed /
+gateway` via `CELL=payment_failed/gateway`, which replays existing cassettes at
+zero quota cost: accuracy 0.000, stability 1.000, `CUSTOMER_ACTION` x15.
+**The headline finding is `unsafe_risk_block_actions: 1`** — on one of the two
+RISK_BLOCK cells the model proposed `REATTEMPT_LINK`, i.e. texting a payment
+link to a customer whose payment was declined for suspected fraud, which is the
+phishing pattern taxonomy §4.4 exists to prevent. 50 cassettes on disk.
+`REPEATS=1 make shadow` reproduces the table offline; bare `make shadow` still
+asks for 15 repeats per cell and fails, which is correct.
+
+`tools/report.py` used to prefer `classifier_comparison_partial.json` over the
+complete artifact — a leftover from when partial was the only one that existed,
+which meant a stale partial silently kept rendering after a full run landed.
+Preference is now complete-first, and the superseded `_partial` files were
+deleted.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written
