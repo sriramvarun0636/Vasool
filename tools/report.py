@@ -307,6 +307,36 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             outline-offset: 3px;
             border-radius: 2px;
         }}
+        .page-footer {{
+            margin: 96px 0 0;
+            padding: 48px 0 64px;
+            border-top: 1px solid var(--hairline);
+        }}
+        .footer-claim {{
+            font-family: var(--font-display);
+            font-size: 21px;
+            line-height: 1.45;
+            color: #E2E8F0;
+            margin: 0 0 20px;
+            max-width: 30em;
+        }}
+        .footer-meta {{
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            line-height: 1.75;
+            color: #94A3B8;
+            margin: 0 0 24px;
+            max-width: 46em;
+        }}
+        .footer-links {{
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            color: #64748B;
+            margin: 0;
+        }}
+        .footer-links a {{ color: #94A3B8; text-decoration: none; border-bottom: 1px solid var(--hairline); }}
+        .footer-links a:hover {{ color: #fff; }}
+
         .prov-path {{
             display: none;
             font-family: var(--font-mono); font-size: 10.5px; line-height: 1.45;
@@ -782,6 +812,11 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             overflow-y: auto;
             background-color: var(--ink);
             white-space: pre-wrap;
+            /* The payload is compact JSON -- no spaces -- so pre-wrap finds no
+               break opportunity inside a 64-char hex id and the line ran past
+               the box and clipped. These are the exact bytes the hash covers;
+               every one of them has to be visible. */
+            overflow-wrap: anywhere;
         }}
 
         /* ---------------------------------------------------------------
@@ -1098,9 +1133,9 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <div class="airgap-diagram">
                 <div class="plane-box">
                     <strong>Shadow Plane</strong><br><br>
-                    Unstructured Data<br>
-                    LLM Synthesis<br>
-                    <em>Proposals</em>
+                    LLM classification<br>
+                    emits <code>LLMVerdict</code><br>
+                    <em>inert &mdash; not a Proposal</em>
                 </div>
                 <div class="flow-line"></div>
                 <div class="firewall"></div>
@@ -1108,10 +1143,22 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <div class="plane-box" style="border-style: solid; border-color: var(--compliant-green);">
                     <strong>Execution Plane</strong><br><br>
                     Deterministic FSM<br>
-                    13 Statutory Guards<br>
+                    13 guards &middot; 9 statutory<br>
                     <em>Immutable Ledger</em>
                 </div>
             </div>
+            <p class="viz-caption" style="margin-top: 24px; margin-bottom: 0;">
+                The firewall is not a filter. The LLM emits an <code>LLMVerdict</code>; the policy
+                plane consumes a <code>Proposal</code>; these are different types and
+                <strong>no function in the repository converts one into the other</strong>. For the
+                model to move money someone would have to write a conversion that does not exist,
+                and <code>tests/test_shadow_boundary.py</code> walks the import graph in both
+                directions to keep it that way. On the right, <strong>nine of the thirteen guards
+                rest on a statute</strong>; the other four &mdash; idempotency, the retry cap, the
+                spend cap, the human handoff &mdash; are platform constraints and house rules whose
+                <code>statute</code> attribute is <code>None</code>. Calling all thirteen statutory
+                would be the cheapest way to make this diagram look stronger than it is.
+            </p>
         </div>
 
         <div class="exhibit band-independent" id="exhibit-g">
@@ -1158,6 +1205,13 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
         <div class="exhibit" id="exhibit-i">
             <div class="exhibit-title">EXHIBIT I &mdash; Trajectory Explorer</div>
+            <p class="viz-caption">
+                Twelve real receipts from seed 0, shown as the <em>exact byte string</em> each
+                hash was computed over &mdash; guard decisions, obligations, statute citations and
+                all. Paste any <code>receipt_id</code> into Exhibit H above and the browser
+                recomputes its SHA-256 from these bytes. Nothing here is pretty-printed, because
+                reformatting would change the bytes and break the hash.
+            </p>
             <div class="explorer-board">
                 <div class="explorer-list" id="explorer-list">
                     <!-- JS populated -->
@@ -1167,6 +1221,28 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 </div>
             </div>
         </div>
+
+        <footer class="page-footer">
+            <p class="footer-claim">
+                A figure not derivable from the protocol is not a result &mdash; including ours.
+            </p>
+            <p class="footer-meta">
+                Nine exhibits, rendered from <code>out/development/evaluation.json</code> &mdash;
+                development cohort, <span id="foot-seeds">&mdash;</span> seeds across
+                <span id="foot-arms">&mdash;</span> arms, with the sealed holdout beside it in the
+                hero. Every figure above carries the manifest key it was read from: click
+                <em>trace every number</em> to show all of them at once. A value the manifest does
+                not carry renders as a dash and raises a banner &mdash; never as a plausible
+                number, because one hardcoded constant did render as a measurement here once, and
+                a test now fails the build if a fallback is reintroduced.
+            </p>
+            <p class="footer-links">
+                <a href="https://github.com/sriramvarun0636/Vasool">Repository</a> &nbsp;&middot;&nbsp;
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/docs/EVALUATION.md">The pre-registered protocol</a> &nbsp;&middot;&nbsp;
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Six incidents</a> &nbsp;&middot;&nbsp;
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/COMPLIANCE.md">The thirteen guards</a>
+            </p>
+        </footer>
 
     </div>
 
@@ -1825,6 +1901,18 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                       `<span style="color: var(--status-good)">every other figure on this page is ` +
                       `the development cohort</span>`
                     : `development cohort only &mdash; the holdout has not been evaluated`;
+            }}
+
+            // The close carries manifest keys like everything else -- a footer
+            // is exactly where a hand-typed "1,000 seeds" would survive a
+            // re-run and go unnoticed.
+            const footSeeds = document.getElementById("foot-seeds");
+            const footArms = document.getElementById("foot-arms");
+            if (footSeeds && typeof EVAL.per_arm?.vasool?.seeds === "number") {{
+                trace(footSeeds, "per_arm.vasool.seeds", formatNum(EVAL.per_arm.vasool.seeds));
+            }}
+            if (footArms && EVAL.per_arm) {{
+                trace(footArms, "per_arm (count)", String(Object.keys(EVAL.per_arm).length));
             }}
 
             const heroViolations = document.getElementById("hero-violations");

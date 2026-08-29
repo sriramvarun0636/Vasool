@@ -21,6 +21,7 @@
 
 <p>
   <sub>
+    <a href="#the-problem"><b>The problem</b></a> &nbsp;·&nbsp;
     <a href="#the-result"><b>The result</b></a> &nbsp;·&nbsp;
     <a href="#and-now-the-uncomfortable-part"><b>Where it loses</b></a> &nbsp;·&nbsp;
     <a href="#verify-it-yourself"><b>Verify it yourself</b></a> &nbsp;·&nbsp;
@@ -30,10 +31,8 @@
   </sub>
 </p>
 
-<br/>
-
 > 📊 **[Live dashboard →](https://sriramvarun0636.github.io/Vasool)** · every figure below is rendered from [`out/development/evaluation.json`](out/development/evaluation.json), which **ships in this repo** — open it and check any number here without running anything.<br/>
-> 🔧 **[What broke →](POSTMORTEM.md)** · six incidents, four of which the system found before I did.
+> 🔧 **[Six incidents, in full →](POSTMORTEM.md)** · four of them cases where the system was silent about being wrong and an artifact caught it.
 
 <a href="https://sriramvarun0636.github.io/Vasool">
   <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout; three arm cards reading 65.42%, 53.81% and 49.07%; and a forest plot of paired differences against eight comparison arms." onerror="this.style.display='none'">
@@ -42,13 +41,23 @@
 <sub><i>Nine exhibits, every figure traced to a manifest key &mdash;
 <a href="https://sriramvarun0636.github.io/Vasool">open the live version</a>.</i></sub>
 
-<br/><br/>
+<h3>A dumber baseline beats it by 16 percentage points.</h3>
 
-<strong>A dumber baseline beats it by 16 percentage points.</strong><br/>
-<sub>Registered as falsification criterion <b>F1</b> before the first run, and reported
-<a href="#and-now-the-uncomfortable-part">two sections down</a> &mdash; not in an appendix.</sub>
+<p>
+  It also breaks policy in <b>1,000 of 1,000</b> seeded worlds. Vasool breaks it in <b>none</b>.<br/>
+  That trade is the entire submission. It was registered as falsification criterion <b>F1</b><br/>
+  before the first run, and it is reported <a href="#and-now-the-uncomfortable-part">two sections down</a> &mdash; not in an appendix.
+</p>
 
 </div>
+
+---
+
+## The problem
+
+Payment failures don't fail in one clean way, and treating them as one problem is what loses the money. **An expired card and a gateway blip arrive as the same webhook and need opposite responses.** Retrying the expired card has exactly zero chance of working, and it burns one of the four attempts Razorpay allows before it halts the subscription — the attempt a re-auth link needed.
+
+So the agent classifies before it acts: five failure classes, each with a registered intervention and a registered attempt budget. Then thirteen guards decide whether the chosen action may actually happen, and the ledger records the answer either way.
 
 ---
 
@@ -335,6 +344,29 @@ Registered in [`docs/EVALUATION.md` §9](docs/EVALUATION.md) before any run, wit
 ---
 
 ## What broke
+
+### The defect that 1,353 passing tests could not see
+
+Every test passed. The safety predicate was clean on 1,000 seeds. No guard misbehaved, no receipt was missing, no exception was raised — and a third of the population was doing nothing at all.
+
+`PreDebitNoticeGuard` holds a mandate debit until a 24-hour notice has been served, and returns an *obligation* to send one. Obligations were honoured only on the **execute** path. A deferred proposal does not execute — so no notice was ever built, so the timestamp stayed empty, so the guard deferred again, five times, and then blocked it for good. **The one thing that could satisfy the guard was an execution the guard was blocking.**
+
+I found it writing an adversarial attack that turned out to be inert: it could not fail, because the thing it attacked never happened.
+
+| Seed 0, full universe | before | after |
+| :--- | ---: | ---: |
+| Pre-debit notices executed | 0 | **196** |
+| Retries executed | 707 | **979** |
+| …of them landing on a mandate episode | **0** | **272** |
+| Mandate episodes ending `BLOCKED` | 209 / 275 | **30 / 275** |
+| Headline recovery rate | 0.344341 | **0.490698** |
+| F5 gap, against a 20pp threshold | 19.378 | **4.742** |
+
+It had been shaping every number published before 2026-08-25. **Three quarters of what I had been calling "the price of the guards" was this bug** — and F5 had been sitting six tenths of a point from firing for a reason that had nothing to do with compliance.
+
+Every test I had written asked whether the agent did something *wrong*. Not one asked whether it did anything *at all*. That is the lesson: liveness needs its own assertions, because a guard that defers forever is indistinguishable from a guard that works. The full before/after is [`docs/taxonomy.md` §9.13](docs/taxonomy.md); the re-run and the stale-shard incident it exposed are in [`docs/EVALUATION.md` §10](docs/EVALUATION.md).
+
+### The adversary
 
 We wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
 
