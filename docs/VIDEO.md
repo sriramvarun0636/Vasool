@@ -213,8 +213,15 @@ Exhibit H — paste a receipt id, hit verify, show the SHA-256 match.
 runs in under a second and prints 34 lines, widest line **123 characters**, so
 size the terminal for that or the verdict column wraps.
 
-> "Twenty-two attacks. Eighteen survive. Four are open and named. I could have
+> "Twenty-two attacks. Nineteen survive. Three are open and named. I could have
 > written twenty-two attacks it passes; these are the ones it doesn't.
+>
+> One came off that list two days ago. My contact window was enforced in the
+> merchant's timezone, so an attack put a message at half ten at night where the
+> customer actually lives. I fixed it — and my own harness turned red twice:
+> once because a *fixed* attack breaks the build exactly like a broken one, and
+> again because the fix made the attack pass with zero receipts, which is a
+> vacuous pass, and a test I'd written for that caught it.
 >
 > The claim isn't that this agent is correct. It's that **the apparatus is built
 > so that being wrong is discoverable** — and the evidence is how long that list
@@ -260,6 +267,6 @@ sound low** — closer to how it will actually be judged than your monitor is.
 - **Run the terminal commands live.** Both finish in under a second. Pre-recorded
   terminal reads as fake, and this submission is about that difference.
 - **Numbers to say precisely:** ₹116 crore · 65.4 to 49.1 · sixteen points ·
-  1,000 of 1,000 against 0 of 1,000 · 20,988 · 0.344 to 0.491 · eighteen of
+  1,000 of 1,000 against 0 of 1,000 · 20,988 · 0.344 to 0.491 · nineteen of
   twenty-two. Everything else can be rounded out loud.
 - **Eight passes.** The target is not memorisation — it is that you stop reading.

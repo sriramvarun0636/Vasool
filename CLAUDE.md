@@ -141,7 +141,7 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 12 (submission docs). 1387 tests.
+Current stage: 12 (submission docs). 1392 tests.
 Stages 9-12 done 2026-08-29: report card rebuilt with real dataviz and
 provenance mode; holdout unsealed and evaluated once; POSTMORTEM.md,
 ARCHITECTURE.md, COMPLIANCE.md and docs/VIDEO.md written.
@@ -188,13 +188,20 @@ Stages complete:
   - 8  — adversary: windtunnel/adversary/{criterion,arena,attacks,harness}.py,
          tools/redteam.py. Criterion registered before any attack was written.
          22 attacks, ids kept from the reviewed list (A17/A21/A25 were cut, so
-         the numbering has gaps on purpose). **18 of 22 survive.** Every attack
+         the numbering has gaps on purpose). **19 of 22 survive.** Every attack
          drives the real receiver, the real FSM, the real thirteen guards and
          the real executor; the arena only decides what happens *to* the agent.
 
-Adversarial state: 18/22. Four named failures remain: §9.3 timezone, §9.10
-out-of-band settlement, `derive_customer_id`'s identity split, and the DND
-classification gap. A15/A16/A18/A19 were fixed on 2026-08-25: later failure
+Adversarial state: 19/22. Three named failures remain: §9.10 out-of-band
+settlement, `derive_customer_id`'s identity split, and the DND classification
+gap. **§9.3's timezone gap was closed 2026-08-30**: `PolicyFacts.customer_zone`
+added, `ContactWindowGuard` reads it and falls back to IST when unknown, arena
+plumbs `Person.zone` through. No universe customer carries a zone, so the
+evaluation is unmoved — verified by recomputing 54 (arm, seed) rows across all
+nine arms, 1,350 field comparisons, byte-identical to the shards. The fix made
+A08 pass *vacuously* at first (deferred past the scene's horizon, zero
+receipts); `test_every_attack_ran_against_a_ledger_that_exists` caught it and
+the scene now runs to 21:00 IST. A15/A16/A18/A19 were fixed on 2026-08-25: later failure
 evidence supersedes queued work from a different reason/source, retry quiet
 hours are re-checked at final gating, and promise-to-pay never delays a human
 handoff.

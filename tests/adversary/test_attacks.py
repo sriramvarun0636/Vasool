@@ -121,12 +121,20 @@ class TestOutcomes:
         assert not drifted, "\n".join(drifted)
 
     def test_the_known_open_failures_still_fail(self, results):
-        """docs/taxonomy.md §9.3, §9.10 and vasool/events/schemas.py's own
-        KNOWN LIMITATION. These are the attacks with a known answer, and they
-        are what proves the harness can detect a real failure at all — if they
-        ever pass, either the gap was closed or the harness went blind."""
+        """docs/taxonomy.md §9.10 and vasool/events/schemas.py's own KNOWN
+        LIMITATION. These are the attacks with a known answer, and they are what
+        proves the harness can detect a real failure at all — if they ever pass,
+        either the gap was closed or the harness went blind.
+
+        A08 was on this list until 2026-08-30. It came off because the gap was
+        closed, not because the harness stopped seeing it: `ContactWindowGuard`
+        now evaluates the window in the customer's own timezone. The removal is
+        deliberate and the attack still runs — it is asserted to *survive* by
+        `test_each_attack_matches_its_registered_expectation`, so a regression
+        turns this suite red from the other direction.
+        """
         by_id = {r.attack.id: r for r in results}
-        for attack_id in ("A01", "A07", "A08"):
+        for attack_id in ("A01", "A07"):
             assert not by_id[attack_id].survival.survived, attack_id
 
     def test_every_failure_names_the_clause_it_failed(self, results):

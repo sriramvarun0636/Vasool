@@ -534,6 +534,54 @@ class TestContactWindowGuard:
         ctx = context(proposal_for("card_expired"), now=decided, effective_at=lands)
         assert self.guard.evaluate(ctx).decision is D.DEFER
 
+    # -- the customer's own clock, not ours ---------------------------------
+    # A08 was an open adversary failure until 2026-08-30: the window was
+    # evaluated in the merchant's IST, so a customer elsewhere was protected by
+    # our clock. The attack proves the fix end to end; these prove the guard's
+    # own behaviour, which is faster to read and fails more precisely.
+
+    NYC = timezone(timedelta(hours=-4))
+    """Nine and a half hours behind IST — far enough west that the two windows
+    barely overlap, which is what makes the arithmetic below legible."""
+
+    def at_zone(self, hour: int, zone, minute: int = 0):
+        when = datetime(2026, 8, 25, hour, minute, tzinfo=IST).astimezone(timezone.utc)
+        return context(
+            proposal_for("card_expired"), now=when, effective_at=when, customer_zone=zone
+        )
+
+    def test_an_unknown_zone_still_means_ist(self):
+        """The fallback, asserted rather than assumed. Every customer the
+        simulator builds has no zone, so this path is the one the entire
+        evaluation runs on and a change to it would move published numbers."""
+        assert self.guard.evaluate(self.at_zone(12, None)).decision is D.ALLOW
+        assert self.guard.evaluate(self.at_zone(3, None)).decision is D.DEFER
+
+    def test_inside_our_window_but_the_middle_of_their_night_defers(self):
+        """08:00 IST is 22:30 in New York. Under the old rule this was the
+        *destination* an overnight deferral aimed at — the bug, exactly."""
+        assert self.guard.evaluate(self.at_zone(8, self.NYC)).decision is D.DEFER
+
+    def test_outside_our_window_but_inside_theirs_allows(self):
+        """03:00 IST is 17:30 in New York, which is their afternoon. Deferring
+        it would be protecting them from a message they are awake for."""
+        assert self.guard.evaluate(self.at_zone(3, self.NYC)).decision is D.ALLOW
+
+    def test_the_deferral_lands_in_the_customers_morning_not_ours(self):
+        """The half-fix this guards against: reading the customer's zone to
+        decide, then deferring to 08:00 IST anyway. The target has to be in the
+        same clock the judgement was made in."""
+        v = self.guard.evaluate(self.at_zone(8, self.NYC))
+        assert v.decision is D.DEFER
+        landed = v.defer_until.astimezone(self.NYC)
+        assert 8 <= landed.hour < 19, f"landed at {landed:%H:%M} New York time"
+
+    def test_the_reason_names_the_clock_it_judged_in(self):
+        """A receipt that says 'IST' for a decision made in another zone is a
+        misleading audit trail, which is worse than a terse one."""
+        v = self.guard.evaluate(self.at_zone(8, self.NYC))
+        assert "IST" not in v.reason, v.reason
+
     def test_the_jitter_is_deterministic_for_a_customer(self):
         """No uuid, no random: same seed -> byte-identical ledger. The jitter
         exists so that a merchant's whole overnight backlog does not fire at

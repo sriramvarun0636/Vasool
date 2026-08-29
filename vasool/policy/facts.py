@@ -34,7 +34,7 @@ or it would refuse every action for want of a promise nobody made.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 from typing import Protocol
 
 from vasool.diagnosis.proposal import Proposal
@@ -132,6 +132,23 @@ class PolicyFacts:
 
     promise_to_pay: date | None = None
     """None means no promise exists — known-absent, therefore permissive."""
+
+    customer_zone: tzinfo | None = None
+    """Where the customer actually is, for the contact window.
+
+    None means unknown, and unknown resolves to the merchant's IST — which is
+    what the whole system did unconditionally until adversary attack A08
+    demonstrated the consequence: a failure at 03:00 IST deferred to the
+    opening of *our* window and landed at 22:30 where the customer lives.
+
+    Defaulting to IST rather than blocking is deliberate, and it is the one
+    place in this package where an unknown is permissive. A blocking default
+    would refuse every contact in a production dataset that carries no zone,
+    which trades a real recovery for a hypothetical discourtesy; and unlike
+    consent or a DND scrub, the downside of being wrong here is a badly-timed
+    message rather than an unlawful one. The honest description is that this
+    protects customers we have a zone for, and leaves the rest exactly where
+    they were."""
 
     # -- mandate
     is_mandate: bool = False

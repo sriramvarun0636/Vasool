@@ -71,16 +71,25 @@ class ContactWindowGuard(Guard):
     # day-one check). The 08:00-19:00 window is the well-established part; the
     # citation is the part to check before anyone prints it.
 
-    # VERIFY: A05 — the window is evaluated in IST, the merchant's timezone, not
-    # the customer's. A customer in another timezone is protected by our clock
-    # rather than by theirs. Recorded as a known open failure in taxonomy.md
-    # §9.3; fixing it needs a customer-timezone fact we have no source for.
+    # Fixed 2026-08-30. This guard evaluated the window in IST unconditionally,
+    # so a customer elsewhere was protected by the merchant's clock rather than
+    # their own -- adversary attack A08 lands a message at 22:30 customer-local
+    # by deferring an 03:00 IST failure to the opening of *our* window. It now
+    # reads `facts.customer_zone` and falls back to IST when that is unknown,
+    # which is every customer the simulator builds, so no evaluated number
+    # moves. taxonomy.md §9.3 carries the before/after.
 
     def applies_to(self, ctx: GuardContext) -> bool:
         return ctx.proposal.is_contact
 
     def check(self, ctx: GuardContext) -> Verdict:
-        local = ctx.effective_at.astimezone(IST)
+        # The customer's zone where we have one, the merchant's where we do
+        # not. The deferral target is computed in the same zone it was judged
+        # in -- deferring to 08:00 of the *wrong* clock is the original defect,
+        # not a smaller version of it.
+        zone = ctx.facts.customer_zone or IST
+        label = "IST" if zone is IST else f"{zone}"
+        local = ctx.effective_at.astimezone(zone)
         if CONTACT_WINDOW_OPEN_HOUR_IST <= local.hour < CONTACT_WINDOW_CLOSE_HOUR_IST:
             return self.allow()
 
@@ -92,6 +101,6 @@ class ContactWindowGuard(Guard):
 
         return self.defer(
             opens + window_jitter(ctx.proposal.customer_id),
-            f"{local:%H:%M} IST is outside the {CONTACT_WINDOW_OPEN_HOUR_IST:02d}:00-"
+            f"{local:%H:%M} {label} is outside the {CONTACT_WINDOW_OPEN_HOUR_IST:02d}:00-"
             f"{CONTACT_WINDOW_CLOSE_HOUR_IST:02d}:00 contact window",
         )

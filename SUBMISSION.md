@@ -115,7 +115,7 @@ Unlisted YouTube is fine. Their guidance is to rehearse eight times.
 Non-negotiable beats, in order: open on the money and the zero violations;
 the risk-decline rule that gets nothing automated; the air gap verbatim
 line; the bug above; F1 excluding zero on the wrong side; the honest-
-limitations verbatim line; close on 18 of 22 with the four named failures.
+limitations verbatim line; close on 19 of 22 with the three named failures, and the one you closed in public.
 
 ---
 
@@ -123,7 +123,7 @@ limitations verbatim line; close on 18 of 22 with the four named failures.
 
 - [ ] Repo public — verify in incognito
 - [ ] `out/holdout/evaluation.json` pushed — it now ships in the repo, and it **cannot be regenerated**: §3c allows the holdout one run and it has been spent. Keep a copy off this machine until the push lands.
-- [ ] `pytest` green on a fresh clone — 1,387 pass, **1 skips** (`test_real_captured_signature_verifies`, which needs `RAZORPAY_WEBHOOK_SECRET`). The manifests and cassettes ship, so the drift guards and the cassette pin actually run rather than skipping silently.
+- [ ] `pytest` green on a fresh clone — 1,392 collected: **1,391 pass, 1 skips** (`test_real_captured_signature_verifies`, which needs `RAZORPAY_WEBHOOK_SECRET`). The manifests and cassettes ship, so the drift guards and the cassette pin actually run rather than skipping silently.
 - [ ] `docs/index.html` renders on GitHub Pages
 - [ ] Video uploaded, link works logged out
 - [ ] `.env` **not** committed — `git log --all -- .env` returns nothing

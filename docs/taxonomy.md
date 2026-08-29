@@ -464,8 +464,25 @@ Listing these is more useful than pretending otherwise.
    one returned `gateway`. The source-based branch narrows the hypothesis space
    rather than determining the answer. Only `gateway` and `bank` have ever been
    observed on a `payment_failed`; the `business` branch is inferred, not seen.
-3. **Contact-window timezone.** Currently merchant TZ, not customer TZ. This is
-   adversary attack A05 and is a known open failure.
+3. **Contact-window timezone. Registered as open; fixed 2026-08-30.** The
+   window was evaluated in the merchant's IST, so a customer elsewhere was
+   protected by our clock rather than their own — adversary attack A05/A08 put a
+   message at 22:30 customer-local by deferring an 03:00 IST failure to the
+   opening of *our* window. `PolicyFacts.customer_zone` now carries the fact and
+   `ContactWindowGuard` defers into the customer's own window, falling back to
+   IST where no zone is known.
+
+   Three things are worth recording about the closure rather than just the fix.
+   **The suite went red when it was fixed** — a registered expectation of FAILS
+   makes a repair break the build exactly as a regression does, which is the
+   property that stops this list rotting. **Then it went red for a better
+   reason:** the fix made A08 pass with zero receipts, because the message was
+   deferred past the end of the scene, and a pass with nothing in the ledger is
+   vacuous; the scene's horizon was extended until the contact actually lands.
+   **And no evaluated number moved** — no universe customer carries a zone, so
+   the fallback is IST and behaviour is unchanged, verified by recomputing 54
+   (arm, seed) rows across all nine arms, 1,350 field comparisons, byte-identical
+   to the shards. Recorded in `EVALUATION.md` §10.
 4. **The 4-retry halt is documented, never observed** on this account.
 5. **UPI is unavailable pre-activation**, so the taxonomy is card-shaped by
    necessity. A UPI-heavy merchant would need different rows, and inventing them
@@ -631,7 +648,7 @@ Listing these is more useful than pretending otherwise.
 
     **Verified 2026-08-29**, and not before: the sentence above was written on
     the strength of the fixes existing, and the suite that would test them had
-    not been run on record. It has now — 18 of 22 survive, all four of these
+    not been run on record. It has now — 18 of 22 survived at that date, all four of these
     among them — and the closure is recorded in `EVALUATION.md` §10 rather than
     here, because a status this paragraph asserts about itself is exactly the
     kind of claim `windtunnel/adversary/criterion.py` exists to refuse.

@@ -58,17 +58,19 @@ than it is.
 
 The working agreement for this project is that an unverified regulatory
 threshold gets a `# VERIFY:` comment in the code rather than a confident
-assertion. **There are 34 of them.** The ones that bear on compliance directly:
+assertion. **There are 33 of them.** The ones that bear on compliance directly:
 
 - **`ContactWindowGuard` — "¶55" is unconfirmed.** The paragraph number comes
   from the design spec's research and was never checked against the current
   Fair Practices Code. The 08:00–19:00 window is well attested; the citation
   for it is not. *This is the single most load-bearing unverified string in the
   repository*, because it appears on every deferral receipt.
-- **`ContactWindowGuard` — the window is enforced in IST, the merchant's
-  timezone, not the customer's.** This is adversary attack **A08** and it is an
-  open, reproducible failure: a contact landed at 22:30 customer-local. Not
-  fixed, not hidden.
+- **`ContactWindowGuard` — the window is now enforced in the customer's own
+  timezone.** It was enforced in IST, the merchant's, until 2026-08-30, and
+  adversary attack **A08** demonstrated the consequence: a contact landing at
+  22:30 customer-local. Fixed, and A08 now survives. The fallback when no zone
+  is known is still IST, which is every customer the simulator builds — so this
+  protects customers we have a zone for and leaves the rest where they were.
 - **`PromiseToPayGuard` — the Fair Practices Code's applicability to a
   payment-gateway integration is assumed, not established.** The FPC governs
   regulated lenders. Whether it reaches a merchant's recovery agent is a

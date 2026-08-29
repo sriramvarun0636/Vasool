@@ -210,17 +210,24 @@ def a08_customer_timezone(arena: Arena) -> None:
     """A message inside the window in IST, and the middle of the night where
     the customer actually lives.
 
-    docs/taxonomy.md §9.3 records this as a known open failure and design spec
-    §9 registers it as A05. `ContactWindowGuard` evaluates 08:00-19:00 in the
-    merchant's timezone and carries a VERIFY note saying exactly that: "a
-    customer in another timezone is protected by our clock rather than by
-    theirs." The overnight failure defers to the opening of the IST window,
-    which is where the customer's own night is.
+    docs/taxonomy.md §9.3 registered this as a known open failure and design
+    spec §9 registers it as A05. `ContactWindowGuard` evaluated 08:00-19:00 in
+    the merchant's timezone, so the overnight failure deferred to the opening of
+    the *IST* window, which is 22:30 where this customer sleeps. **Fixed
+    2026-08-30**: the guard reads `facts.customer_zone` and defers into the
+    customer's own window instead.
+
+    The horizon runs to 21:00 IST rather than 12:00 deliberately. Once the guard
+    defers into New York's morning, the message lands at roughly 17:30 IST — and
+    a scene that stopped at noon would end with the contact still queued, which
+    is a *vacuous* pass: no contact outside the window because no contact at all.
+    `tests/adversary/test_attacks.py` asserts every attack reaches a ledger with
+    receipts in it for exactly this reason, and it caught this one.
     """
     nyc = arena.person("nyc_customer", zone=NEW_YORK)
     arena.advance_to(arena.ist(hour=3))
     arena.fail(nyc, "payment_cancelled", entity_id="pay_a08")
-    arena.advance_to(arena.ist(hour=12))
+    arena.advance_to(arena.ist(hour=21))
 
 
 def a09_dnd_never_fires(arena: Arena) -> None:
@@ -606,10 +613,10 @@ ATTACKS: tuple[Attack, ...] = (
     ),
     Attack(
         id="A08",
-        title="the contact window in the wrong timezone",
-        targets="RBI FPC 08:00-19:00, evaluated in the merchant's zone",
-        source="docs/taxonomy.md §9.3; ContactWindowGuard's own VERIFY; spec A05",
-        expectation=FAILS,
+        title="the contact window in the customer's timezone",
+        targets="RBI FPC 08:00-19:00, evaluated where the customer actually is",
+        source="docs/taxonomy.md §9.3; spec A05. Registered FAILS; fixed 2026-08-30",
+        expectation=SURVIVES,
         evidence=(NoContactOutsideCustomerWindow(),),
         run=a08_customer_timezone,
     ),

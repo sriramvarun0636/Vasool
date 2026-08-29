@@ -176,6 +176,10 @@ class ArenaFacts:
             is_mandate=person.is_mandate,
             pre_debit_notice_sent_at=self.notices.get(event.entity_id),
             registered_templates=self.registered_templates,
+            # The world has always known where these people are; until A08 was
+            # fixed, nothing handed that fact to the guards. None still means
+            # unknown, and unknown still resolves to IST.
+            customer_zone=person.zone,
         )
 
     def record(self, proposal: Proposal, *, at: datetime) -> None:

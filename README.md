@@ -150,7 +150,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 
-pytest                        # 1,387 tests
+pytest                        # 1,392 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds  (~20 min)
@@ -192,7 +192,7 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 | 66,040 retries on a zero-budget class | `per_arm.retry_plus_contact.customer_action_retries_world` | `66040` |
 | F5 gap 4.74pp of a 20pp threshold | `falsification.F5_compliance_unaffordable.gap_pp` | `4.742469…` |
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
-| 18 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `18` |
+| 19 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `19` |
 
 The dashboard makes this checkable without leaving the page: **click _trace every number_ and every figure on it displays the exact manifest key it was read from** — the button reports how many, so the count is never a number this README can get wrong. A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
 
@@ -397,14 +397,21 @@ Every test I had written asked whether the agent did something *wrong*. Not one 
 
 We wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
 
-**18 of 22 survive.** Four remain open, and they are the complete set:
+**19 of 22 survive.** Three remain open, and they are the complete set:
 
 | | Attack | Why it still wins |
 | :--- | :--- | :--- |
 | **A01** | Out-of-band payment mid-ladder | A customer who pays through another channel carries no join key. We keep chasing money the merchant already has — a double-collection hazard, not a lost-revenue one. |
 | **A07** | One human, two customer IDs | Per-human contact caps key on a derived id; two ids for one person defeat the cap. Worst case seen: 4 contacts in 7 days against a cap of 3. |
-| **A08** | Contact window in the wrong timezone | The window is enforced in merchant-local IST, not the customer's. One contact landed at 22:30 customer-local. |
 | **A09** | Message to a DND-listed customer | `DNDGuard` scopes to promotional traffic; the classification gap lets one through. |
+
+**A08 was on that list until 2026-08-30**, and closing it is the clearest demonstration in the repository that the apparatus works. The guard evaluated the RBI contact window in IST — the *merchant's* timezone — so a customer elsewhere was protected by our clock rather than their own, and the attack landed a message at 22:30 customer-local. The guard now reads the customer's zone and falls back to IST when it doesn't have one.
+
+Three things happened when I fixed it, in this order, and none of them were manual:
+
+1. **The suite went red.** `A08 registered fails, actually survived` — a *fixed* attack breaks the build exactly as a broken one does, because the expectation is registered rather than assumed.
+2. **Then it went red again**, for a better reason: the attack passed with **zero receipts**. The message was now deferred into New York's morning, past the end of the scene — "no contact outside the window" held because there was no contact at all. `tests/adversary/test_attacks.py` asserts every attack reaches a ledger with receipts in it, and it caught the vacuous pass. The scene's horizon was extended until the message actually lands.
+3. **The evaluation was proven unmoved.** No universe customer carries a timezone, so the guard falls back to IST and behaves exactly as before. Verified rather than assumed: **54 (arm, seed) rows recomputed across all nine arms, 1,350 field comparisons, byte-identical** to the shards on disk. The manifest stands; nothing was re-run to make this fit.
 
 Each of these is written up properly in [`POSTMORTEM.md`](POSTMORTEM.md), alongside the bugs that were found and fixed.
 
@@ -425,7 +432,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — thirty-five of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — thirty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
