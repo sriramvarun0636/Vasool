@@ -4,10 +4,38 @@ __pycache__/
 .env
 .env.*
 !.env.example
-out/
 *.db
 *.sqlite3
 .pytest_cache/
 .hypothesis/
-data/cassettes/*.json
 .DS_Store
+
+# Evaluation output. The shards are ~320 MB and stay out. The four manifests
+# are ~380 KB and ship, because README's "check the cryptography without
+# trusting us" snippet opens one, and tests/test_report.py's drift guards
+# skip -- silently, on a green run -- when they are absent. A judge cloning
+# this repo should be able to check every published figure without a nine-hour
+# regeneration. out/holdout/evaluation.json additionally cannot be
+# regenerated at all: EVALUATION.md 3c allows the holdout one run, and it has
+# been spent.
+out/*
+!out/development/
+!out/holdout/
+!out/adversary/
+!out/shadow/
+out/development/*
+!out/development/evaluation.json
+out/holdout/*
+!out/holdout/evaluation.json
+out/adversary/*
+!out/adversary/redteam.json
+out/shadow/*
+# Both the JSON and the rendered .txt: the text table is what a reader
+# actually reads, and it carries the partial-run warning inline.
+!out/shadow/classifier_comparison*
+
+# Cassettes ship. They are 164 KB, they carry no credential (provider, model,
+# prompt, response_text), and without them `make shadow` fails with
+# CassetteMiss on a fresh clone -- which defeats the purpose of having
+# recorded them. Replay is the default everywhere, so shipping them makes the
+# comparison reproducible offline and for free.

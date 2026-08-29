@@ -1,0 +1,871 @@
+{
+  "as_registered": true,
+  "attacks": 22,
+  "failed": 4,
+  "results": [
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 actions after money_arrived, first SILENT_RETRY at 01 Sep 10:36 IST",
+          "held": false,
+          "name": "no_action_on_pay_a01_after_money_arrived"
+        }
+      ],
+      "dispatched": 2,
+      "expectation": "fails",
+      "id": "A01",
+      "ledger_sha256": "194086d118ed4495d3be7db839521b1d9b6d7bf8e38c09beceb541134195657e",
+      "receipts": 2,
+      "source": "docs/taxonomy.md \u00a79.9 and \u00a79.10; design spec \u00a79 A07",
+      "survived": false,
+      "targets": "double collection: \u00a77's hard stop on out-of-band success",
+      "title": "out-of-band payment mid-ladder"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 recovered receipts, expected 1",
+          "held": true,
+          "name": "1_recovered_receipts_for_pay_a02"
+        },
+        {
+          "detail": "nothing after paid",
+          "held": true,
+          "name": "no_action_on_pay_a02_after_paid"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A02",
+      "ledger_sha256": "23e822f2e3cf65b8c01d00b8f986048a5e479413ae84898a2389d8e078e05bfc",
+      "receipts": 2,
+      "source": "docs/VERIFIED.md's settlement DECISION; the control for A01",
+      "survived": true,
+      "targets": "the one settlement path with a join key that was not guessed",
+      "title": "a link we sent is paid"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "4 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "5 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "3 retries executed, expected 3",
+          "held": true,
+          "name": "3_retries_on_pay_a03"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a03"
+        },
+        {
+          "detail": "rcpt_257085d0080980ea naming IdempotencyGuard",
+          "held": true,
+          "name": "blocked_receipt_for_pay_a03"
+        }
+      ],
+      "dispatched": 4,
+      "expectation": "survives",
+      "id": "A03",
+      "ledger_sha256": "ceb2c3fea28b7421e9341a16d5dac01e9d5480e4c7ff554effec0009a8fc2e91",
+      "receipts": 5,
+      "source": "docs/taxonomy.md \u00a79.11 (EXHAUSTED is unreachable)",
+      "survived": true,
+      "targets": "unbounded escalation once the retry budget is spent",
+      "title": "escalation without end"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a04"
+        },
+        {
+          "detail": "1 recovered receipts, expected 1",
+          "held": true,
+          "name": "1_recovered_receipts_for_pay_a04"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A04",
+      "ledger_sha256": "eea65084cb473ed20a5e1ffac7ca07ec68666f72d7f41c8ad010eb083d1faa4b",
+      "receipts": 2,
+      "source": "docs/VERIFIED.md: duplicate delivery is normal operation",
+      "survived": true,
+      "targets": "event-plane idempotency, and closure-receipt uniqueness",
+      "title": "every webhook delivered twice"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a05"
+        },
+        {
+          "detail": "rcpt_212ae6f32d292e2f naming IdempotencyGuard",
+          "held": true,
+          "name": "blocked_receipt_for_pay_a05"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A05",
+      "ledger_sha256": "d66ddbc985dc86356440c01395e5204d6367ed9ffd6609d2fbdbfec6b777fc24",
+      "receipts": 2,
+      "source": "design spec \u00a79 A02",
+      "survived": true,
+      "targets": "semantic idempotency, where the event plane has nothing to match on",
+      "title": "same payment, fresh event id"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a06"
+        },
+        {
+          "detail": "0 blocked receipts, expected 0",
+          "held": true,
+          "name": "0_blocked_receipts_for_pay_a06"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A06",
+      "ledger_sha256": "3704acb599bef10d40722bddaf5c292fe4086b8a746554d58a3b3f9d5413fab1",
+      "receipts": 1,
+      "source": "docs/VERIFIED.md (two IPs, same millisecond); the postmortem list",
+      "survived": true,
+      "targets": "dedupe as an atomic insert rather than a read then a write",
+      "title": "the check-then-act dedupe window, won"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "4 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "4 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "4 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "worst human saw 4 contacts in 7d, cap 3",
+          "held": false,
+          "name": "at_most_3_contacts_per_human_per_7d"
+        }
+      ],
+      "dispatched": 4,
+      "expectation": "fails",
+      "id": "A07",
+      "ledger_sha256": "d8e09268c71dd0162280d00e85a6b9bacc7312d94a2508aab0b80fc7fd56e53e",
+      "receipts": 4,
+      "source": "vasool/events/schemas.py::derive_customer_id KNOWN LIMITATION; spec A13",
+      "survived": false,
+      "targets": "the per-customer frequency cap, counted against the wrong unit",
+      "title": "one human, two customer ids"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 outside it, first at 22:30 local (08:00 IST)",
+          "held": false,
+          "name": "no_contact_outside_the_customers_own_window"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "fails",
+      "id": "A08",
+      "ledger_sha256": "1f8b1a9520aca09c7a6cfecae481cb87055d9dfd25e7b24feba720d0e7c2ca36",
+      "receipts": 1,
+      "source": "docs/taxonomy.md \u00a79.3; ContactWindowGuard's own VERIFY; spec A05",
+      "survived": false,
+      "targets": "RBI FPC 08:00-19:00, evaluated in the merchant's zone",
+      "title": "the contact window in the wrong timezone"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 messages to DND-listed customers, first rcpt_96dd1fcdc560890d",
+          "held": false,
+          "name": "no_contact_to_a_dnd_listed_customer"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "fails",
+      "id": "A09",
+      "ledger_sha256": "a4109a23354b4b8e5198e136ab979a3c5492a1d861b4a6ddf671b230f66b1d00",
+      "receipts": 1,
+      "source": "vasool/diagnosis/proposal.py::MessageCategory VERIFY",
+      "survived": false,
+      "targets": "the TRAI scrub, which no proposal this system builds can reach",
+      "title": "a message to a DND-listed customer"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a10"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A10",
+      "ledger_sha256": "53e39170f77afbede837d10ad44b3c0d47362cab0606a8a02698301c729b2e3f",
+      "receipts": 1,
+      "source": "design spec \u00a79 A04",
+      "survived": true,
+      "targets": "the compliance check happening at execute time, on effective_at",
+      "title": "queued at 17:05, due at 19:05"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "4 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "4 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "4 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "worst human saw 3 contacts in 7d, cap 3",
+          "held": true,
+          "name": "at_most_3_contacts_per_human_per_7d"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a11_3"
+        }
+      ],
+      "dispatched": 4,
+      "expectation": "survives",
+      "id": "A11",
+      "ledger_sha256": "7956eb7dc2e41d2ffee766e75b2dfc6419e4fd990570f68648d88d3d30f0f041",
+      "receipts": 4,
+      "source": "the control for A07",
+      "survived": true,
+      "targets": "the frequency cap when identity resolution is not the problem",
+      "title": "four episodes, one identity"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "3 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "rcpt_667f13640e410e67 naming AFAThresholdGuard",
+          "held": true,
+          "name": "escalated_receipt_for_pay_a12_over"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a12_over"
+        },
+        {
+          "detail": "0 escalated receipts, expected 0",
+          "held": true,
+          "name": "0_escalated_receipts_for_pay_a12_at"
+        }
+      ],
+      "dispatched": 2,
+      "expectation": "survives",
+      "id": "A12",
+      "ledger_sha256": "baeb433d012e31344c57b011ae6a0a55e3ec79aa23f26226184fd4137f9ba73f",
+      "receipts": 3,
+      "source": "design spec \u00a79 A11",
+      "survived": true,
+      "targets": "RBI's \u20b915,000 e-mandate limit, both directions",
+      "title": "a mandate debit at the AFA threshold, and one paisa over"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "0 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "rcpt_eac5e7f122bd758e",
+          "held": true,
+          "name": "consent_withdrawn_receipt_for_pay_a13_open"
+        },
+        {
+          "detail": "nothing after withdrawn",
+          "held": true,
+          "name": "no_action_on_pay_a13_open_after_withdrawn"
+        },
+        {
+          "detail": "rcpt_e179fc8f90a2c15e naming ConsentGuard",
+          "held": true,
+          "name": "blocked_receipt_for_pay_a13_after"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a13_after"
+        }
+      ],
+      "dispatched": 0,
+      "expectation": "survives",
+      "id": "A13",
+      "ledger_sha256": "1c683f15e97b5436f493c3bf3f9abff165581152b3b0639fcec7a605843f0bb0",
+      "receipts": 2,
+      "source": "design spec \u00a79 A12; taxonomy \u00a77",
+      "survived": true,
+      "targets": "DPDP: purge the queue, close the episodes, refuse what arrives next",
+      "title": "consent withdrawn with work in flight"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "0 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 clock_skew receipts, expected 1",
+          "held": true,
+          "name": "1_clock_skew_receipts_for_pay_a14"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a14"
+        }
+      ],
+      "dispatched": 0,
+      "expectation": "survives",
+      "id": "A14",
+      "ledger_sha256": "9e34df5ac9e3079d658ab54cec1063ad6b8d670ffeeaa821aff8e6e1ab735d65",
+      "receipts": 1,
+      "source": "design spec \u00a79 A18; PolicyMachine.observe's own terminal check",
+      "survived": true,
+      "targets": "clock-skew sanity bounds, and the closure receipt they write",
+      "title": "a future-dated event, delivered twice"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "0 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a15"
+        },
+        {
+          "detail": "rcpt_4f5c9e9350cb5486",
+          "held": true,
+          "name": "escalated_receipt_for_pay_a15"
+        }
+      ],
+      "dispatched": 0,
+      "expectation": "survives",
+      "id": "A15",
+      "ledger_sha256": "3c384dc6bbc373ef200e54f749b34c7a4c88232f256738e7fc07acf39bf65bc3",
+      "receipts": 1,
+      "source": "taxonomy \u00a72's hardest rule; found reading PolicyMachine.tick",
+      "survived": true,
+      "targets": "a queued proposal outliving the diagnosis that built it",
+      "title": "a risk decline in the same instant as a due retry"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "nothing after card_reported_expired",
+          "held": true,
+          "name": "no_retry_on_pay_a16_after_card_reported_expired"
+        },
+        {
+          "detail": "1 retries executed, expected 1",
+          "held": true,
+          "name": "1_retries_on_pay_a16"
+        }
+      ],
+      "dispatched": 2,
+      "expectation": "survives",
+      "id": "A16",
+      "ledger_sha256": "fbfeff1fee4207bd319188cf6f3d3f7b77a227b027626a3b37fb589ed93a27bf",
+      "receipts": 2,
+      "source": "design spec \u00a79 A06; taxonomy \u00a75's card_expired",
+      "survived": true,
+      "targets": "stale classification: the queued retry is never reclassified",
+      "title": "the card expires between attempt 2 and 3"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "no re-presentation inside 00:00-06:00 IST",
+          "held": true,
+          "name": "no_retry_between_00_and_06_ist"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A18",
+      "ledger_sha256": "4828ce5b63fc1228ac927c8f651b5487e45ccd1aab56a15f1a2c8f8e1ea23ca4",
+      "receipts": 1,
+      "source": "vasool/diagnosis/rules.py's own note that the hold is classify-time only",
+      "survived": true,
+      "targets": "taxonomy \u00a76's quiet period on the retry half",
+      "title": "a promise to pay releases a retry at midnight"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "0 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "1 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "rcpt_3b89c4c85bf16129 written within 1:00:00",
+          "held": true,
+          "name": "escalated_within_1:00:00_of_declined"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a19"
+        }
+      ],
+      "dispatched": 0,
+      "expectation": "survives",
+      "id": "A19",
+      "ledger_sha256": "72c848895e4eb0a49824b684a74e94c552e2d8a22f50ff6cf77fb5514522609c",
+      "receipts": 1,
+      "source": "PromiseToPayGuard has no applies_to; the same defect rules.py already fixed",
+      "survived": true,
+      "targets": "taxonomy \u00a77's immediate hard stop on RISK_BLOCK",
+      "title": "a promise to pay defers the human handoff"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "3 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "4 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "3 retries executed, ceiling 3",
+          "held": true,
+          "name": "at_most_3_retries_on_pay_a20"
+        },
+        {
+          "detail": "rcpt_47010d5ee3e9ca0a naming RetryCapGuard",
+          "held": true,
+          "name": "blocked_receipt_for_pay_a20"
+        }
+      ],
+      "dispatched": 3,
+      "expectation": "survives",
+      "id": "A20",
+      "ledger_sha256": "2aec23f2336650eecf0d6d0869896bd1afb76637ec6d0e83291f91bbf8c6d8d1",
+      "receipts": 4,
+      "source": "taxonomy \u00a77's 4-retry halt; docs/VERIFIED.md's duplicate delivery",
+      "survived": true,
+      "targets": "the platform attempt ceiling under concurrent delivery",
+      "title": "two webhooks racing for the last attempt"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "0 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "rcpt_4e7ec8a0e257ff90 naming SpendCapGuard",
+          "held": true,
+          "name": "blocked_receipt_for_pay_a22_huge"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a22_huge"
+        },
+        {
+          "detail": "rcpt_b730dd86d402d326 naming HumanApprovalGuard",
+          "held": true,
+          "name": "escalated_receipt_for_pay_a22_big"
+        },
+        {
+          "detail": "0 actions executed, expected 0",
+          "held": true,
+          "name": "0_actions_on_pay_a22_big"
+        }
+      ],
+      "dispatched": 0,
+      "expectation": "survives",
+      "id": "A22",
+      "ledger_sha256": "d1cfa42e835974afdfcc544d4bbb38aac363e79e72da2e069c7b6e4a606a1995",
+      "receipts": 2,
+      "source": "design spec \u00a75; SpendCapGuard's own argument against deferring forever",
+      "survived": true,
+      "targets": "blast radius: the daily spend cap and the unattended threshold",
+      "title": "an amount past both merchant ceilings"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 notices served, no debit inside the 1 day, 0:00:00 lead",
+          "held": true,
+          "name": "no_debit_on_pay_a23_before_its_notice_matured"
+        },
+        {
+          "detail": "1 contacts executed, expected 1",
+          "held": true,
+          "name": "1_contacts_on_pay_a23"
+        },
+        {
+          "detail": "1 retries executed, expected 1",
+          "held": true,
+          "name": "1_retries_on_pay_a23"
+        }
+      ],
+      "dispatched": 2,
+      "expectation": "survives",
+      "id": "A23",
+      "ledger_sha256": "77f08c8de864ee9054f3a99ed87aa0b8b33176593d246fa40214893cbec80d6f",
+      "receipts": 2,
+      "source": "design spec \u00a710's compliance row; docs/taxonomy.md \u00a79.13",
+      "survived": true,
+      "targets": "RBI e-mandate: the account is not touched inside the notice period",
+      "title": "a mandate debit with no notice served"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "1 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 recovered receipts, expected 1",
+          "held": true,
+          "name": "1_recovered_receipts_for_pay_a24"
+        },
+        {
+          "detail": "nothing after settled",
+          "held": true,
+          "name": "no_action_on_pay_a24_after_settled"
+        }
+      ],
+      "dispatched": 1,
+      "expectation": "survives",
+      "id": "A24",
+      "ledger_sha256": "be865e1cdb8ab8f889911ad5bb7e07c3047ef84bcdba2878c89f69572ca42f7c",
+      "receipts": 2,
+      "source": "design spec \u00a79 A03; taxonomy \u00a75 on payment_timed_out",
+      "survived": true,
+      "targets": "event ordering: a terminal episode absorbs what comes late",
+      "title": "the failure arrives after the capture"
+    }
+  ],
+  "survived": 18
+}

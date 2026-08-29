@@ -16,6 +16,7 @@ LIVE     ?=
 RECORD   ?=
 REPEATS  ?=
 CELL     ?=
+PARTIAL  ?=
 
 SHADOW_ARGS :=
 ifeq ($(strip $(RECORD)),1)
@@ -26,6 +27,9 @@ SHADOW_ARGS += --repeats $(REPEATS)
 endif
 ifneq ($(strip $(CELL)),)
 SHADOW_ARGS += --consistency-cell $(CELL)
+endif
+ifeq ($(strip $(PARTIAL)),1)
+SHADOW_ARGS += --partial
 endif
 
 DEMO_ARGS := --scenario $(SCENARIO)
@@ -53,7 +57,7 @@ sweeps: ## eval + SS7's sensitivity grid (83 configs + reference x 200 seeds -- 
 sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log make sweep-one
 	$(PYTHON) tools/evaluate.py --skip-base --sweep-target $(TARGET) $(EVAL_ARGS)
 
-shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; CELL=reason/source adds the depth section
+shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; REPEATS=N sets depth; PARTIAL=1 replays only recorded cells; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
 redteam: ## 22 attacks, scored against the registered survival criterion -- writes out/adversary/
