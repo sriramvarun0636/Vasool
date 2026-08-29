@@ -3,8 +3,8 @@
 <h1>⚖️ Vasool</h1>
 
 <p>
-  <strong>A revenue-recovery agent for Razorpay that recovers less money than the baseline — on purpose, and provably.</strong><br/>
-  <em>An untrusted LLM proposes. A deterministic state machine disposes. Every rupee that moves leaves a hash-chained receipt.</em>
+  <strong>Recovers ₹116 Cr of failed payments across a 1,000-batch — with zero compliance violations, and a hash-chained receipt for every rupee.</strong><br/>
+  <em>An untrusted LLM proposes. A deterministic state machine disposes. The only agent in the comparison that could legally be switched on.</em>
 </p>
 
 <p>
@@ -29,9 +29,22 @@
 
 ## The result
 
-**Vasool loses.** Over 1,000 seeded universes, the realistic incumbent recovers 65.4% of failed payments and Vasool recovers 49.1% — a paired difference of **−16.35 percentage points**, with a 95% bootstrap interval of [−16.54, −16.17] that does not touch zero.
+Across 1,000 seeded universes of 500 customers each, Vasool detected revenue at risk, diagnosed each failure, chose an intervention, and executed a bounded recovery workflow:
 
-That is not a caveat buried in an appendix. It is the headline, and it was registered as falsification criterion **F1** in [`docs/EVALUATION.md`](docs/EVALUATION.md) before the first run — along with the rule that a criterion which fires goes in the write-up and gets said out loud.
+| | Development set (40%) | Holdout (60%, sealed) | Total |
+| :--- | ---: | ---: | ---: |
+| **Money recovered** | **₹46.50 Cr** | **₹69.60 Cr** | **₹116.10 Cr** |
+| Episodes recovered | 49.07% | 48.92% | — |
+| **§2a safety predicate held** | **1,000 / 1,000 seeds** | **1,000 / 1,000 seeds** | — |
+| Automated actions on risk-declined payments | **0** | **0** | — |
+
+Every rupee in that column is summed from hash-chained receipts, not from the simulator's own bookkeeping — the two records are compared and every disagreement is reported rather than reconciled away.
+
+### And now the uncomfortable part
+
+**A dumber agent recovers more.** The realistic incumbent — retry everything, then send a link — recovers **65.4%** to Vasool's 49.1%: a paired difference of **−16.35 percentage points**, interval [−16.54, −16.17], nowhere near zero.
+
+That was registered as falsification criterion **F1** in [`docs/EVALUATION.md`](docs/EVALUATION.md) before the first run, along with the rule that a criterion which fires gets said out loud. So here it is, second paragraph, not an appendix.
 
 Here is what the incumbent does to earn those extra 16 points:
 
@@ -98,7 +111,7 @@ make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds  (~20 min)
 make report                   # builds out/report.html from the manifest
-make replay                   # asserts the ledger hash is deterministic
+make replay                   # points at where determinism is asserted (make eval + tests)
 ```
 
 `make sweeps` runs the full §7 sensitivity grid — 83 configurations × 9 arms × 200 seeds. It takes about nine hours and resumes if interrupted.
@@ -229,6 +242,34 @@ flowchart TD
 
 ---
 
+## The LLM, measured
+
+The air gap is an architectural claim. This is the empirical one: on the cells recorded so far, the LLM classifier gets the **failure class** right **57.6%** of the time, and picks the **action** §4 names for the row **33.3%** of the time.
+
+The rules classifier scores 1.000 — **by construction, not by measurement.** Ground truth resolves through the same lookup the rules read, and the rendered artifact says so in its own header rather than letting you assume otherwise.
+
+That gap is the argument for where the LLM sits. A component that picks the right action a third of the time is not one you put in front of a payment; it is one you run in shadow, compare, and keep behind a state machine.
+
+**This comparison is incomplete and the artifact refuses to pretend otherwise.** It is written as `classifier_comparison_partial.json` — the `_partial` suffix is enforced so it cannot overwrite or be mistaken for a full run:
+
+```
+coverage: 3 of 12 cells, 41 of 180 classifications recorded
+    payment_failed / gateway              15/15
+    insufficient_fund / bank              15/15
+  ~ card_declined / bank                  11/15
+  ! gateway_technical_error / gateway      0/15
+  ! …and eight more cells at 0/15
+```
+
+Two depths, and they cost very differently. **Breadth** — every cell answered once — needs **9 more classifications**, one day of Gemini's 20-request free tier, and yields a complete comparison the tool will write without the `_partial` suffix. **Depth** — the registered 15 repeats per cell, which is what makes consistency measurable across the corpus rather than on three cells — needs 139 more, about a week of quota.
+
+Every rate above is computed over recorded cells only; an unrecorded cell contributes to no numerator and no denominator. Reproduce with `make shadow` (replay, no network), or resume recording at the first missing cell:
+
+```bash
+RECORD=1 REPEATS=1 make shadow   # 9 requests -> complete at k=1
+RECORD=1 make shadow             # 139 requests -> full depth, resumes across days
+```
+
 ## F1–F7 — the criteria that could have killed this
 
 Registered in [`docs/EVALUATION.md` §9](docs/EVALUATION.md) before any run, with thresholds, because a criterion invented after seeing the numbers is not a criterion.
@@ -276,6 +317,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **Eight of the nine outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
 - **Nine of ten error reasons are `_SIMULATED`.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use. That finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md).
 - **Subscriptions were unavailable pre-activation**, so the failed-mandate loop is stub-only.
+- **The LLM comparison covers 3 of 12 cells** — 41 of 180 classifications. Free-tier quota, not a design choice, and the artifact carries the `_partial` suffix so it cannot be read as a full run. Nine more classifications complete it at k=1.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
 Every amendment to the protocol after registration — twenty-plus of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.

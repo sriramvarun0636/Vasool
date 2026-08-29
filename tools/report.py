@@ -24,6 +24,27 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             print(f"error: {json_path} is corrupted. run 'make sweeps' first.", file=sys.stderr)
             sys.exit(1)
 
+    # §4.5's rules-vs-LLM comparison. Optional: absent on a clone that has not
+    # run `make shadow`, and the exhibit renders "not run" rather than nothing.
+    shadow_path = json_path.parent.parent / "shadow" / "classifier_comparison_partial.json"
+    if not shadow_path.exists():
+        shadow_path = json_path.parent.parent / "shadow" / "classifier_comparison.json"
+    shadow_data = {}
+    if shadow_path.exists():
+        try:
+            shadow_data = json.loads(shadow_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            shadow_data = {}
+
+    # §2a's adversary. Optional the same way the shadow artifact is.
+    redteam_path = json_path.parent.parent / "adversary" / "redteam.json"
+    redteam_data = {}
+    if redteam_path.exists():
+        try:
+            redteam_data = json.loads(redteam_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            redteam_data = {}
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -414,6 +435,11 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             text-align: right;
             white-space: nowrap;
         }}
+        /* The LLM's answer distribution is the one cell with real prose in it;
+           forcing it onto one line pushes the last two columns off the page,
+           and those two columns are the whole point of the table. */
+        #llm-table td:nth-child(4) {{ white-space: normal; min-width: 190px; }}
+        #llm-table td:first-child, #llm-table th:first-child {{ white-space: normal; }}
         .world-table th:first-child, .world-table td:first-child {{
             text-align: left;
         }}
@@ -750,6 +776,12 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     <script type="application/json" id="eval-data">
 {json.dumps(raw_data)}
     </script>
+    <script type="application/json" id="shadow-data">
+{json.dumps(shadow_data)}
+    </script>
+    <script type="application/json" id="redteam-data">
+{json.dumps(redteam_data)}
+    </script>
 
     <div id="spine">
         <!-- Generated dynamically by JS -->
@@ -780,13 +812,17 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" height="32" style="filter: brightness(0) invert(1);">
                 <h2><span class="vasool-tag">VASOOL</span></h2>
             </div>
-            <h1 id="hero-trajectories">0</h1>
-            <p>arm-seed runs (9,000 base + 151,200 sweep) &middot; <span id="hero-violations">&mdash;</span></p>
+            <h1 id="hero-money">&mdash;</h1>
+            <p id="hero-sub">recovered across the <span id="hero-cohort">&mdash;</span>
+               cohort, 1,000 seeds &middot; <span id="hero-violations">&mdash;</span></p>
+            <p style="margin-top: 10px; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">
+               <span id="hero-trajectories">0</span> arm-seed runs &middot; 9,000 base + 151,200 sweep
+            </p>
         </div>
 
         <div class="exhibit band-dependent" id="exhibit-a">
             <span class="band-tag">&sect;2b &middot; simulator-dependent &mdash; the outcome model decides these</span>
-            <div class="exhibit-title">EXHIBIT A &mdash; Vasool Loses</div>
+            <div class="exhibit-title">EXHIBIT A &mdash; The Money, and What It Cost</div>
             <p class="viz-caption">
                 The realistic incumbent recovers more money than we do. That is the result, it was
                 registered as falsification criterion <strong>F1</strong> before the first run, and
@@ -897,7 +933,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
         <div class="exhibit band-dependent" id="exhibit-sweep">
             <span class="band-tag">&sect;7 &middot; sensitivity</span>
-            <div class="exhibit-title">EXHIBIT B2 &mdash; Does It Survive the Sweep?</div>
+            <div class="exhibit-title">EXHIBIT C &mdash; Does It Survive the Sweep?</div>
             <p class="viz-caption">
                 Eight of the nine outcome parameters are guesses. So every registered parameter is
                 swept independently at &minus;50%, &minus;25%, +25% and +50% of its value &mdash;
@@ -927,7 +963,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
 
         <div class="exhibit band-dependent" id="exhibit-falsification">
             <span class="band-tag">&sect;9 &middot; registered in advance</span>
-            <div class="exhibit-title">EXHIBIT B3 &mdash; What Would Have Killed This</div>
+            <div class="exhibit-title">EXHIBIT D &mdash; What Would Have Killed This</div>
             <p class="viz-caption">
                 Seven criteria, each with a threshold, written into the protocol before any run
                 existed. A criterion invented after seeing the numbers is not a criterion. None
@@ -937,8 +973,40 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             <div class="fboard" id="fboard"></div>
         </div>
 
+        <div class="exhibit band-independent" id="exhibit-llm">
+            <span class="band-tag">&sect;4.5 &middot; where the LLM lost</span>
+            <div class="exhibit-title">EXHIBIT E &mdash; Should the LLM Own This?</div>
+            <p class="viz-caption">
+                The architecture keeps the LLM away from money. That is a claim; this is the
+                measurement behind it. Both classifiers were asked the same questions in shadow
+                &mdash; the LLM never touched a ledger, and a test walks the import graph in both
+                directions to prove it could not have.
+                <strong>The rules column is 1.000 by construction, not by measurement</strong>
+                &mdash; ground truth resolves through the same lookup the rules read, and saying
+                so is the only way the other column means anything.
+            </p>
+            <div class="tiles" id="llm-tiles" style="margin-bottom: 34px;"></div>
+            <div class="viz-scroll">
+            <table class="world-table" id="llm-table">
+                <thead>
+                    <tr>
+                        <th>Failure the webhook reported</th>
+                        <th>Truth</th>
+                        <th>Rules</th>
+                        <th>LLM</th>
+                        <th>Accuracy</th>
+                        <th>Consistency</th>
+                        <th>Episodes</th>
+                    </tr>
+                </thead>
+                <tbody><!-- JS --></tbody>
+            </table>
+            </div>
+            <p class="viz-caption" id="llm-note" style="margin-top: 24px; margin-bottom: 0;"></p>
+        </div>
+
         <div class="exhibit" id="exhibit-c">
-            <div class="exhibit-title">EXHIBIT C — The AI Air-Gap</div>
+            <div class="exhibit-title">EXHIBIT F — The AI Air-Gap</div>
             <div class="airgap-diagram">
                 <div class="plane-box">
                     <strong>Shadow Plane</strong><br><br>
@@ -958,36 +1026,35 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
             </div>
         </div>
 
-        <div class="exhibit" id="exhibit-d">
-            <div class="exhibit-title">EXHIBIT D — Failure &amp; Recovery (A15-A19 Bug)</div>
-            <div class="diff-board">
-                <div class="diff-col" style="border-right: 1px solid var(--hairline)">
-                    <h3 style="margin-bottom: 16px; font-size: 14px;">BEFORE (Queue Survival Leak)</h3>
-                    <pre>
-[12:00:00] PROPOSED retry (transient_error)
-[12:00:00] DEFERRED by QuietHoursGuard
-...
-[08:00:00] OBSERVE card_expired
-<span class="diff-highlight-red">[08:01:00] EXECUTE retry (transient_error)</span>
-<span class="diff-highlight-red">           ^ FATAL: Executed dead card</span>
-                    </pre>
-                </div>
-                <div class="diff-col">
-                    <h3 style="margin-bottom: 16px; font-size: 14px;">AFTER (_supersede_queued Fix)</h3>
-                    <pre>
-[12:00:00] PROPOSED retry (transient_error)
-[12:00:00] DEFERRED by QuietHoursGuard
-...
-[08:00:00] OBSERVE card_expired
-<span class="diff-highlight-green">[08:00:00] DIAGNOSED superseded by later failure</span>
-<span class="diff-highlight-green">[08:00:01] BLOCKED instrument_dead</span>
-                    </pre>
-                </div>
+        <div class="exhibit band-independent" id="exhibit-d">
+            <span class="band-tag">&sect;2a &middot; the adversary</span>
+            <div class="exhibit-title">EXHIBIT G &mdash; What Still Beats It</div>
+            <p class="viz-caption">
+                The survival criterion was registered <em>before</em> the first attack was written,
+                and <code>judge()</code> is the only thing that can return a verdict. It scans the
+                ledger the way &sect;2a scans &mdash; never &ldquo;a guard returned BLOCKED&rdquo;.
+                An attack may add evidence requirements; it cannot lower the bar. Each row below
+                carries the SHA-256 of the ledger that attack produced.
+            </p>
+            <div class="tiles" id="rt-tiles" style="margin-bottom: 34px;"></div>
+            <div class="viz-scroll">
+            <table class="world-table" id="rt-table">
+                <thead>
+                    <tr><th>Attack</th><th>Verdict</th><th>Why</th><th>Receipts</th><th>Ledger</th></tr>
+                </thead>
+                <tbody><!-- JS --></tbody>
+            </table>
             </div>
+            <p class="viz-caption" style="margin-top: 22px; margin-bottom: 0;">
+                Four are open and named. They are not bugs awaiting a fix in the last commit &mdash;
+                they are limits with a registered expectation, so a known failure keeps the suite
+                green and a <em>fixed</em> one turns it red. A clean sheet here would be evidence
+                the attacks are too weak.
+            </p>
         </div>
 
         <div class="exhibit" id="exhibit-e">
-            <div class="exhibit-title">EXHIBIT E — The Audit Trail</div>
+            <div class="exhibit-title">EXHIBIT H — The Audit Trail</div>
             <div class="verifier-box">
                 <h3 style="margin-bottom: 16px;">Live Cryptographic Verifier</h3>
                 <p style="margin-bottom: 24px; color: #94A3B8; font-family: var(--font-body);">Recompute the deterministic SHA-256 digest live in-browser using Web Crypto API.</p>
@@ -1002,7 +1069,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
         </div>
 
         <div class="exhibit" id="exhibit-f">
-            <div class="exhibit-title">EXHIBIT F — Trajectory Explorer</div>
+            <div class="exhibit-title">EXHIBIT I — Trajectory Explorer</div>
             <div class="explorer-board">
                 <div class="explorer-list" id="explorer-list">
                     <!-- JS populated -->
@@ -1480,6 +1547,119 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                 }});
             }}
 
+            // 1h. §4.5 — the rules-vs-LLM comparison, from its own artifact.
+            let SHADOW = {{}};
+            try {{
+                SHADOW = JSON.parse(document.getElementById("shadow-data").textContent) || {{}};
+            }} catch (e) {{ SHADOW = {{}}; }}
+
+            const llmBody = document.querySelector("#llm-table tbody");
+            const llmNote = document.getElementById("llm-note");
+            const llmTiles = document.getElementById("llm-tiles");
+            const ov = SHADOW.overall;
+
+            if (llmBody && ov) {{
+                const pctOf = (x) => (typeof x === "number" ? (x * 100).toFixed(1) + "%" : "—");
+                [
+                    [pctOf(ov.rules_accuracy), "rules classifier — by construction, not measured"],
+                    [pctOf(ov.llm_accuracy), "LLM picked the right failure class"],
+                    [pctOf(ov.intervention_agreement), "LLM picked the action §4 names for the row"],
+                    [`${{SHADOW.covered_cells}} / ${{SHADOW.total_cells}}`, "cells recorded — free-tier quota, not a design choice"]
+                ].forEach(([v, l]) => {{
+                    const d = document.createElement("div");
+                    d.className = "tile";
+                    d.innerHTML = `<div class="tv">${{v}}</div><div class="tl">${{l}}</div>`;
+                    llmTiles.appendChild(d);
+                }});
+
+                (SHADOW.by_cell || []).forEach(c => {{
+                    const tr = document.createElement("tr");
+                    const recorded = c.repeats > 0 && c.absent < c.repeats;
+                    const top = (c.llm_classes && c.llm_classes.length)
+                        ? c.llm_classes.map(([k, n]) => `${{k}}×${{n}}`).join(", ")
+                        : "—";
+                    const acc = recorded ? (c.llm_accuracy * 100).toFixed(0) + "%" : "—";
+                    const con = recorded && typeof c.llm_consistency === "number"
+                        ? (c.llm_consistency * 100).toFixed(0) + "%" : "—";
+                    // A stable wrong answer is the finding. Accuracy alone hides it,
+                    // consistency alone flatters it; they are shown together.
+                    const damning = recorded && c.llm_accuracy === 0 && c.llm_consistency === 1;
+                    tr.innerHTML =
+                        `<td>${{c.error_reason}} / ${{c.error_source}}</td>` +
+                        `<td>${{c.truth}}</td>` +
+                        `<td class="zero">${{c.rules}}</td>` +
+                        `<td class="${{recorded ? (c.llm_accuracy === 1 ? "zero" : "nonzero") : ""}}">${{top}}</td>` +
+                        `<td class="${{recorded && c.llm_accuracy < 1 ? "nonzero" : ""}}">${{acc}}</td>` +
+                        `<td${{damning ? ' class="nonzero"' : ""}}>${{con}}</td>` +
+                        `<td>${{new Intl.NumberFormat().format(c.episodes)}}</td>`;
+                    llmBody.appendChild(tr);
+                }});
+
+                const worst = (SHADOW.by_cell || [])
+                    .filter(c => c.absent < c.repeats && c.llm_accuracy === 0 && c.llm_consistency === 1)
+                    .sort((a, b) => b.episodes - a.episodes)[0];
+                llmNote.innerHTML = worst
+                    ? `<strong>Read the last two columns together.</strong> On ` +
+                      `<code>${{worst.error_reason}} / ${{worst.error_source}}</code> — the largest ` +
+                      `recorded cell at ${{new Intl.NumberFormat().format(worst.episodes)}} episodes — the ` +
+                      `model answered <strong>${{worst.llm_classes[0][0]}}</strong> every single time, ` +
+                      `for a consistency of 100% and an accuracy of 0%. A stable wrong answer is worse ` +
+                      `than an unstable one: it is confidently, reproducibly incorrect about the most ` +
+                      `common failure on the platform, and either column alone would have hidden it. ` +
+                      `That is the measurement behind keeping this component in shadow.`
+                    : `Every recorded cell is shown. A dash means the cell has no recording and ` +
+                      `contributes to no rate.`;
+            }} else if (llmNote) {{
+                llmNote.textContent =
+                    "No comparison artifact on disk — run `make shadow` to build one.";
+            }}
+
+            // 1i. The adversary, from out/adversary/redteam.json.
+            let RT = {{}};
+            try {{
+                RT = JSON.parse(document.getElementById("redteam-data").textContent) || {{}};
+            }} catch (e) {{ RT = {{}}; }}
+
+            const rtBody = document.querySelector("#rt-table tbody");
+            const rtTiles = document.getElementById("rt-tiles");
+            if (rtBody && Array.isArray(RT.results)) {{
+                [
+                    [`${{RT.survived}} / ${{RT.attacks}}`, "attacks survived the registered criterion"],
+                    [String(RT.failed), "open failures, each named and reproducible"],
+                    [RT.as_registered ? "yes" : "NO", "every attack judged against the criterion as registered"],
+                    ["13", "guards, all evaluated then resolved by severity"]
+                ].forEach(([v, l]) => {{
+                    const d = document.createElement("div");
+                    d.className = "tile";
+                    d.innerHTML = `<div class="tv">${{v}}</div><div class="tl">${{l}}</div>`;
+                    rtTiles.appendChild(d);
+                }});
+
+                // Failures first: they are the informative half.
+                const ordered = RT.results.slice().sort(
+                    (a, b) => (a.survived === b.survived) ? a.id.localeCompare(b.id)
+                                                          : (a.survived ? 1 : -1)
+                );
+                ordered.forEach(r => {{
+                    const broke = (r.clauses || []).filter(c => !c.held);
+                    const why = broke.length
+                        ? broke.map(c => c.detail).join("; ")
+                        : `all ${{(r.clauses || []).length}} clauses held`;
+                    const tr = document.createElement("tr");
+                    // No row-level tint: `is-vasool` is the green "this is ours"
+                    // class, and painting a failure green is exactly the wrong
+                    // signal. The verdict cell carries the colour.
+                    tr.innerHTML =
+                        `<td><b>${{r.id}}</b> &middot; ${{r.title}}</td>` +
+                        `<td class="${{r.survived ? "zero" : "nonzero"}}">` +
+                        `${{r.survived ? "\\u2713 survived" : "\\u2717 open"}}</td>` +
+                        `<td style="white-space: normal; text-align: left; max-width: 420px;">${{why}}</td>` +
+                        `<td>${{r.receipts}}</td>` +
+                        `<td style="font-size: 11px;">${{(r.ledger_sha256 || "").slice(0, 12)}}</td>`;
+                    rtBody.appendChild(tr);
+                }});
+            }}
+
             // 2. Generate Data-Driven Spine
             const spine = document.getElementById("spine");
             const exhibitData = [
@@ -1524,6 +1704,24 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                     }}
                     heroRuns.innerText = formatNum(currentRuns);
                 }}, 30);
+            }}
+
+            // Money first. The run count is effort; this is the result, and it is
+            // what Track 03's bar actually asks for.
+            const heroMoney = document.getElementById("hero-money");
+            const paise = EVAL?.per_arm?.vasool?.recovered_paise_total;
+            if (heroMoney) {{
+                if (typeof paise !== "number") {{
+                    heroMoney.innerText = "\u2014";
+                }} else {{
+                    trace(heroMoney, "per_arm.vasool.recovered_paise_total",
+                          "\u20b9" + (paise / 100 / 1e7).toFixed(2) + " Cr");
+                }}
+            }}
+
+            const heroCohort = document.getElementById("hero-cohort");
+            if (heroCohort) {{
+                trace(heroCohort, "cohort", EVAL?.cohort || "\u2014");
             }}
 
             const heroViolations = document.getElementById("hero-violations");

@@ -186,21 +186,11 @@ class FactStore(Protocol):
     ) -> PolicyFacts: ...
 
 
-def build_context(
-    *, store: FactStore, event: FailureEvent, proposal: Proposal, now: datetime
-) -> GuardContext:
-    """Materialise the world once, then hand the guards a value.
-
-    `effective_at` is the later of now and the proposal's scheduled time. When
-    the machine gates immediately before executing — which is the design — they
-    are the same instant. They differ only when something gates an action ahead
-    of its time, and then the guards correctly rule on when it would land rather
-    than on when we asked.
-    """
-    return GuardContext(
-        now=now,
-        effective_at=max(now, proposal.execute_at),
-        event=event,
-        proposal=proposal,
-        facts=store.snapshot(event=event, proposal=proposal, now=now),
-    )
+# `build_context` lived here and was removed 2026-08-29. It built a
+# GuardContext straight from a FactStore snapshot, which looks like the
+# sanctioned way to make one and is not: it omits the episode-counter merge
+# that `PolicyMachine._context` performs (attempts_used, episode_contacts,
+# executed_keys). A caller using it would hand RetryCapGuard and
+# FrequencyCapGuard zeroed counters and get a silent under-count on exactly
+# the two caps §2a scans. Nothing called it. `PolicyMachine._context` is the
+# only way a GuardContext should be built.

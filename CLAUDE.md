@@ -10,9 +10,12 @@ implementing anything.
 1. **The LLM never calls a tool.** The diagnosis plane emits an inert `Proposal`
    object. Only `actions/executor.py` may call Razorpay. If you find yourself
    giving an LLM a tool, stop and ask me.
-2. **Nothing calls `datetime.now()` or `time.time()`** outside `vasool/clock.py`.
-   All time comes from an injected clock. Enforced by
-   `tests/test_no_wallclock.py`. Violating it silently breaks replay
+2. **Nothing in `vasool/` or `windtunnel/` calls `datetime.now()` or
+   `time.time()`** outside `vasool/clock.py`. All time comes from an injected
+   clock. Enforced by `tests/test_no_wallclock.py`, which walks those two
+   package roots — `tools/` is deliberately out of scope, and `tools/catch.py`
+   does timestamp a live capture, which is real wall-clock work outside the
+   agent and the simulator. Violating it silently breaks replay
    determinism, which is a headline claim of the project.
 3. **Every money action produces a hash-chained `Receipt`.** No exceptions, no
    "TODO: add receipt later".
@@ -85,8 +88,13 @@ Discovered live on 2026-08-21, recorded in full in `docs/VERIFIED.md`:
 ## Stack
 
 Python 3.12 · FastAPI · Pydantic v2 · SQLite (Postgres optional) ·
-pytest + hypothesis · httpx (test only) · numpy/scipy · structlog ·
-OpenTelemetry · Jinja2
+pytest + hypothesis · httpx (test only) · numpy · OpenTelemetry · razorpay
+
+Declared in `requirements.txt` but imported nowhere: **scipy**, **structlog**,
+**Jinja2**. The first two are leftovers and should come out. Jinja2 stays on
+purpose — `tools/report.py` is 1,581 lines of HTML in a Python f-string and
+should be a template; the dependency is already there for the day that is
+fixed. Checked 2026-08-29.
 
 ## Commands
 
@@ -133,7 +141,14 @@ the new repeats and an interrupted run resumes.
 
 ## Status
 
-Current stage: 8 (adversary). 1381 tests.
+Current stage: 12 (submission docs). 1381 tests.
+Stages 9-12 done 2026-08-29: report card rebuilt with real dataviz and
+provenance mode; holdout unsealed and evaluated once; POSTMORTEM.md,
+ARCHITECTURE.md, COMPLIANCE.md and docs/VIDEO.md written.
+**Stage 7's LLM comparison is partial — 3 of 12 cells, 41 of 180
+classifications.** `RECORD=1 REPEATS=1 make shadow` needs 9 requests and
+completes it at k=1 (drops the `_partial` suffix); full 15-deep needs 139,
+about a week at the free tier's 20/day. Quota for 2026-08-29 is spent.
 
 Stages complete:
   - 0A — live payloads captured, VERIFIED.md written

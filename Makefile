@@ -63,7 +63,7 @@ report: ## builds out/report.html and README.md's forest plot from the manifest
 	$(PYTHON) tools/report.py
 	$(PYTHON) tools/make_forest_svg.py
 
-replay: ## rebuild state from the ledger, assert hash determinism at full scale
+replay: ## where the determinism assertion actually lives (it is not run here)
 	@echo "make replay: covered by 'make eval', which runs the determinism check"
 	@echo "and writes it to out/development/evaluation.json under 'determinism'."
 	@echo "tests/test_replay.py covers one episode; tests/windtunnel/test_runner.py"

@@ -22,6 +22,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPORT = REPO_ROOT / "tools" / "report.py"
 MANIFEST = REPO_ROOT / "out" / "development" / "evaluation.json"
 HOLDOUT = REPO_ROOT / "out" / "holdout" / "evaluation.json"
+SHADOW = REPO_ROOT / "out" / "shadow" / "classifier_comparison_partial.json"
 
 SOURCE = REPORT.read_text()
 
@@ -169,6 +170,16 @@ class TestReadmeDoesNotDrift:
             for arm in self.HEADLINE_ARMS:
                 rate = manifest["per_arm"][arm]["recovery_rate_mean"] * 100
                 allowed.update({f"{rate:.2f}%", f"{rate:.1f}%"})
+
+        # §4.5's shadow comparison prints its rates as percentages too. They
+        # are measurements from a different artifact, not recovery rates, and
+        # they are held to the same rule: quotable only if something produced
+        # them.
+        if SHADOW.exists():
+            overall = json.loads(SHADOW.read_text()).get("overall", {})
+            for value in overall.values():
+                if isinstance(value, float) and 0.0 < value <= 1.0:
+                    allowed.update({f"{value * 100:.2f}%", f"{value * 100:.1f}%"})
 
         printed = set(re.findall(r"\d{1,3}\.\d{1,2}%", readme))
         stale = sorted(printed - allowed)
