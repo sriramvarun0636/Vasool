@@ -41,7 +41,7 @@ Four properties, and each exists because the obvious alternative is wrong:
 | G05 | `PromiseToPayGuard` | **RBI Fair Practices Code** (fair dealing) | A customer who promised a date is not chased before it. Has no jurisdiction over `HUMAN_QUEUE`. |
 | G06 | `DNDGuard` | **TRAI TCCCPR 2018**, as amended Feb 2025 | No promotional traffic to a DND-registered number. |
 | G07 | `FrequencyCapGuard` | **RBI FPC** (anti-harassment) | ≤2 contacts per episode; ≤3 per customer per rolling 7 days. |
-| G08 | `ContactWindowGuard` | **RBI FPC ¶55** | No contact outside 08:00–19:00 IST. Defers rather than blocks, with a per-customer jitter. |
+| G08 | `ContactWindowGuard` | **RBI FPC ¶55** | No contact outside 08:00–19:00 in the customer's zone, IST when unknown. Defers rather than blocks, with a per-customer jitter. |
 | G09 | `PreDebitNoticeGuard` | **RBI e-mandate framework** — pre-debit notification | A mandate debit is held until a notice has been served, 24h ahead. |
 | G10 | `AFAThresholdGuard` | **RBI e-mandate framework** — AFA above ₹15,000 | A recurring debit over the threshold needs additional factor authentication. |
 | G11 | `DLTTemplateGuard` | **TRAI TCCCPR** — DLT template registration (Feb 2025 amendment) | Every message carries a template the merchant actually registered. |

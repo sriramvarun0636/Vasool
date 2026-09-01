@@ -5,8 +5,8 @@ in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
 
-Two of these were found by the system catching itself rather than by me
-noticing. Those are the two worth reading.
+Four of these were found by the system catching itself rather than by me
+noticing. Those are the four worth reading.
 
 ---
 
@@ -317,7 +317,7 @@ whose verdict is scanned from the ledger rather than reported by the code under
 test, and a diagnostic that had to be added before the failure would speak.
 
 That is the argument this project is actually making. Not that the agent is
-correct — I have six incidents here that say otherwise, and four known
+correct — I have six incidents here that say otherwise, and three known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by
