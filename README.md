@@ -315,7 +315,7 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | **G03** `ConsentGuard` | DPDP Act 2023 s.6 | consent absent or withdrawn | `BLOCK`, and purge queued work for that customer |
 | **G07** `FrequencyCapGuard` | RBI FPC (anti-harassment) | >2 contacts/episode, or >3 per customer per rolling 7d | `BLOCK` |
-| **G08** `ContactWindowGuard` | RBI FPC ¶55 | dispatch time outside 08:00–19:00 IST | `DEFER` to the next open window |
+| **G08** `ContactWindowGuard` | RBI FPC ¶55 | dispatch time outside 08:00–19:00 in the customer's zone (IST when unknown) | `DEFER` to the next open window |
 | **G09** `PreDebitNoticeGuard` | RBI e-mandate framework | mandate debit with no notice served | `DEFER`, and emit the obligation to send one |
 
 ---
@@ -407,17 +407,17 @@ Every test I had written asked whether the agent did something *wrong*. Not one 
 
 ### The adversary
 
-We wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
+I wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
 
 **19 of 22 survive.** Three remain open, and they are the complete set:
 
 | | Attack | Why it still wins |
 | :--- | :--- | :--- |
-| **A01** | Out-of-band payment mid-ladder | A customer who pays through another channel carries no join key. We keep chasing money the merchant already has — a double-collection hazard, not a lost-revenue one. |
+| **A01** | Out-of-band payment mid-ladder | A customer who pays through another channel carries no join key. Vasool keeps chasing money the merchant already has — a double-collection hazard, not a lost-revenue one. |
 | **A07** | One human, two customer IDs | Per-human contact caps key on a derived id; two ids for one person defeat the cap. Worst case seen: 4 contacts in 7 days against a cap of 3. |
 | **A09** | Message to a DND-listed customer | `DNDGuard` scopes to promotional traffic; the classification gap lets one through. |
 
-**A08 was on that list until 2026-08-30**, and closing it is the clearest demonstration in the repository that the apparatus works. The guard evaluated the RBI contact window in IST — the *merchant's* timezone — so a customer elsewhere was protected by our clock rather than their own, and the attack landed a message at 22:30 customer-local. The guard now reads the customer's zone and falls back to IST when it doesn't have one.
+**A08 was on that list until 2026-08-30**, and closing it is the clearest demonstration in the repository that the apparatus works. The guard evaluated the RBI contact window in IST — the *merchant's* timezone — so a customer elsewhere was protected by that clock rather than their own, and the attack landed a message at 22:30 customer-local. The guard now reads the customer's zone and falls back to IST when it doesn't have one.
 
 Three things happened when I fixed it, in this order, and none of them were manual:
 
@@ -454,7 +454,7 @@ Every amendment to the protocol after registration — thirty-six of them — is
 | :--- | :--- |
 | [`POSTMORTEM.md`](POSTMORTEM.md) | **Six incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
-| [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 34 places the code flags its own uncertainty |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 33 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, and the LLM shadow (which never touches a ledger) |
 | [`vasool/policy/`](vasool/policy/) | Thirteen pure-function guards, the state machine, the transition log |
 | [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |
