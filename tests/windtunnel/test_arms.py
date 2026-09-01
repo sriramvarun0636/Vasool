@@ -85,7 +85,7 @@ class TestArmsAreConfigurationsNotCopies:
 
     def test_every_arm_table_has_the_registered_key_set(self):
         """An arm is a different policy for a reason, never a claim that a
-        different set of reasons exists. CLAUDE.md's rule against inventing
+        different set of reasons exists. the project's rule against inventing
         error strings holds for the baselines exactly as it holds for the
         agent."""
         for arm in ALL_ARMS:

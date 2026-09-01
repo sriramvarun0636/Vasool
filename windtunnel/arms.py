@@ -25,7 +25,7 @@ real `_scheduled` and the real `hold_out_of_quiet_hours`.
 **What an arm may not change.** The key set. `normalise()` still resolves
 against the registered `known_reasons()`, and every table here has exactly the
 registered keys — a baseline is a different policy *for* a reason, never a
-claim that a different set of reasons is real. CLAUDE.md's rule against
+claim that a different set of reasons is real. the project's rule against
 inventing error strings holds here exactly as it holds in the agent, and
 tests/windtunnel/test_arms.py enforces it.
 

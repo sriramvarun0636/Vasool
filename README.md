@@ -150,7 +150,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 
-pytest                        # 1,392 tests
+pytest                        # 1,394 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds  (~20 min)
@@ -221,7 +221,7 @@ Exhibit H on the dashboard does the same computation in your browser with the We
 
 ## What the agent actually does
 
-Real output from `make demo`, pinned byte-for-byte by [`tests/test_demo.py`](tests/test_demo.py) against [`data/golden/`](data/golden/). An expired card fails at 19:30 IST — inside the RBI Fair Practices Code's prohibited contact window:
+Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.txt`](data/golden/demo_card_expired_1930.txt) — which [`tests/test_demo.py`](tests/test_demo.py) pins byte-for-byte, so this block cannot drift from what the command prints. Five guards are elided where marked; nothing else is reformatted. An expired card fails at 19:30 IST — inside the RBI Fair Practices Code's prohibited contact window:
 
 ```text
 [4] classified
@@ -233,19 +233,31 @@ Real output from `make demo`, pinned byte-for-byte by [`tests/test_demo.py`](tes
                    re-auth link needed.
 
 [6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
+    proposal     : REAUTH_LINK (PRIMARY)
+
     IdempotencyGuard    ALLOW
     RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        ALLOW              DPDP Act 2023 s.6 + DPDP Rules 2025
+    ConsentGuard        ALLOW
+                                       DPDP Act 2023 s.6 + DPDP Rules 2025
     RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW              RBI FPC (fair dealing)
+    PromiseToPayGuard   ALLOW
+                                       RBI Fair Practices Code (fair dealing)
     DNDGuard            NOT_APPLICABLE
-    FrequencyCapGuard   ALLOW              RBI FPC (anti-harassment)
-    ContactWindowGuard  DEFER -> 2026-08-22 08:09 IST
-                                           RBI FPC ¶55 — 19:30 IST is outside
-                                           the 08:00-19:00 contact window
-    ...
+    FrequencyCapGuard   ALLOW
+                                       RBI Fair Practices Code (anti-
+                                       harassment)
+    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
+                                       RBI Fair Practices Code ¶55
+                                       19:30 IST is outside the 08:00-19:00
+                                       contact window
+    ... five more guards, all NOT_APPLICABLE or ALLOW ...
+
 [7] decision -- cycle 1
     resolved     : DEFER -> 2026-08-22 08:09 IST
+    clause       : RBI Fair Practices Code ¶55
+    re-queued for 2026-08-22 08:09 IST
+
+    -- clock fast-forwarded to 2026-08-22 08:09 IST --
 ```
 
 Three things are load-bearing here and none of them are the LLM:

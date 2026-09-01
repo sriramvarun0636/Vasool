@@ -6,7 +6,7 @@ between the document and vasool/diagnosis/taxonomy.py fails here rather than
 in a demo.
 
 Reason strings are loaded from data/observed_payloads/ and
-data/stubbed_payloads/ — never typed in. CLAUDE.md: a reason in neither
+data/stubbed_payloads/ — never typed in. the project rules: a reason in neither
 directory does not exist.
 """
 from __future__ import annotations
@@ -142,7 +142,7 @@ class TestTableMatchesTheDocument:
 
 
 class TestProvenance:
-    """CLAUDE.md: never invent a Razorpay error string. Enforced mechanically,
+    """the project rules: never invent a Razorpay error string. Enforced mechanically,
     not by discipline."""
 
     def test_fixtures_are_not_silently_empty(self):

@@ -11,7 +11,7 @@ network, no clock. The provider lives in `tools/gemini.py`, the measurement in
 **One deliberate departure from §4.5.** The spec says this module emits a
 `Proposal`, and `vasool/diagnosis/proposal.py`'s docstring says the same. It
 does not. A `Proposal` is precisely the object `actions/executor.py` consumes,
-so a constructor from a model response would leave CLAUDE.md invariant 1 —
+so a constructor from a model response would leave architectural invariant 1 —
 *the LLM never calls a tool* — resting on nobody calling the wrong function
 in a later session. `LLMVerdict` is a separate type with no conversion to a
 `Proposal` anywhere in the codebase, which turns the invariant into a property
@@ -107,7 +107,7 @@ FAILURE CLASSES — choose exactly one:
                    state, no matter how many times it is presented. The
                    customer has to supply a different instrument, or change
                    something at their bank before this one can work.
-  CUSTOMER_ACTION  A human has to do something: complete an authentication
+  CUSTOMER_ACTION  A human has to do something: complete an authentication 
                    step, correct a mistake they made, or finish something
                    they abandoned. Re-presenting the same request without
                    them cannot help.
@@ -226,7 +226,7 @@ def _member(enum_type, raw: object, field: str):
 def parse_verdict(text: str) -> LLMVerdict:
     """Turn raw model output into an LLMVerdict, or raise.
 
-    This is the boundary CLAUDE.md invariant 1 is enforced at. Everything that
+    This is the boundary architectural invariant 1 is enforced at. Everything that
     is not exactly a verdict over the closed vocabularies is rejected, and the
     caller counts the rejection rather than retrying — a model that cannot
     produce the shape is a finding, not an inconvenience.

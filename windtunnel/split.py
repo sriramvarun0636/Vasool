@@ -17,7 +17,7 @@ arrived at by an argument being threaded through from somewhere else.
 
 The seal is not a security control. Anyone reading this module can defeat it
 in a second, and that is fine — it is aimed at the author's own inattention,
-which is the actual threat, and CLAUDE.md's git discipline means the peek
+which is the actual threat, and the project's git discipline means the peek
 would be in a diff either way.
 
 **Randomisation unit: the customer** (§3a), because episodes from one customer

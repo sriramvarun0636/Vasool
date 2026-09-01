@@ -11,7 +11,7 @@ is a convention rather than an invariant.
 
 This module does not know how a message reaches a phone or an inbox — that is
 `deliver`, injected by the caller. Keeping the transport out of comms.py means
-its own tests never need a Razorpay mock (CLAUDE.md: "no real API calls in
+its own tests never need a Razorpay mock (the project rules: "no real API calls in
 tests"), and the actual channel integration is free to change without
 touching the one thing that must never change: a message with no template, or
 one the merchant hasn't registered, does not go out.

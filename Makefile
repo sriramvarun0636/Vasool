@@ -1,7 +1,7 @@
 # make demo / eval / redteam / report / replay / all
 #
 # demo is the only target this session builds. The rest exist so a judge (or
-# CLAUDE.md's "run pytest before declaring a session done") never hits a
+# the project rules's "run pytest before declaring a session done") never hits a
 # target that silently does nothing -- each prints which session lands it
 # rather than failing or, worse, pretending to have run something.
 

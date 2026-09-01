@@ -3,7 +3,7 @@
 `trace_id_for` is deterministic — sha256 of the entity_id — and is what
 receipts.py stores on every Receipt. It is deliberately not the value OTel's
 own SDK would assign a live span: that generator is random by default, and
-CLAUDE.md invariant 5 requires the same seed to produce a byte-identical
+architectural invariant 5 requires the same seed to produce a byte-identical
 ledger, which a random id would break on every single run. The live span
 still gets a real (random) trace/span id from the SDK for correlation in a
 real tracing backend — but it also carries `vasool.trace_id` as an explicit

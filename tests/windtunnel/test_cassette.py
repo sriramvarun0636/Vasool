@@ -1,6 +1,6 @@
 """The cassette store: a recorded response is the only response.
 
-**Why this exists.** CLAUDE.md invariant 5 says the same seed produces a
+**Why this exists.** architectural invariant 5 says the same seed produces a
 byte-identical ledger. An LLM cannot promise that — there is no temperature
 setting, seed, or model flag that makes a provider deterministic, and claiming
 otherwise would be the kind of unverified assertion docs/VERIFIED.md exists to
@@ -170,7 +170,7 @@ class TestTheFileOnDisk:
         assert store.count() == 1
 
     def test_recording_time_is_injected_not_read_from_the_wall_clock(self, store):
-        """CLAUDE.md invariant 2. The store cannot call datetime.now() — it
+        """architectural invariant 2. The store cannot call datetime.now() — it
         takes the instant from the caller, who holds the clock."""
         from datetime import datetime, timezone
 

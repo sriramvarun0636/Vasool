@@ -1,6 +1,6 @@
 """razorpay_client.py: idempotency keys on every call, exponential backoff on
 a 5xx, no retry on a 4xx. No real API calls — every test injects a fake SDK
-client and a fake sleep, per CLAUDE.md's "no real API calls in tests".
+client and a fake sleep, per the project's "no real API calls in tests".
 """
 from __future__ import annotations
 

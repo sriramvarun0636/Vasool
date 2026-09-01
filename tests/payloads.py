@@ -1,7 +1,7 @@
 """Real captured payloads on disk -> FailureEvent, for the policy-plane tests.
 
 Same discipline as tests/test_rules.py: reason and source strings are read off
-disk, never typed in. CLAUDE.md — a reason in neither data/observed_payloads/
+disk, never typed in. the project rules — a reason in neither data/observed_payloads/
 nor data/stubbed_payloads/ does not exist.
 
 This is a separate module rather than a conftest fixture because the guards need

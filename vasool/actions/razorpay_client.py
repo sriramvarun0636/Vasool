@@ -1,13 +1,13 @@
 """Thin wrapper over the Razorpay SDK.
 
-The ONLY module allowed to import `razorpay` (CLAUDE.md invariant 1's sibling
+The ONLY module allowed to import `razorpay` (architectural invariant 1's sibling
 rule for the action plane — "only actions/executor.py may call Razorpay",
 narrowed further here so even executor.py reaches the SDK through this one
 seam). tests/test_actions_boundary.py enforces both boundaries by grepping
 vasool/, the way tests/test_no_wallclock.py enforces the clock invariant.
 
 Config comes from the environment via python-dotenv — never hardcoded
-(CLAUDE.md "Secrets"). Every write call takes an idempotency key; every call
+(the project rules "Secrets"). Every write call takes an idempotency key; every call
 retries a 5xx with exponential backoff and never retries a 4xx, because a bad
 request will be bad again and retrying it only delays the failure a 4xx is
 trying to report.
@@ -71,7 +71,7 @@ class RazorpayConfig:
             raise RuntimeError(
                 "RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not set. Read via "
                 "python-dotenv from .env — see .env.example. Never hardcode a "
-                "key (CLAUDE.md)."
+                "key (the project rules)."
             )
         return cls(key_id=key_id, key_secret=key_secret)
 
@@ -81,7 +81,7 @@ class RazorpayClient:
     exponential backoff, a 4xx never is.
 
     `sdk_client` and `sleep` are injectable so tests never make a real API
-    call or a real wait (CLAUDE.md's "no real API calls in tests" and the
+    call or a real wait (the project's "no real API calls in tests" and the
     project's ban on unmocked wall-clock waits in a test suite that has to
     stay fast).
     """

@@ -27,7 +27,7 @@ from. Without it a merchant's entire overnight backlog fires at 08:00:00.000 —
 a self-inflicted thundering herd, and a burst of simultaneous messages that
 reads to a recipient exactly like the automated dunning the rule is trying to
 prevent. It is derived from the customer id rather than drawn at random, because
-CLAUDE.md invariant 5 requires the same seed to produce a byte-identical ledger.
+architectural invariant 5 requires the same seed to produce a byte-identical ledger.
 """
 from __future__ import annotations
 

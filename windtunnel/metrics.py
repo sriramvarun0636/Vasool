@@ -487,7 +487,7 @@ def reconcile(
 @dataclass(frozen=True, slots=True)
 class Metrics:
     """One arm, one seed, one cohort. Comparable and hashable, so two runs of
-    the same seed can be asserted equal (CLAUDE.md invariant 5)."""
+    the same seed can be asserted equal (architectural invariant 5)."""
 
     seed: int
     arm: str

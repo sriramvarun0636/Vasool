@@ -6,7 +6,7 @@ pairing can detect". `test_pairing_detects_what_marginals_would_miss` is that
 sentence as an executable claim.
 
 §6b's distinction between seeds and repeats is the one this file exists to
-pin down. Re-running a single seed is not an independent trial: CLAUDE.md
+pin down. Re-running a single seed is not an independent trial: the project rules
 invariant 5 makes the ledger byte-identical, so pass^k over repeats is 1.0 by
 construction and measures nothing. What varies across *seeds* is the world.
 """

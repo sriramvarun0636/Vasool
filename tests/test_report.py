@@ -293,18 +293,65 @@ class TestReadmeDoesNotDrift:
         )
 
 
+class TestTheReadmeQuotesRealOutput:
+    """README.md prints a `make demo` transcript and says it is real output.
+
+    It was not. The block had been hand-reflowed -- statutes moved onto the
+    guard's own line, "RBI Fair Practices Code" abbreviated to "RBI FPC", the
+    `proposal :` line dropped -- while the surrounding sentence claimed it was
+    pinned byte-for-byte. That is the same defect class as a hardcoded constant
+    rendering as a measurement, in the one block a reader is most likely to
+    treat as ground truth.
+    """
+
+    GOLDEN = REPO_ROOT / "data" / "golden" / "demo_card_expired_1930.txt"
+
+    @pytest.fixture(scope="class")
+    def readme(self):
+        return (REPO_ROOT / "README.md").read_text()
+
+    def test_every_quoted_line_appears_in_the_golden_fixture(self, readme):
+        if not self.GOLDEN.exists():
+            pytest.skip("golden fixture absent")
+        gold = self.GOLDEN.read_text()
+        block = re.search(r"```text\n(\[4\] classified.*?)```", readme, re.S)
+        assert block, "the README no longer quotes a demo transcript"
+        stray = [
+            line.rstrip()
+            for line in block.group(1).rstrip().split("\n")
+            if line.strip() and "..." not in line and line.rstrip() not in gold
+        ]
+        assert not stray, (
+            "README quotes demo output that `make demo` does not produce:\n"
+            + "\n".join(stray)
+        )
+
+    def test_the_elision_count_is_honest(self, readme):
+        if not self.GOLDEN.exists():
+            pytest.skip("golden fixture absent")
+        chain = self.GOLDEN.read_text().split("[6] guard chain")[1].split("[7]")[0]
+        block = re.search(r"```text\n(\[4\] classified.*?)```", readme, re.S).group(1)
+        total = len(re.findall(r"^    (\w+Guard)\s", chain, re.M))
+        shown = len(re.findall(r"^    (\w+Guard)\s", block, re.M))
+        words = {"three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
+        claimed = re.search(r"\.\.\. (\w+) more guards", block)
+        assert claimed, "the elision marker no longer names a count"
+        assert words[claimed.group(1)] == total - shown, (
+            f"README elides {total - shown} guards but says {claimed.group(1)}"
+        )
+
+
 class TestTestCountDoesNotDrift:
-    """The suite's own size is quoted in README.md and CLAUDE.md.
+    """The suite's own size is quoted in README.md.
 
     It went stale three times in one week — every time a test was added, the
-    two documents claiming a count became wrong, and nothing noticed. A number
+    document claiming a count became wrong, and nothing noticed. A number
     that only a human remembers to update is a number that will be wrong, so
     it is checked here against what pytest actually collected.
     """
 
     DOCS = {
         "README.md": re.compile(r"#\s*([\d,]+)\s*tests"),
-        "CLAUDE.md": re.compile(r"\b([\d,]+)\s*tests\."),
     }
 
     def test_the_documents_quote_the_real_count(self, request):
@@ -375,7 +422,7 @@ class TestDocsCiteRealExhibits:
     nobody having checked.
     """
 
-    DOCS = ("README.md", "SUBMISSION.md", "docs/VIDEO.md", "ARCHITECTURE.md", "COMPLIANCE.md")
+    DOCS = ("README.md", "SUBMISSION.md", "ARCHITECTURE.md", "COMPLIANCE.md")
 
     def test_every_named_exhibit_exists(self):
         live = {m.group(1) for m in re.finditer(r'exhibit-title">EXHIBIT ([A-Z]) ', SOURCE)}

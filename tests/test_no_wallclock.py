@@ -1,4 +1,4 @@
-"""Enforces CLAUDE.md invariant 2: nothing outside vasool/clock.py touches the
+"""Enforces architectural invariant 2: nothing outside vasool/clock.py touches the
 wall clock. A real grep would also match .venv/site-packages and give a false
 sense of security, so this walks only the vasool/ and windtunnel/ package
 directories with pathlib.rglob.

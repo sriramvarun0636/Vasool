@@ -90,7 +90,7 @@ INDENT = "    "
 
 
 # ---------------------------------------------------------------------------
-# loading a scenario off disk — never a typed-in error string (CLAUDE.md)
+# loading a scenario off disk — never a typed-in error string (the project rules)
 # ---------------------------------------------------------------------------
 def _payload_paths() -> list[tuple[pathlib.Path, bool]]:
     observed = [(p, False) for p in sorted(OBSERVED_DIR.glob("payment_failed__*.json"))]
@@ -397,7 +397,9 @@ def _stage_signature(stages: _Stages, fixture: dict, simulated: bool) -> None:
             "skipped -- _SIMULATED payload; its signature was copied from the "
             "real envelope it was derived from and does not cover this body "
             "(see docs/VERIFIED.md). Nothing here was ever sent by Razorpay, "
-            "so there is nothing to authenticate."
+            "so there is nothing to authenticate. The HMAC scheme itself is "
+            "verified against nine signatures Razorpay actually computed and "
+            "sent -- tests/test_receiver.py, from data/observed_payloads/."
         )
         for line in textwrap.wrap(note, width=WIDTH - len(INDENT)):
             print(f"{INDENT}{line}")

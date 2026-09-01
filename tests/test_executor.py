@@ -5,7 +5,7 @@ programming error the session brief names, not a silent no-op.
 
 No real Razorpay calls: FakeRazorpayClient stands in for
 vasool.actions.razorpay_client.RazorpayClient at its own public interface,
-which is the boundary CLAUDE.md names for mocking.
+which is the boundary the project rules names for mocking.
 """
 from __future__ import annotations
 

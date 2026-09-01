@@ -1,6 +1,6 @@
 """windtunnel/runner.py: a whole universe through the real agent.
 
-Two things these tests are for. The first is CLAUDE.md invariant 5 at scale —
+Two things these tests are for. The first is architectural invariant 5 at scale —
 tests/test_replay.py asserts a byte-identical ledger for one episode, and the
 headline claim is about a whole run. The second is the boundary: that the
 simulator supplies the world and vasool/ supplies every decision, including
@@ -33,7 +33,7 @@ def run():
 
 
 class TestDeterminism:
-    """CLAUDE.md invariant 5, across a full run rather than one episode."""
+    """architectural invariant 5, across a full run rather than one episode."""
 
     def test_the_same_seed_produces_an_identical_transition_log(self):
         assert run_seed(0, pepper=PEPPER).transition_digest() == run_seed(
@@ -276,7 +276,7 @@ class TestTheLedgerBuildsForAWholeRun:
                 assert r.at < withdrawn_at[r.customer_id], r
 
     def test_the_ledger_is_reproducible_from_the_seed(self, run):
-        """CLAUDE.md invariant 5 over the artefact a hostile reader actually
+        """architectural invariant 5 over the artefact a hostile reader actually
         verifies, not only over the transition log it is derived from."""
         assert run.ledger_digest() == run_seed(0, pepper=PEPPER).ledger_digest()
 

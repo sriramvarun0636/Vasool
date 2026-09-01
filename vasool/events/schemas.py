@@ -26,7 +26,7 @@ why a failed retry needs one at all.
 # observed live (BAD_REQUEST_ERROR / gateway / payment_authorization /
 # payment_failed) plus the values in data/stubbed_payloads/. Restricting to
 # Razorpay's documented enum would mean trusting doc knowledge over observed
-# data, which CLAUDE.md forbids. Same reasoning for `method` (only "card"
+# data, which the project rules forbids. Same reasoning for `method` (only "card"
 # observed).
 """
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """replay.py: rebuild state from the ledger.
 
-CLAUDE.md invariant 5 — "same seed -> byte-identical ledger" — is proved at
+architectural invariant 5 — "same seed -> byte-identical ledger" — is proved at
 full scale once windtunnel's 1000-seed evaluation exists (stage 6+). This
 session's slice of it: replaying one episode's transition log reproduces the
 same terminal state PolicyMachine actually reached, and replaying a receipt

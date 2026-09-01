@@ -1,7 +1,7 @@
 """The action plane.
 
 Everything downstream of a GATED proposal that is allowed to move money or
-reach a customer. Two rules hold this package to CLAUDE.md invariant 1 and 3:
+reach a customer. Two rules hold this package to architectural invariant 1 and 3:
 
 1. **Only razorpay_client.py touches the Razorpay SDK.** Enforced by
    tests/test_actions_boundary.py the way tests/test_no_wallclock.py enforces

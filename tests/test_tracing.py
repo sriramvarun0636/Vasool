@@ -1,5 +1,5 @@
 """tracing.py: trace_id_for is deterministic — not OTel's own random span id
-(CLAUDE.md invariant 5 would break the instant a receipt embedded a random
+(architectural invariant 5 would break the instant a receipt embedded a random
 value). recovery_span works with no SDK/exporter configured, since a test
 suite has none.
 """

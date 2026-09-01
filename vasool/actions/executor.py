@@ -134,7 +134,7 @@ def _medium_for(channel: Channel) -> str:
 class RazorpayExecutor:
     """One executor per merchant — `registered_templates` is that merchant's
     current DLT registration, sourced from the same place PolicyFacts is
-    (CLAUDE.md's own allergy to a second, quietly diverging copy of a record
+    (the project's own allergy to a second, quietly diverging copy of a record
     applies here too: this is data flowing from one config source at wiring
     time, not an independent registry)."""
 
@@ -238,7 +238,7 @@ class RazorpayExecutor:
     @classmethod
     def from_env(cls, *, registered_templates: frozenset[str]) -> RazorpayExecutor:
         """A live executor, credentials from RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET
-        via RazorpayConfig.from_env() (CLAUDE.md: read secrets from the
+        via RazorpayConfig.from_env() (the project rules: read secrets from the
         environment, never hardcode one).
 
         This is the one seam a caller outside actions/ may use to get a live

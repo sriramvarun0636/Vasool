@@ -186,7 +186,7 @@ class TestTheReport:
 
 class TestDeterminismCheck:
     def test_two_runs_of_a_seed_produce_identical_ledgers(self):
-        """CLAUDE.md invariant 5 and §9's F7, at ledger-digest level."""
+        """architectural invariant 5 and §9's F7, at ledger-digest level."""
         result = determinism_check([0, 1], pepper=PEPPER)
         assert result["identical"] and not result["mismatches"]
 
@@ -202,7 +202,7 @@ class TestEndToEnd:
         assert report["determinism"]["identical"]
 
     def test_the_report_never_contains_the_pepper(self, tmp_path):
-        """CLAUDE.md: never write a secret's value into any file. The customer
+        """the project rules: never write a secret's value into any file. The customer
         ids in a universe are HMACs keyed on it, and the report records only
         that it was configured."""
         main(["--seeds", "1", "--workers", "1", "--out", str(tmp_path)], pepper=PEPPER)

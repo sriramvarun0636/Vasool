@@ -193,7 +193,7 @@ only lead either offers is `order_id`, and it does not hold here: a
 REAUTH_LINK/REATTEMPT_LINK this agent sends opens a brand-new Payment Link
 with Razorpay's own newly allocated order, never the original failed
 payment's `order_id`. Attempting to correlate by `order_id`, amount, or
-customer would mean guessing a join key — exactly what CLAUDE.md's working
+customer would mean guessing a join key — exactly what the project's working
 agreement says not to do.
 
 `order.paid` stays unwired for exactly that reason: it has no attributable

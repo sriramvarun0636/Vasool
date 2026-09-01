@@ -1,6 +1,6 @@
 """Recorded provider responses, addressed by what was asked.
 
-**Why a recording and not a re-ask.** CLAUDE.md invariant 5 requires the same
+**Why a recording and not a re-ask.** architectural invariant 5 requires the same
 seed to produce byte-identical output, and no provider offers that. There is
 no temperature, seed or flag that makes one deterministic, and asserting
 otherwise would be exactly the sort of unverified claim docs/VERIFIED.md
@@ -88,7 +88,7 @@ class Recording:
     response_text: str
     recorded_at: datetime | None
     """When this was recorded, if the recorder said. Optional, and injected
-    rather than read: CLAUDE.md invariant 2 means this module cannot ask the
+    rather than read: architectural invariant 2 means this module cannot ask the
     wall clock what time it is, so the caller — who holds the clock — says.
     """
 

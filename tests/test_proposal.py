@@ -153,7 +153,7 @@ class TestContactShape:
 # ---------------------------------------------------------------------------
 class TestIdentity:
     def test_the_same_inputs_yield_the_same_id(self):
-        """No uuid4 anywhere: same seed -> byte-identical ledger (CLAUDE.md
+        """No uuid4 anywhere: same seed -> byte-identical ledger (the project rules
         invariant 5) means proposal ids have to be derived, not generated."""
         assert propose("card_expired")[0].proposal_id == propose("card_expired")[0].proposal_id
 

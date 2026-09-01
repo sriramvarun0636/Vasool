@@ -1,6 +1,6 @@
 """windtunnel/payloads.py: every simulated event comes off disk.
 
-CLAUDE.md: a reason in neither data/observed_payloads/ nor
+the project rules: a reason in neither data/observed_payloads/ nor
 data/stubbed_payloads/ does not exist — do not guess, do not infer from
 documentation, do not "helpfully" add plausible ones. The simulator generates
 several hundred thousand events, so the discipline has to be structural: this
@@ -72,7 +72,7 @@ class TestProvenance:
             _event("payment_failed", "network")
 
     def test_the_error_fields_are_never_altered_by_stamping_identity(self):
-        """The four error fields are the ones CLAUDE.md protects. Identity —
+        """The four error fields are the ones the project rules protects. Identity —
         who, how much, when — is ours to set; the failure itself is not."""
         on_disk = json.loads(
             (

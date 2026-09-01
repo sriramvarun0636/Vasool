@@ -318,7 +318,7 @@ level**, matching §3a.
 fraction of size-k seed subsets in which every run passes.
 
 The distinction matters and is easy to get wrong. Re-running a *single* seed
-is not an independent trial: CLAUDE.md invariant 5 makes the ledger
+is not an independent trial: architectural invariant 5 makes the ledger
 byte-identical, so `pass^k` over repeats of one seed is 1.0 by construction
 and measures nothing. What varies across *seeds* is the world — which
 customers exist, what fails, when it fails, whether an attempt lands at 18:59
@@ -414,7 +414,7 @@ does not support conclusions and is presented as an instrument-building
 exercise instead.
 
 **F7 — Determinism fails.** If two runs on one seed produce different
-ledgers, CLAUDE.md invariant 5 is violated and every number above is
+ledgers, architectural invariant 5 is violated and every number above is
 unreproducible.
 
 **F6 is evaluated on the primary metric alone.** §7's grid computes paired

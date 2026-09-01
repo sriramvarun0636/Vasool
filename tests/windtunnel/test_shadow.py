@@ -140,7 +140,7 @@ class TestProvenanceTravelsWithTheCell:
         assert assembled == {("payment_failed", "business")}
 
     def test_no_cell_invents_an_error_string(self, corpus):
-        """CLAUDE.md's hardest rule. Every reason in the corpus has a payload
+        """the project's hardest rule. Every reason in the corpus has a payload
         in data/, because every event came off disk through
         windtunnel/payloads.py."""
         from tests.payloads import all_events

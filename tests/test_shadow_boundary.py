@@ -1,6 +1,6 @@
 """Invariant 1, enforced on the import graph rather than on good intentions.
 
-CLAUDE.md: *the LLM never calls a tool.* Session 7's version of that is
+the project rules: *the LLM never calls a tool.* Session 7's version of that is
 stronger than "we didn't wire it up" — there must be no path through the
 import graph from the LLM classifier to anything that can act, and no path
 from anything that acts to the LLM classifier.
@@ -152,7 +152,7 @@ class TestNothingThatActsCanReachTheLLM:
     @pytest.mark.parametrize("module", ACTING_MODULES)
     def test_the_llm_classifier_is_unreachable(self, graph, module):
         assert LLM_MODULE not in _reachable(graph, module), (
-            f"{module} can reach {LLM_MODULE} — CLAUDE.md invariant 1"
+            f"{module} can reach {LLM_MODULE} — architectural invariant 1"
         )
 
     @pytest.mark.parametrize("module", ACTING_MODULES)

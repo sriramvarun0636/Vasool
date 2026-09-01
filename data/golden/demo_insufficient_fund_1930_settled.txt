@@ -18,7 +18,9 @@
     skipped -- _SIMULATED payload; its signature was copied from the real
     envelope it was derived from and does not cover this body (see
     docs/VERIFIED.md). Nothing here was ever sent by Razorpay, so there is
-    nothing to authenticate.
+    nothing to authenticate. The HMAC scheme itself is verified against nine
+    signatures Razorpay actually computed and sent -- tests/test_receiver.py,
+    from data/observed_payloads/.
 
 [3] deduped
     1st delivery : stored
