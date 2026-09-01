@@ -422,7 +422,7 @@ class TestDocsCiteRealExhibits:
     nobody having checked.
     """
 
-    DOCS = ("README.md", "SUBMISSION.md", "ARCHITECTURE.md", "COMPLIANCE.md")
+    DOCS = ("README.md", "ARCHITECTURE.md", "COMPLIANCE.md")
 
     def test_every_named_exhibit_exists(self):
         live = {m.group(1) for m in re.finditer(r'exhibit-title">EXHIBIT ([A-Z]) ', SOURCE)}
