@@ -26,6 +26,8 @@
   <b><a href="https://www.youtube.com/watch?v=B0Iov6qAaqs">Watch the 5-minute pitch</a></b>
   &nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <b><a href="https://sriramvarun0636.github.io/Vasool">Open the live dashboard</a></b>
+  &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+  <b><a href="https://sriramvarun0636.github.io/">Read the writeup</a></b>
 </p>
 
 <p>
