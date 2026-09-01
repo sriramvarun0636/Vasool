@@ -208,7 +208,7 @@ def main(argv, *, pepper: str, api_key: str | None) -> int:
     print(f"cassettes: {store.count()} on disk in {args.cassettes}")
 
     if args.record:
-        # Reported as a boolean, never as a value (CLAUDE.md).
+        # Reported as a boolean, never as a value (the project rules).
         print(f"GEMINI_API_KEY configured: {bool(api_key)}")
         if not api_key:
             print(

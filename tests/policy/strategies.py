@@ -2,7 +2,7 @@
 
 Every Proposal here descends from a real captured payload — the pool is built by
 running the real classifier over every (reason, source) pair on disk, so no test
-in this package ever types an error string by hand (CLAUDE.md).
+in this package ever types an error string by hand (the project rules).
 
 The facts are generated freely, which is the point of the snapshot design: a
 PolicyFacts is a value, so hypothesis can produce thousands of adversarial

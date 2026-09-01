@@ -191,7 +191,7 @@ class TestContactWindowHolds:
 
 
 # ---------------------------------------------------------------------------
-# the jitter — CLAUDE.md invariant 5 reaches into the guards
+# the jitter — architectural invariant 5 reaches into the guards
 # ---------------------------------------------------------------------------
 class TestJitterDeterminism:
     @given(customer_id=st.text(min_size=1, max_size=64))

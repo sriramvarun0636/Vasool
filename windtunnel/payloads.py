@@ -1,6 +1,6 @@
 """Real envelopes off disk, stamped with simulated identity.
 
-CLAUDE.md's working agreement is absolute about this: every `error_reason`
+the project's working agreement is absolute about this: every `error_reason`
 must come from `data/observed_payloads/` or `data/stubbed_payloads/`, and a
 reason in neither directory does not exist. A simulator that generates
 hundreds of thousands of events cannot honour that by care alone, so it is
@@ -62,7 +62,7 @@ class NoSuchPayload(LookupError):
     """A (reason, source) pair that cannot be built from anything on disk.
 
     Raised rather than defaulted, because a default here is precisely the
-    "helpfully add a plausible one" CLAUDE.md forbids. If this fires, either
+    "helpfully add a plausible one" the project rules forbids. If this fires, either
     the registered mix named something that does not exist, or a payload
     directory changed.
     """
@@ -115,7 +115,7 @@ def _template(reason: str, source: str) -> dict[str, Any]:
         if source not in _sources_on_disk():
             raise NoSuchPayload(
                 f"error_source {source!r} appears on no payload in data/ — "
-                "CLAUDE.md: a value in neither directory does not exist"
+                "the project rules: a value in neither directory does not exist"
             )
         body = copy.deepcopy(fixture["body"])
         body["payload"]["payment"]["entity"]["error_source"] = source

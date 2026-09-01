@@ -1,7 +1,7 @@
 """FailureEvent must be derivable entirely from real captured payloads.
 
 Fixtures come from data/observed_payloads/ (live) and data/stubbed_payloads/
-(hand-built, _SIMULATED: true) per CLAUDE.md — never invented here. See
+(hand-built, _SIMULATED: true) per the project rules — never invented here. See
 docs/VERIFIED.md for why only error_reason "payment_failed" is reproducible
 live and everything else needs a stub.
 """

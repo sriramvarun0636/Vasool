@@ -31,7 +31,7 @@ already has. That is not a defect in this runner — it is docs/taxonomy.md
 **Determinism.** Every ordering here is total and derived: world events sort
 by (time, kind, entity), the machine's own queue is processed in insertion
 order, and settlements are applied in the order their executions occurred.
-Nothing iterates a set or a dict whose order could vary. CLAUDE.md invariant 5
+Nothing iterates a set or a dict whose order could vary. architectural invariant 5
 has to hold across a whole run, not just one episode
 (tests/windtunnel/test_runner.py).
 """
@@ -210,7 +210,7 @@ class RunResult:
     def transition_digest(self) -> str:
         """SHA-256 over the whole transition log, canonically encoded.
 
-        CLAUDE.md invariant 5 — "same seed, byte-identical ledger" — is
+        architectural invariant 5 — "same seed, byte-identical ledger" — is
         asserted for one episode by tests/test_replay.py and has to hold
         across a full 500-customer run. This is that check at scale.
 

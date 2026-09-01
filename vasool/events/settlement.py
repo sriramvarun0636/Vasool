@@ -18,7 +18,7 @@ REAUTH_LINK/REATTEMPT_LINK created by vasool/actions/executor.py opens a
 brand-new Payment Link with its own new order, never the original failed
 payment's order_id (confirmed by inspecting create_payment_link — it takes no
 order_id and Razorpay allocates one). Attributing settlement by order_id,
-amount, or customer would mean guessing a join key CLAUDE.md's working
+amount, or customer would mean guessing a join key the project's working
 agreement specifically says not to guess — an honest gap, not an oversight.
 
 `payment_link.paid` is different because the payment link's `notes` field is

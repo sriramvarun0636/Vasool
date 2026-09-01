@@ -7,7 +7,7 @@ the attack, hand the arena to `judge`. The attack's return value is discarded
 attack can decide its own verdict.
 
 A fresh `Arena` per attack, never a shared one. Each attack owns its ledger,
-which is what makes `Result.digest` a per-attack replay check (CLAUDE.md
+which is what makes `Result.digest` a per-attack replay check (the project rules
 invariant 5) rather than a property of whatever order the suite happened to
 run in.
 """

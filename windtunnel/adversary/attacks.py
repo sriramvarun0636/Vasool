@@ -28,7 +28,7 @@ was registered in `criterion.py` before any of this was written.
 
 **No attack authors a payload.** Every failure comes off disk through
 `windtunnel/payloads.py`, which copies a real envelope and stamps only
-identity. CLAUDE.md's rule against inventing an `error_reason` holds at full
+identity. the project's rule against inventing an `error_reason` holds at full
 force here; adversarial framing is not an exception to it.
 """
 from __future__ import annotations

@@ -2,7 +2,7 @@
 to the entity_id whose recovery episode it closes.
 
 Uses the real captured payload plus copies of it with notes altered — never a
-hand-typed envelope shape, per CLAUDE.md. Session 0A's own capture predates
+hand-typed envelope shape, per the project rules. Session 0A's own capture predates
 the vasool_entity_id tag (docs/VERIFIED.md), so it is the "None" case here by
 construction, not a contrived one.
 """

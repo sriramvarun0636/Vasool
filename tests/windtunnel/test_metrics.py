@@ -392,7 +392,7 @@ class TestMetrics:
         assert m.time_to_recovery_p90_hours >= m.time_to_recovery_median_hours
 
     def test_measurement_is_deterministic(self):
-        """CLAUDE.md invariant 5 has to survive the evaluator, not stop at the
+        """architectural invariant 5 has to survive the evaluator, not stop at the
         runner: the same seed must produce the same numbers."""
         first = measure(run_seed(3, pepper=PEPPER), arm="vasool")
         second = measure(run_seed(3, pepper=PEPPER), arm="vasool")

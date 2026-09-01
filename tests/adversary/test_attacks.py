@@ -145,7 +145,7 @@ class TestOutcomes:
 
 class TestDeterminism:
     def test_every_attack_replays_to_the_same_ledger(self):
-        """CLAUDE.md invariant 5, per attack. Runs each one twice."""
+        """architectural invariant 5, per attack. Runs each one twice."""
         for attack in ATTACKS:
             first = run_attack(attack)
             second = run_attack(attack)

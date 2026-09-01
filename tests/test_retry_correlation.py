@@ -38,7 +38,7 @@ def _failed_retry_webhook(payment_id: str, *, reason: str = "gateway_technical_e
     created does not authorise.
 
     A real envelope off disk with the retry's own payment id stamped on it —
-    never a hand-typed shape (CLAUDE.md). The id is the one
+    never a hand-typed shape (the project rules). The id is the one
     `RazorpayExecutor._retry` recorded from Razorpay's own response, which is
     the whole basis of the correlation.
     """

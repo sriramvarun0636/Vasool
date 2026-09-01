@@ -17,7 +17,7 @@ policy/guards/contact_window.py's, and nothing here holds an outbound message �
 see QUIET_HOURS_END_HOUR_IST.
 
 All time is injected. The wall clock is reachable only through vasool/clock.py
-(CLAUDE.md invariant 2), and scheduling is computed from `clock.now()` rather
+(architectural invariant 2), and scheduling is computed from `clock.now()` rather
 than `event.occurred_at` — a replayed two-year-old event schedules from the
 moment we are deciding, not from the moment it happened.
 """
@@ -70,7 +70,7 @@ Three reasons the split is worth the churn, the third decisive:
      was reassurance rather than enforcement (adversary attack A04).
   3. When the LLM classifier lands in Session 7 it has to be comparable to this
      one. A compliance rule baked in here would mean the LLM either reimplements
-     it — an LLM owning compliance, which CLAUDE.md invariant 1 forbids — or the
+     it — an LLM owning compliance, which architectural invariant 1 forbids — or the
      two classifiers are not measuring the same thing.
 
 It also fixed a live bug: HUMAN_QUEUE was being held too, so a risk-declined
@@ -144,7 +144,7 @@ about 30 days; this only exists so a logic bug fails loudly instead of hanging.
 @dataclass(frozen=True, slots=True)
 class Diagnosis:
     """What the rules classifier concluded. Inert — it describes an action, it
-    does not perform one (CLAUDE.md invariant 1).
+    does not perform one (architectural invariant 1).
 
     Feeds the Proposal that the policy plane gates and the ledger records, so
     everything a receipt needs to explain the decision is carried here.

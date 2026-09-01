@@ -66,7 +66,7 @@ class TestDraw:
         assert lean == busy
 
     def test_values_are_stable_across_processes_and_releases(self):
-        """Pins the wire format of the draw itself. CLAUDE.md invariant 5 is
+        """Pins the wire format of the draw itself. architectural invariant 5 is
         a claim about reproducing a ledger tomorrow, on another machine —
         which a salted or version-dependent hash would quietly break while
         every other test in this file still passed."""

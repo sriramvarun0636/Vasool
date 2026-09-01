@@ -62,7 +62,7 @@ class TestDelivery:
         assert len(arena.machine.pending()) == 1
 
     def test_error_fields_are_never_authored_by_the_arena(self):
-        """CLAUDE.md: every error_reason comes off disk. A reason with no
+        """the project rules: every error_reason comes off disk. A reason with no
         payload must raise rather than be invented."""
         arena = Arena()
         with pytest.raises(Exception):
@@ -211,6 +211,6 @@ class TestTheRecord:
 
 class TestDeterminism:
     def test_the_same_script_produces_a_byte_identical_ledger(self):
-        """CLAUDE.md invariant 5. The adversary runs in virtual time like
+        """architectural invariant 5. The adversary runs in virtual time like
         everything else, so an attack is as replayable as a seed."""
         assert _clean_run().ledger_digest() == _clean_run().ledger_digest()

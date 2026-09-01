@@ -338,7 +338,7 @@ class TestAdversary:
 
     def test_settled_amount_lands_on_the_recovered_transition(self):
         """amount_recovered_paise is the headline metric of the whole project
-        (CLAUDE.md), and it is only knowable here: settled() is the one call
+        (the project rules), and it is only knowable here: settled() is the one call
         that learns what actually landed. The RECOVERED transition is where
         receipts.py has to be able to read it from."""
         m, clock = machine()

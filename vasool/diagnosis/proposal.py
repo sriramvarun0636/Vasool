@@ -1,7 +1,7 @@
 """The Proposal: what the diagnosis plane emits, and what the policy plane rules
 on. Inert by construction — it describes an action, it cannot perform one.
 
-This is the object CLAUDE.md invariant 1 is about. When the LLM classifier lands
+This is the object architectural invariant 1 is about. When the LLM classifier lands
 in Session 7 it produces one of these and nothing else: a closed enum it cannot
 invent a member of, a channel, a time, and a rationale. Thirteen guards stand
 between it and any executor.
@@ -117,7 +117,7 @@ def _template_for(role: ProposalRole, intervention: InterventionType, explain: b
 def _derive_id(entity_id: str, intervention: InterventionType, attempt: int, role: str) -> str:
     """A deterministic proposal id.
 
-    Not uuid4 and not hash(): CLAUDE.md invariant 5 requires the same seed to
+    Not uuid4 and not hash(): architectural invariant 5 requires the same seed to
     produce a byte-identical ledger, and Python's hash() is salted per process,
     so it would pass an equality check inside one run and break replay across
     two.

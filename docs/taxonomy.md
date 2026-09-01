@@ -8,7 +8,7 @@ Get this wrong and a correct implementation still recovers nothing.
 
 **Provenance.** Every `error_reason` below has a payload in
 `data/observed_payloads/` (captured live) or `data/stubbed_payloads/`
-(documentation-derived, marked `_SIMULATED: true`). Per `CLAUDE.md`, a reason in
+(documentation-derived, marked `_SIMULATED: true`). Per `the project rules`, a reason in
 neither directory does not exist. See `docs/VERIFIED.md` for why only
 `payment_failed` is reproducible live.
 

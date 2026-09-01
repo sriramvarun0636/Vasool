@@ -5,7 +5,7 @@ and parses a string, and that is deliberately all it does — the provider
 client lives in tools/gemini.py and the boundary is scanned by
 tests/test_shadow_boundary.py.
 
-**The parser is the load-bearing half.** CLAUDE.md invariant 1 says the LLM
+**The parser is the load-bearing half.** architectural invariant 1 says the LLM
 never calls a tool; the mechanism that makes that structural rather than
 aspirational is that the only thing an LLM response can become is an
 LLMVerdict, whose fields are the closed enums of vasool/diagnosis/taxonomy.py.
@@ -165,7 +165,7 @@ class TestParserAcceptsAWellFormedVerdict:
 
 
 class TestParserRejectsEverythingElse:
-    """CLAUDE.md invariant 1, enforced at the type boundary."""
+    """architectural invariant 1, enforced at the type boundary."""
 
     def test_an_invented_class_is_rejected(self):
         with pytest.raises(VerdictRejected, match="failure_class"):

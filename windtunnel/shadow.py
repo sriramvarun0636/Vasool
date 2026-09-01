@@ -200,7 +200,7 @@ def _provenance(reason: str, source: str) -> str:
     """Where this cell's error strings came from.
 
     Three answers, and the third matters. `observed` and `simulated` are the
-    two directories CLAUDE.md names. `assembled` is the pair whose two halves
+    two directories the project rules names. `assembled` is the pair whose two halves
     each exist on disk but whose combination never has —
     windtunnel/payloads.py builds it by reading each string from a different
     envelope, and docs/taxonomy.md §9.7 argues that row from cost asymmetry

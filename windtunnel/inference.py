@@ -20,7 +20,7 @@ in a shared world; there is no analogue here, because a bootstrap replicate is
 not something two arms have to agree about. What is required is
 reproducibility, which `BOOTSTRAP_SEED` and numpy's explicit `default_rng`
 give: the same inputs produce the same interval, asserted by a test. Nothing
-in this module touches the ledger, so CLAUDE.md invariant 5 is not in play.
+in this module touches the ledger, so architectural invariant 5 is not in play.
 
 **`pass^k` is computed in closed form, over seeds.** With *m* of *n* seeds
 satisfying §2a's predicate, the fraction of size-*k* seed subsets in which

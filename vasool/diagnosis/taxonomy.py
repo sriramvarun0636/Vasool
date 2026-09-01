@@ -16,7 +16,7 @@ Three rules govern edits to this file:
    belongs in the document first.
 
 2. **No invented error strings.** Every canonical reason below has a payload in
-   data/observed_payloads/ or data/stubbed_payloads/ (CLAUDE.md). That is
+   data/observed_payloads/ or data/stubbed_payloads/ (the project rules). That is
    enforced mechanically by
    tests/test_taxonomy.py::TestProvenance::test_every_mapped_reason_has_a_payload,
    not by discipline.
@@ -477,7 +477,7 @@ def lookup(
     What an alternative table may *not* change is which reasons exist:
     `normalise` still resolves against `known_reasons()`, which reads the
     registered table. A baseline is a different policy for a reason, never a
-    claim that a different set of reasons is real — CLAUDE.md's rule against
+    claim that a different set of reasons is real — the project's rule against
     inventing error strings holds for the baselines exactly as it holds here.
     """
     canonical = normalise(reason)

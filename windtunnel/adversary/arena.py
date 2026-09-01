@@ -29,7 +29,7 @@ whether money comes back, so a retry has no probability attached: an attack
 that wants the ladder to advance says so by calling `fail_last_retry`. That
 keeps every attack's script legible as a sequence of things the world did.
 
-**Virtual time, like everything else.** CLAUDE.md invariant 2 and 5 hold here
+**Virtual time, like everything else.** architectural invariant 2 and 5 hold here
 without exception; `tests/test_no_wallclock.py` already scans this package and
 `tests/adversary/test_attacks.py` replays every attack for a byte-identical
 ledger.
@@ -433,7 +433,7 @@ class Arena:
 
         The envelope comes off disk with only identity stamped on it
         (`windtunnel/payloads.py`), so no attack can author an error string —
-        adversarial framing is not an exception to CLAUDE.md's rule.
+        adversarial framing is not an exception to the project's rule.
         """
         entity_id = entity_id or self._entity_id_for(person, reason)
         # Overwritten rather than kept: a second failure on one payment may
@@ -670,7 +670,7 @@ class Arena:
         return self.facts.people.get(customer_id)
 
     def ledger_digest(self) -> str:
-        """SHA-256 over the receipt chain. CLAUDE.md invariant 5, per attack."""
+        """SHA-256 over the receipt chain. architectural invariant 5, per attack."""
         basis = [(r.receipt_id, r.prev_hash, r.hash) for r in self.ledger()]
         return hashlib.sha256(
             json.dumps(basis, sort_keys=True, separators=(",", ":"), default=str).encode()

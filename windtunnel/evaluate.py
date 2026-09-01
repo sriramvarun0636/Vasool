@@ -23,7 +23,7 @@ a crash at hour six must not mean starting again. Each completed seed appends
 one line to `out/<cohort>/<config>/<arm>.jsonl`, and a resumed run reads the
 seeds already present and skips them. Append-only, one line per seed, so a
 half-written line at the moment of a kill costs exactly one seed — which the
-resume then recomputes, because it is byte-identical (CLAUDE.md invariant 5).
+resume then recomputes, because it is byte-identical (architectural invariant 5).
 
 **The holdout is not run by default and cannot be run by accident.** §3c seals
 it, `--cohort holdout` demands the unseal phrase, and its results go to a

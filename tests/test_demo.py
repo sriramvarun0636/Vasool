@@ -298,7 +298,7 @@ class TestHostileWorld:
         assert "TRAI TCCCPR — DLT template registration (Feb 2025 amendment)" in flattened
         assert "outcome      : blocked" in out
         # the deciding clause is the DLT statute, not ConsentGuard's DPDP one
-        # (which still prints ALLOW alongside it -- every guard runs, per CLAUDE.md)
+        # (which still prints ALLOW alongside it -- every guard runs, per the project rules)
         assert "clause : TRAI TCCCPR" in flattened
 
 

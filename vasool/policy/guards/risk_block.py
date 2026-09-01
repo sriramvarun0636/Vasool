@@ -54,4 +54,13 @@ class RiskBlockGuard(Guard):
                 "degrades a decline ratio the merchant cannot repair, and if it "
                 "was fraud it is the fraudster's tool. A human decides."
             )
-        return self.allow()
+        # Reached only when the taxonomy already chose HUMAN_QUEUE, which is
+        # every RISK_BLOCK row on the rules path. The reason is spelled out
+        # because "RiskBlockGuard ALLOW" beside a card-network citation reads
+        # as the containment failing, when it is the containment having nothing
+        # left to contain -- the state machine still refuses to let a handoff
+        # reach the executor.
+        return self.allow(
+            "nothing to refuse -- the proposal is already HUMAN_QUEUE. "
+            "The handoff is escalated, never executed."
+        )

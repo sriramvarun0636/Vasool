@@ -92,8 +92,20 @@ class Guard(ABC):
 
     # -- verdict constructors, so that `guard` and `statute` are never
     # -- transcribed by hand at a call site
-    def allow(self) -> Verdict:
-        return Verdict(guard=self.name, decision=Decision.ALLOW, statute=self.statute)
+    def allow(self, reason: str | None = None) -> Verdict:
+        """Permitted. `reason` is optional and exists for the guards whose
+        ALLOW is surprising to read.
+
+        `RiskBlockGuard` is the case that motivated it: on a risk decline the
+        taxonomy has already chosen `HUMAN_QUEUE`, so the guard has nothing left
+        to refuse and allows — which, printed in a chain next to the words
+        "Card network norms", reads as the guard failing. It is the opposite.
+        A receipt that cannot be read correctly is a worse audit trail than a
+        terse one.
+        """
+        return Verdict(
+            guard=self.name, decision=Decision.ALLOW, reason=reason, statute=self.statute
+        )
 
     def not_applicable(self) -> Verdict:
         return Verdict(guard=self.name, decision=Decision.NOT_APPLICABLE)

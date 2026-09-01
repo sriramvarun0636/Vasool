@@ -313,7 +313,7 @@ def _compute_hash(
 def _receipt_id(entity_id: str, proposal_id: str | None, to_state: State) -> str:
     """Deterministic, like every other id this codebase derives (see
     vasool/diagnosis/proposal.py::_derive_id) — not uuid4, so replay produces
-    the same receipt_id from the same inputs (CLAUDE.md invariant 5).
+    the same receipt_id from the same inputs (architectural invariant 5).
 
     `proposal_id` is None on a closure receipt. That's still deterministic
     and still unique: every closure lands on a terminal state, and an episode

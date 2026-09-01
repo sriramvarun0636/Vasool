@@ -146,7 +146,7 @@ class TestExecutionFailure:
 
 class TestSettlementProducesARecoveredReceipt:
     """amount_recovered_paise is the headline metric of the whole project
-    (CLAUDE.md) — this is what makes it real instead of structurally 0."""
+    (the project rules) — this is what makes it real instead of structurally 0."""
 
     def test_settlement_after_an_execution_carries_the_real_amount(self):
         machine, clock, executor = make_machine()

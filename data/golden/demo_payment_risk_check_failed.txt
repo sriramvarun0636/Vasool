@@ -18,7 +18,9 @@
     skipped -- _SIMULATED payload; its signature was copied from the real
     envelope it was derived from and does not cover this body (see
     docs/VERIFIED.md). Nothing here was ever sent by Razorpay, so there is
-    nothing to authenticate.
+    nothing to authenticate. The HMAC scheme itself is verified against nine
+    signatures Razorpay actually computed and sent -- tests/test_receiver.py,
+    from data/observed_payloads/.
 
 [3] deduped
     1st delivery : stored
@@ -47,6 +49,9 @@
     RiskBlockGuard      ALLOW
                                        Card network norms on retrying declined
                                        authorisations
+                                       nothing to refuse -- the proposal is
+                                       already HUMAN_QUEUE. The handoff is
+                                       escalated, never executed.
     ConsentGuard        ALLOW
                                        DPDP Act 2023 s.6 + DPDP Rules 2025
     RetryCapGuard       NOT_APPLICABLE
@@ -69,7 +74,7 @@
 [8] receipt
     outcome      : escalated
     receipt_id   : rcpt_19abe5843d52f01b
-    hash         : 54c25d77bcb1c470e6e002c2957f168443ea2cf8f52924a4008608df316dea31
+    hash         : 1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -77,5 +82,5 @@
 SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms
 on retrying declined authorisations, and stayed with a human, executor never
 called.
-Receipt: 54c25d77bcb1c470e6e002c2957f168443ea2cf8f52924a4008608df316dea31
+Receipt: 1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754
 ==============================================================================

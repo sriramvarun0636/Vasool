@@ -3,7 +3,7 @@
 Thirteen pure guards and a deterministic state machine standing between an
 inert Proposal and any movement of money. Nothing here calls Razorpay, and
 nothing here asks an LLM anything — this is the line the LLM cannot cross
-(CLAUDE.md invariant 1).
+(architectural invariant 1).
 
 Two rules govern everything in this package:
 

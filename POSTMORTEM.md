@@ -141,7 +141,7 @@ which seeds are already present in each shard file and computing only the
 missing ones — and every seed was already present, from *before* the fix. It
 re-emitted a thousand pre-fix rows and labelled the result a post-fix evaluation.
 
-**Root cause.** The resume is justified by CLAUDE.md invariant 5 — same seed,
+**Root cause.** The resume is justified by architectural invariant 5 — same seed,
 byte-identical ledger. That invariant holds for a *fixed* agent. It says nothing
 across a change to the agent, and **a shard carries no fingerprint of the code
 that produced it**.
