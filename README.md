@@ -148,7 +148,15 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 ## Verify it yourself
 
-Nothing here asks for trust. The whole artifact regenerates from source:
+Nothing here asks for trust. The whole artifact regenerates from source.
+
+> ⚠️ **Read this before running the block.** `make eval` **overwrites the committed
+> manifest** with a base-protocol-only run. The values reproduce, but the `sweeps`
+> block and F6's verdict do not exist in it — only `make sweeps` writes those — so
+> the dashboard's sensitivity grid would render as dashes afterwards, and a dash on
+> that dashboard means *the manifest does not carry this*. `git checkout out/` puts
+> the shipped one back. **Every claim in this README is checkable without running
+> anything** — the manifest ships; see [the table below](#every-claim-and-where-it-comes-from).
 
 ```bash
 git clone https://github.com/sriramvarun0636/Vasool && cd Vasool
@@ -159,7 +167,7 @@ cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 pytest                        # 1,394 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
-make eval                     # 9 arms x 1,000 seeds  (~20 min)
+make eval                     # 9 arms x 1,000 seeds (~20 min) -- OVERWRITES out/, see note above
 make report                   # builds out/report.html from the manifest
 REPEATS=1 make shadow         # rules vs LLM, replayed from committed cassettes -- no network
 make replay                   # points at where determinism is asserted (make eval + tests)
@@ -175,12 +183,6 @@ writes to `classifier_comparison_partial.*` so it can never impersonate a full
 one — this one is complete, so it doesn't.
 
 `make sweeps` runs the full §7 sensitivity grid — 83 configurations × 9 arms × 200 seeds. It takes about nine hours and resumes if interrupted.
-
-> ⚠️ `make eval` **overwrites the committed manifest** with a base-protocol-only
-> run. The values reproduce, but the `sweeps` block and F6's verdict do not
-> exist in it — only `make sweeps` writes those — so the dashboard's sensitivity
-> grid would render as dashes afterwards. `git checkout out/` puts the shipped
-> one back.
 
 ### Every claim, and where it comes from
 
