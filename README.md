@@ -179,7 +179,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 
-pytest                        # 1,394 tests
+pytest                        # 1,412 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds (~20 min) -- OVERWRITES out/, see note above

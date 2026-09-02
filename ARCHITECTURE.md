@@ -130,18 +130,23 @@ is reintroduced. `POSTMORTEM.md` INC-005 is why that test exists.
 
 ## Known structural debt
 
-Two, both named rather than quietly carried:
+One, named rather than quietly carried:
 
 - **`tools/report.py` is 1,581 lines of HTML, CSS and JavaScript inside a Python
   f-string**, with 590 escaped brace pairs. No highlighting, no linting, no type
   checking. It has tests now; it should be a Jinja2 template, and Jinja2 is
   already a dependency. Two real bugs came out of this file's shape
   (`POSTMORTEM.md` INC-006).
-- **Shards carry no fingerprint of the code that produced them.** The evaluator
-  resumes by seed, which is correct for a fixed agent and wrong across a change
-  to one. It has caused a silent non-run once (INC-003). The mitigation today is
-  procedural — recompute and compare before trusting a fast resume — where it
-  should be a content hash written into every shard.
+
+**Closed 2026-09-03 — shard fingerprints.** This section carried a second entry:
+shards recorded no evidence of the code that produced them, so a resume by seed
+was correct for a fixed agent and wrong across a change to one, and the
+mitigation was procedural. `windtunnel/fingerprint.py` now hashes the agent-side
+source set into every shard row, and a resume that meets rows from another agent
+refuses rather than skipping the seeds. The entry is recorded as closed rather
+than deleted, because INC-003 is the reason the check exists and a reader
+arriving at `_done`'s refusal path deserves to find out why it is there. See
+§10's row of 2026-09-03.
 
 ## Repository map
 

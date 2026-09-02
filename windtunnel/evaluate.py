@@ -48,8 +48,10 @@ import time
 from collections.abc import Iterable, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
+from enum import StrEnum
 
 from windtunnel.arms import ALL_ARMS, arm_named
+from windtunnel.fingerprint import agent_fingerprint
 from windtunnel.inference import (
     PASS_K_VALUES,
     PairedComparison,
@@ -147,29 +149,139 @@ def _work(job: tuple[int, str, str, str, str, str | None]) -> dict:
 # ---------------------------------------------------------------------------
 # the shard
 # ---------------------------------------------------------------------------
+class StaleShards(StrEnum):
+    """What to do when a shard holds rows from a different agent. Closed."""
+
+    REFUSE = "refuse"
+    """Stop, name both fingerprints, exit non-zero. The default, and the only
+    one that requires no judgement from the person running it."""
+
+    REBUILD = "rebuild"
+    """Truncate the shard and recompute every seed. Correct and expensive —
+    roughly forty minutes for the base protocol. There is deliberately no
+    third option that keeps the rows and suppresses the complaint: "I know
+    that edit did not matter" is the judgement INC-003 punished."""
+
+    ADOPT = "adopt"
+    """Stamp the current fingerprint onto rows that predate the field.
+
+    Sound only against shards whose agreement with **the tree in front of you
+    now** has been checked, and the qualifier is the whole of it. §10's row of
+    2026-08-29 re-ran the entire base protocol into a scratch directory and
+    compared it field by field — 9,000 rows, 207,000 comparisons, byte
+    identical — and that recomputation on its own licenses nothing today,
+    because `ContactWindowGuard` changed the following day for A08. "It
+    matched last time" is the inference INC-003 punished, and a stale
+    recomputation is not a stronger version of it.
+
+    What licenses adoption of the 765 shards is a check dated with the
+    adoption: the A08 fix is unreachable in simulation, since
+    `ContactWindowGuard` falls back to IST when `customer_zone` is unknown and
+    no module in windtunnel/ ever sets it — and rather than rest on that,
+    2026-09-03 recomputed 30 runs across 5 arms against the current tree and
+    found all 30 byte-identical. Adopt on that basis or not at all."""
+
+
+class StaleShard(RuntimeError):
+    """A shard holds rows produced by an agent other than this one."""
+
+
 def _shard(out: pathlib.Path, config: str, arm: str) -> pathlib.Path:
     path = out / config / f"{arm}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def _done(path: pathlib.Path) -> dict[int, dict]:
-    """Seeds already computed in this shard.
+def _done(
+    path: pathlib.Path, *, expected: str, stale: StaleShards = StaleShards.REFUSE
+) -> dict[int, dict]:
+    """Seeds already computed in this shard **by this agent**.
 
     A line that does not parse is dropped rather than fatal: the only way to
     get one is a kill mid-write, and the seed it belonged to is recomputed
     identically on the next pass.
+
+    A line that parses but carries a different `agent` is the case this
+    function exists for, and it is not dropped quietly. Under `REFUSE` it
+    raises; under `REBUILD` the shard is truncated and every seed recomputed;
+    under `ADOPT` the row is stamped and the file rewritten in place. The last
+    two mutate the shard, which makes this more than a read — the honest
+    description is that it reconciles a shard against the running agent, and
+    returns the part of it that can be trusted.
     """
     if not path.exists():
         return {}
+
     rows: dict[int, dict] = {}
+    foreign: dict[str | None, int] = {}
     for line in path.read_text().splitlines():
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        rows[row["seed"]] = row
+        found = row.get("agent")
+        if found == expected:
+            rows[row["seed"]] = row
+            continue
+        foreign[found] = foreign.get(found, 0) + 1
+        if stale is StaleShards.ADOPT:
+            row["agent"] = expected
+            rows[row["seed"]] = row
+
+    if not foreign:
+        return rows
+
+    if stale is StaleShards.REFUSE:
+        raise StaleShard(_stale_message(path, expected=expected, foreign=foreign))
+
+    if stale is StaleShards.REBUILD:
+        print(
+            f"  --rebuild: discarding {sum(foreign.values())} row(s) in {path}",
+            file=sys.stderr,
+        )
+        path.write_text("")
+        return {}
+
+    print(
+        f"  --adopt-shards: stamping {sum(foreign.values())} row(s) in {path}",
+        file=sys.stderr,
+    )
+    path.write_text(
+        "".join(json.dumps(rows[seed], default=str) + "\n" for seed in sorted(rows))
+    )
     return rows
+
+
+def _stale_message(
+    path: pathlib.Path, *, expected: str, foreign: dict[str | None, int]
+) -> str:
+    """Name both fingerprints and the counts, then say what the options cost.
+
+    Written out at length because the whole value of this check is that the
+    person who hits it understands what it caught. A terse "stale shard" would
+    be read as an obstacle and routed around, which is how the check becomes
+    worse than not having one.
+    """
+    lines = [
+        f"{path} holds rows this agent did not produce.",
+        "",
+        f"  running agent : {expected}",
+    ]
+    for found, count in sorted(foreign.items(), key=lambda kv: -kv[1]):
+        label = found or "(no fingerprint — predates the field)"
+        lines.append(f"  on disk       : {label}  x{count}")
+    lines += [
+        "",
+        "The resume skips seeds already present, which is right for a fixed",
+        "agent and wrong across a change to one. Reporting these rows as this",
+        "agent's results is INC-003 (POSTMORTEM.md), which cost a published",
+        "evaluation once already.",
+        "",
+        "  --rebuild        recompute them. ~40 min for the base protocol.",
+        "  --adopt-shards   stamp them, ONLY where a recomputation on record",
+        "                   already shows they match. See StaleShards.ADOPT.",
+    ]
+    return "\n".join(lines)
 
 
 def _execute(
@@ -195,12 +307,23 @@ def collect(
     unseal: str | None,
     workers: int,
     progress: bool = True,
+    fingerprint: str | None = None,
+    stale: StaleShards = StaleShards.REFUSE,
 ) -> dict[str, dict[str, dict[int, dict]]]:
     """Run everything not already on disk, and return every row.
 
     Returns `{config_name: {arm_name: {seed: row}}}`. Work is grouped by shard
     so a resumed run reads each file once.
+
+    Every row is stamped with the agent fingerprint that produced it, and a
+    resume trusts only the rows carrying the running one — see
+    `windtunnel/fingerprint.py` for what that covers and why. The fingerprint
+    is computed once here rather than inside `_work`: it is the same for every
+    job in a run, and hashing sixty-three files nine thousand times to learn
+    that would be a strange way to spend forty minutes.
     """
+    if fingerprint is None:
+        fingerprint = agent_fingerprint()
     results: dict[str, dict[str, dict[int, dict]]] = {}
     total = len(configs) * len(arms) * len(seeds)
     started = time.perf_counter()
@@ -210,7 +333,7 @@ def collect(
         results[config.name] = {}
         for arm in arms:
             path = _shard(out, config.name, arm.name)
-            rows = _done(path)
+            rows = _done(path, expected=fingerprint, stale=stale)
             pending = [
                 (seed, arm.name, config.name, cohort, pepper, unseal)
                 for seed in seeds
@@ -221,6 +344,7 @@ def collect(
             if pending:
                 with path.open("a") as shard:
                     for job, row in _execute(pending, workers=workers, progress=progress):
+                        row["agent"] = fingerprint
                         shard.write(json.dumps(row, default=str) + "\n")
                         shard.flush()
                         rows[job[0]] = row
@@ -712,6 +836,25 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
                         choices=[c.value for c in Cohort])
     parser.add_argument("--unseal", default=None,
                         help="the §3c phrase; required for --cohort holdout")
+
+    # Mutually exclusive because they are opposite answers to the same
+    # question, and a run that was handed both would have to pick one
+    # silently. There is no third flag that keeps foreign rows and stops
+    # complaining -- see StaleShards.
+    shards = parser.add_mutually_exclusive_group()
+    shards.add_argument(
+        "--rebuild", action="store_true",
+        help="discard shard rows produced by a different agent and recompute "
+             "them (~40 min for the base protocol). Without this, a run that "
+             "finds foreign rows refuses rather than resuming over them.",
+    )
+    shards.add_argument(
+        "--adopt-shards", action="store_true",
+        help="stamp the running fingerprint onto rows that predate the field. "
+             "Sound only where a recomputation already on record shows those "
+             "rows match the working tree -- see StaleShards.ADOPT and §10's "
+             "row of 2026-08-29. Not a way past a refusal.",
+    )
     args = parser.parse_args(argv)
 
     if args.sweep_target:
@@ -735,7 +878,23 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
     seeds = list(REGISTERED_SEEDS)[: args.seeds]
     started = time.perf_counter()
 
-    report: dict = {"cohort": args.cohort, "arms": [a.name for a in ALL_ARMS]}
+    stale = (
+        StaleShards.REBUILD if args.rebuild
+        else StaleShards.ADOPT if args.adopt_shards
+        else StaleShards.REFUSE
+    )
+    # Computed before any work and recorded in the manifest, so a reader can
+    # ask which agent produced a number without recomputing anything. A
+    # manifest whose fingerprint does not match the tree it sits in is a
+    # question worth asking; before this field there was no way to ask it.
+    fingerprint = agent_fingerprint()
+    print(f"agent fingerprint: {fingerprint}", file=sys.stderr)
+
+    report: dict = {
+        "cohort": args.cohort,
+        "arms": [a.name for a in ALL_ARMS],
+        "agent_fingerprint": fingerprint,
+    }
 
     if args.skip_base:
         print("--skip-base: §6a's protocol not run, §7's grid only", file=sys.stderr)
@@ -752,6 +911,7 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
         _base_protocol(
             report, out=out, seeds=seeds, cohort=args.cohort,
             pepper=pepper, unseal=args.unseal, workers=args.workers,
+            fingerprint=fingerprint, stale=stale,
         )
 
     if args.sweeps:
@@ -764,6 +924,7 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
         swept = collect(
             out=out / "sweeps", configs=grid, arms=ALL_ARMS, seeds=list(SWEEP_SEEDS),
             cohort=args.cohort, pepper=pepper, unseal=args.unseal, workers=args.workers,
+            fingerprint=fingerprint, stale=stale,
         )
         unswept = reference_differences(swept)
         report["sweeps"] = {
@@ -797,6 +958,7 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
 def _base_protocol(
     report: dict, *, out: pathlib.Path, seeds: Sequence[int], cohort: str,
     pepper: str, unseal: str | None, workers: int,
+    fingerprint: str | None = None, stale: StaleShards = StaleShards.REFUSE,
 ) -> None:
     """§5's arms over §6a's registered range, and everything read off them.
 
@@ -808,6 +970,7 @@ def _base_protocol(
     base = collect(
         out=out, configs=[_Base()], arms=ALL_ARMS, seeds=list(seeds), cohort=cohort,
         pepper=pepper, unseal=unseal, workers=workers,
+        fingerprint=fingerprint, stale=stale,
     )[BASE_CONFIG]
 
     comparisons = compare(base)

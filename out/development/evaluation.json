@@ -11,6 +11,7 @@
     "A4",
     "A5"
   ],
+  "agent_fingerprint": "614b7120abcecd13b291014bd19ccea69a0ac42d8462d58568244a90dc15caa0",
   "seeds": {
     "first": 0,
     "last": 999,
@@ -24,7 +25,6 @@
       "instrument_dead_retries_world": 64321,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 174103,
@@ -32,7 +32,8 @@
         "escalated": 13014,
         "exhausted": 0,
         "awaiting": 138591
-      }
+      },
+      "seeds": 1000
     },
     "naive_retry": {
       "recovery_rate_mean": 0.465936313481441,
@@ -41,7 +42,6 @@
       "instrument_dead_retries_world": 292256,
       "risk_block_actions_world": 18541,
       "customer_action_retries_world": 66040,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 165330,
@@ -49,7 +49,8 @@
         "escalated": 0,
         "exhausted": 189476,
         "awaiting": 0
-      }
+      },
+      "seeds": 1000
     },
     "retry_plus_contact": {
       "recovery_rate_mean": 0.6542272536430769,
@@ -58,7 +59,6 @@
       "instrument_dead_retries_world": 292256,
       "risk_block_actions_world": 20988,
       "customer_action_retries_world": 66040,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 232133,
@@ -66,7 +66,8 @@
         "escalated": 0,
         "exhausted": 0,
         "awaiting": 121064
-      }
+      },
+      "seeds": 1000
     },
     "vasool_ungated": {
       "recovery_rate_mean": 0.5381228185488008,
@@ -75,7 +76,6 @@
       "instrument_dead_retries_world": 69311,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 190933,
@@ -83,7 +83,8 @@
         "escalated": 8910,
         "exhausted": 0,
         "awaiting": 152829
-      }
+      },
+      "seeds": 1000
     },
     "A1": {
       "recovery_rate_mean": 0.45462745255392173,
@@ -92,7 +93,6 @@
       "instrument_dead_retries_world": 90191,
       "risk_block_actions_world": 16366,
       "customer_action_retries_world": 29672,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 161301,
@@ -100,7 +100,8 @@
         "escalated": 5234,
         "exhausted": 0,
         "awaiting": 164868
-      }
+      },
+      "seeds": 1000
     },
     "A2": {
       "recovery_rate_mean": 0.4408558736806403,
@@ -109,7 +110,6 @@
       "instrument_dead_retries_world": 64315,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 156419,
@@ -117,7 +117,8 @@
         "escalated": 13014,
         "exhausted": 0,
         "awaiting": 148266
-      }
+      },
+      "seeds": 1000
     },
     "A3": {
       "recovery_rate_mean": 0.4900490437590267,
@@ -126,7 +127,6 @@
       "instrument_dead_retries_world": 90292,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 173871,
@@ -134,7 +134,8 @@
         "escalated": 13342,
         "exhausted": 0,
         "awaiting": 138229
-      }
+      },
+      "seeds": 1000
     },
     "A4": {
       "recovery_rate_mean": 0.4906251981415578,
@@ -143,7 +144,6 @@
       "instrument_dead_retries_world": 64318,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 174077,
@@ -151,7 +151,8 @@
         "escalated": 12860,
         "exhausted": 0,
         "awaiting": 138587
-      }
+      },
+      "seeds": 1000
     },
     "A5": {
       "recovery_rate_mean": 0.31805263398237127,
@@ -160,7 +161,6 @@
       "instrument_dead_retries_world": 64446,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
-      "seeds": 1000,
       "closure": {
         "episodes": 354826,
         "recovered": 112865,
@@ -168,7 +168,8 @@
         "escalated": 4191,
         "exhausted": 220864,
         "awaiting": 0
-      }
+      },
+      "seeds": 1000
     }
   },
   "paired_vs_vasool": {
@@ -9212,5 +9213,5 @@
       }
     }
   },
-  "elapsed_seconds": 14.4
+  "elapsed_seconds": 17.6
 }
