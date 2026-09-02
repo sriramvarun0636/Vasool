@@ -55,6 +55,19 @@ which <b>ships in this repo</b>. Open it and check any number here without runni
 
 ---
 
+## Track 03 asks for four things
+
+> *"Don't just identify the problem. Show **measured money recovered across a batch**, with **compliant escalation**, **stopping rules**, and an **audit trail**."*
+
+| The bar | Where it is | Evidence |
+| :--- | :--- | :--- |
+| **Measured money recovered across a batch** | [The result](#the-result) | **₹116.09 Cr** across 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping — the two records are compared and every disagreement is reported. |
+| **Compliant escalation** | [What the agent actually does](#what-the-agent-actually-does) | **13,014** episodes handed to a human, each receipt carrying every clause that decided it. A risk-declined payment gets nothing automated, ever — and `AFAThresholdGuard` escalates rather than blocking, because the action is not forbidden, it just cannot be completed unattended. |
+| **Stopping rules** | [The thirteen guards](#four-of-the-thirteen-guards) | Five independent bounds: `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget, a per-merchant daily spend cap, and a merchant kill switch that **holds** queued work rather than discarding it. Measured: Vasool exhausts an attempt budget **0 times**; `naive_retry` does it **189,476** times — 53% of every episode it sees. |
+| **An audit trail** | [Check the cryptography](#check-the-cryptography-without-trusting-us) | Every action **and every refusal** writes a SHA-256 hash-chained receipt. Twelve real receipts ship in the manifest with the exact bytes each hash was computed over, so you can verify the chain yourself in four lines of Python — or in your browser on Exhibit H. |
+
+---
+
 ## The problem
 
 Payment failures don't fail in one clean way, and treating them as one problem is what loses the money. **An expired card and a gateway blip arrive as the same webhook and need opposite responses.** Retrying the expired card has exactly zero chance of working, and it burns one of the four attempts Razorpay allows before it halts the subscription — the attempt a re-auth link needed.
