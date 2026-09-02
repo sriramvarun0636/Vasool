@@ -63,7 +63,7 @@ which <b>ships in this repo</b>. Open it and check any number here without runni
 | :--- | :--- | :--- |
 | **Measured money recovered across a batch** | [The result](#the-result) | **₹116.09 Cr** across 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping — the two records are compared and every disagreement is reported. |
 | **Compliant escalation** | [What the agent actually does](#what-the-agent-actually-does) | **13,014** episodes handed to a human, each receipt carrying every clause that decided it. A risk-declined payment gets nothing automated, ever — and `AFAThresholdGuard` escalates rather than blocking, because the action is not forbidden, it just cannot be completed unattended. |
-| **Stopping rules** | [The thirteen guards](#four-of-the-thirteen-guards) | Five independent bounds: `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget, a per-merchant daily spend cap, and a merchant kill switch that **holds** queued work rather than discarding it. Measured: Vasool exhausts an attempt budget **0 times**; `naive_retry` does it **189,476** times — 53% of every episode it sees. |
+| **Stopping rules** | [Where every episode ended](#what-didnt-recover-actually-means) | Five independent bounds in [`vasool/policy/machine.py`](vasool/policy/machine.py) and the guard chain: `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget from the taxonomy, a per-merchant daily spend cap, and a kill switch that **holds** queued work rather than discarding it. Measured rather than asserted: Vasool exhausts an attempt budget **0 times**; `naive_retry` does it **189,476** times — 53% of every episode it sees. |
 | **An audit trail** | [Check the cryptography](#check-the-cryptography-without-trusting-us) | Every action **and every refusal** writes a SHA-256 hash-chained receipt. Twelve real receipts ship in the manifest with the exact bytes each hash was computed over, so you can verify the chain yourself in four lines of Python — or in your browser on Exhibit H. |
 
 ---
@@ -214,6 +214,9 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 | 20,988 actions on risk-declined | `per_arm.retry_plus_contact.risk_block_actions_world` | `20988` |
 | 66,040 retries on a zero-budget class | `per_arm.retry_plus_contact.customer_action_retries_world` | `66040` |
 | F5 gap 4.74pp of a 20pp threshold | `falsification.F5_compliance_unaffordable.gap_pp` | `4.742469…` |
+| 13,014 episodes escalated to a human | `per_arm.vasool.closure.escalated` | `13014` |
+| `naive_retry` exhausts a budget 189,476 times | `per_arm.naive_retry.closure.exhausted` | `189476` |
+| Vasool exhausts a budget 0 times | `per_arm.vasool.closure.exhausted` | `0` |
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
 | 19 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `19` |
 
