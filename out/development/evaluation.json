@@ -11,7 +11,7 @@
     "A4",
     "A5"
   ],
-  "agent_fingerprint": "614b7120abcecd13b291014bd19ccea69a0ac42d8462d58568244a90dc15caa0",
+  "agent_fingerprint": "780a6653e49a8d6bdb2806f56b17b5b9ba4f2f171cafdba170fa3cea7e731cd5",
   "seeds": {
     "first": 0,
     "last": 999,
@@ -9213,5 +9213,5 @@
       }
     }
   },
-  "elapsed_seconds": 17.6
+  "elapsed_seconds": 14.8
 }

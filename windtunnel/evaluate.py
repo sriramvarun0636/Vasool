@@ -179,7 +179,30 @@ class StaleShards(StrEnum):
     `ContactWindowGuard` falls back to IST when `customer_zone` is unknown and
     no module in windtunnel/ ever sets it — and rather than rest on that,
     2026-09-03 recomputed 30 runs across 5 arms against the current tree and
-    found all 30 byte-identical. Adopt on that basis or not at all."""
+    found all 30 byte-identical. Adopt on that basis or not at all.
+
+    **Adopted a second time on 2026-09-03**, when `AGENT_SOURCES` was widened
+    to cover the two payload directories the simulator reads. That change moves
+    the digest and nothing else — no file under `vasool/`, `windtunnel/` or
+    `data/` was edited — but "it cannot have changed anything" is an argument,
+    not a check, so 69 rows were recomputed against the working tree first.
+    **The result is not uniform and the difference is the point.** All 45 base
+    rows are byte-identical across 1,725 field comparisons. None of the 24
+    sweep rows are, and the only fields that differ anywhere are `safety` and
+    `safety_holds` — the block §10's row of 2026-08-29 established as stale in
+    83 of the 84 sweep configurations and deliberately left there, since no
+    safety data reaches §7's manifest. So the base shards behind every
+    published figure are certified by recomputation, and the sweep shards are
+    adopted knowing exactly which field of them is not to be believed. The
+    regenerated manifest differs from its predecessor in two of 5,881 leaf
+    values: `agent_fingerprint`, and the run's own `elapsed_seconds`.
+
+    A note on order, learned the hard way an hour after the first adoption: do
+    every edit to a fingerprinted file **before** adopting, not after. Editing
+    this docstring once the shards were stamped moved the digest again and left
+    the manifest recording an agent that no longer existed — the check working
+    exactly as designed, and a reminder that "it was only a comment" is the
+    same sentence this enum refuses to accept anywhere else."""
 
 
 class StaleShard(RuntimeError):

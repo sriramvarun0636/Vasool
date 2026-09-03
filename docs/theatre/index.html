@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vasool &mdash; the episode theatre</title>
+<meta name="description" content="Watch thirteen guards rule on one payment recovery, one at a time, and then break the receipt's seal yourself in the browser. Replayed from the agent's own run.">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   THE EPISODE THEATRE
+
+   A sibling of docs/index.html and deliberately built from the same tokens:
+   same ink, same panel, same Newsreader/Plex pairing, same band tags, same
+   provenance mode. A reader arriving from the dashboard should not feel they
+   have left the building.
+
+   What is different is the job. The dashboard reports a hundred thousand runs;
+   this page shows exactly one, slowly enough to watch. So the centrepiece is
+   not a chart -- it is the chain itself, ruling guard by guard, with a
+   transport control, because the single most persuasive thing this system does
+   is decline to act and say which clause made it decline.
+
+   Two rules the code keeps everywhere:
+
+     1. Nothing is recovered by parsing prose. Decisions come from
+        `verdicts[].decision`, outcomes from `receipts[].outcome`, times from
+        `at` and `defer_until`. The demo's English summary is quoted verbatim
+        as what it is -- a log line -- and never mined for words.
+
+     2. Nothing here knows what a card is. A step carrying verdicts is a
+        ruling, a step carrying receipts is a seal, a step carrying neither is
+        fact. That is the whole dispatch, which is why the same page will
+        replay a mandate episode without an edit.
+   ========================================================================= */
+
+:root{
+  /* --- shared with docs/index.html; do not drift ------------------------ */
+  --ink:#0B1221;
+  --panel:#121B30;
+  --hairline:rgba(255,255,255,.08);
+  --signal-blue:#2D68E6;
+  --compliant-green:#00C96D;
+  --violation-red:#D13B3B;
+  --caution-amber:#F4C430;
+  --paper:#EDEAE0;
+  --font-display:'Newsreader',Georgia,'Times New Roman',serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --viz-axis:rgba(255,255,255,.22);
+  --viz-muted:#898781;
+  --status-good:#0ca30c;
+  --status-warning:#fab219;
+
+  /* --- local ------------------------------------------------------------ */
+  --ink-lift:#0E1729;
+  --panel-lift:#16203A;
+  --hairline-firm:rgba(255,255,255,.17);
+  --body-text:#E2E8F0;
+  --dim:#94A3B8;
+  --dimmer:#64748B;
+  --na:#5A688A;
+  --blue-lift:#4A7DEE;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--ink);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--ink);color:var(--body-text);font-family:var(--font-body);
+  font-size:15.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;display:flex;min-height:100vh}
+:focus-visible{outline:2px solid var(--blue-lift);outline-offset:3px;border-radius:2px}
+code{font-family:var(--font-mono);font-size:.88em;color:#B9C4DA}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.num{font-variant-numeric:tabular-nums}
+
+.shell{display:none}
+
+/* ---------- provenance mode (the dashboard's control, same behaviour) ---- */
+.prov-toggle{position:fixed;top:20px;right:20px;z-index:200;
+  display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:6px;cursor:pointer;
+  background:rgba(18,27,48,.92);backdrop-filter:blur(8px);border:1px solid var(--hairline);
+  color:var(--paper);font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;
+  transition:border-color .18s,background .18s}
+.prov-toggle:hover{border-color:var(--signal-blue)}
+.prov-toggle[aria-pressed="true"]{border-color:var(--signal-blue);background:rgba(45,104,230,.18)}
+.prov-dot{width:8px;height:8px;border-radius:50%;background:var(--viz-muted);flex:none}
+.prov-toggle[aria-pressed="true"] .prov-dot{background:var(--signal-blue)}
+.prov-banner{display:none;border:1px solid rgba(45,104,230,.4);background:rgba(45,104,230,.08);
+  border-radius:6px;padding:17px 21px;margin:28px 0 0;font-size:14.5px;line-height:1.7;
+  color:var(--paper)}
+body.provenance .prov-banner{display:block}
+.prov-path{display:none!important;font-family:var(--font-mono);font-size:10px;line-height:1.5;
+  color:var(--signal-blue);word-break:break-all;margin-top:5px;letter-spacing:.01em;
+  flex-basis:100%}
+body.provenance .prov-path{display:block!important}
+body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset:3px;
+  border-radius:2px}
+@media(max-width:1080px){.prov-toggle{display:none}}
+
+/* ---------- the spine, and the geometry it belongs to -------------------
+   Lifted from docs/index.html rather than re-invented. This page and the
+   dashboard are two volumes of one document, and a reader arriving here from
+   the report card should not have to work out that they are still in the same
+   building: same 72px rail, same 48px gutter, same 1200px measure. The marks
+   are T for the top and I/II/III for the three acts. */
+#spine{width:72px;border-right:1px solid var(--hairline);display:flex;flex-direction:column;
+  align-items:center;padding:40px 0;position:fixed;height:100vh;overflow:hidden;z-index:10;
+  background:var(--ink)}
+.spine-mark{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#64748B;
+  text-decoration:none;min-width:26px;height:26px;padding:0 5px;
+  display:flex;align-items:center;justify-content:center;margin:3px 0;
+  border:1px solid transparent;border-radius:2px;
+  transition:color .18s ease,border-color .18s ease,background-color .18s ease}
+.spine-mark:hover{color:#CBD5E1;border-color:var(--hairline)}
+.spine-mark:focus-visible{outline:2px solid var(--signal-blue);outline-offset:2px}
+.spine-mark.is-here{color:var(--paper);border-color:var(--signal-blue);
+  background:rgba(45,104,230,.14)}
+.spine-progress{margin-top:auto;width:2px;height:84px;background:var(--hairline);
+  border-radius:1px;overflow:hidden}
+.spine-progress-fill{width:100%;height:0%;background:var(--signal-blue);
+  transition:height .12s linear}
+
+#content{margin:0 auto;margin-left:72px;padding:48px;flex-grow:1;max-width:1200px;
+  /* Without this a flex item's min-width resolves to `auto`, so the container
+     refuses to shrink below its widest child and the whole page scrolls
+     sideways instead of the one wide box inside it. */
+  min-width:0}
+@media(max-width:820px){
+  #spine{display:none}
+  #content{margin-left:0;padding:28px 20px 64px}
+}
+
+/* ---------- brand header ------------------------------------------------ */
+.brand-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.brand-header img{height:32px;width:auto;display:block;filter:brightness(0) invert(1)}
+.brand-header h2{font-family:var(--font-display);font-size:24px;font-weight:600;color:#E2E8F0;
+  letter-spacing:-.5px;display:flex;align-items:center;gap:12px}
+.brand-header .vasool-tag{background:var(--signal-blue);color:#fff;padding:4px 10px;
+  border-radius:4px;font-size:14px;font-family:var(--font-mono);font-weight:500}
+.brand-header .back{margin-left:auto;font-family:var(--font-mono);font-size:12px;
+  color:#94A3B8;text-decoration:none;border-bottom:1px solid var(--hairline);
+  padding-bottom:2px;transition:color .16s,border-color .16s}
+.brand-header .back:hover{color:#fff;border-color:var(--signal-blue)}
+
+/* ---------- episode selector -------------------------------------------- */
+/* The dashboard has one page and needs no selector; this one has five
+   episodes, so the control lives in the content column rather than in a
+   masthead the dashboard does not have. */
+.picker{border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+  padding:14px 0;margin-bottom:44px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.picker .plabel{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dimmer);flex:0 0 auto}
+.tablist{display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+.tab{flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:var(--font-mono);
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer);
+  background:none;border:1px solid transparent;border-radius:3px;padding:6px 10px;
+  transition:color .16s,border-color .16s,background-color .16s}
+.tab:hover{color:#CBD5E1;border-color:var(--hairline)}
+.tab[aria-selected="true"]{color:var(--paper);border-color:var(--signal-blue);
+  background:rgba(45,104,230,.16)}
+
+/* ---------- hero --------------------------------------------------------- */
+.hero{padding:0 0 8px;display:grid;gap:clamp(30px,4vw,52px);
+  grid-template-columns:minmax(0,1.32fr) minmax(310px,.68fr);align-items:start}
+.hero>.hero-main{min-width:0}
+.hero>.wait,.hero>.facts-line,.hero>.prov-banner{grid-column:1 / -1}
+@media(max-width:920px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .hero>.glance{grid-column:1}
+}
+.kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dimmer);margin-bottom:22px}
+.kicker .sep{color:var(--hairline-firm);margin:0 9px}
+.verdict{font-family:var(--font-display);font-weight:600;
+  font-size:clamp(38px,7vw,74px);line-height:1.02;letter-spacing:-.015em;
+  font-variation-settings:"opsz" 60;max-width:16ch;text-wrap:balance}
+.verdict .join{font-weight:400;color:var(--dimmer);font-size:.62em;letter-spacing:0}
+.v-defer{color:var(--caution-amber)} .v-allow{color:var(--compliant-green)}
+.v-block{color:var(--violation-red)} .v-escalate{color:var(--signal-blue)}
+.v-recover{color:var(--compliant-green)}
+.dek{margin-top:20px;font-size:17.5px;line-height:1.56;color:var(--dim);max-width:60ch}
+.dek b{color:var(--paper);font-weight:500}
+.dek .clause{color:var(--caution-amber);font-weight:500}
+.dek code{font-size:.9em}
+
+.hero-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+.cta{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+  border-radius:4px;padding:12px 17px;border:1px solid var(--hairline-firm);
+  background:none;color:var(--paper);text-decoration:none;transition:.16s}
+.cta:hover{border-color:#CBD5E1}
+.cta.primary{background:var(--signal-blue);border-color:var(--signal-blue)}
+.cta.primary:hover{background:var(--blue-lift);border-color:var(--blue-lift)}
+.cta .glyph{font-size:10px;line-height:1}
+
+.chip{display:inline-flex;align-items:center;gap:9px;margin-top:24px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;
+  border:1px solid var(--hairline-firm);border-radius:999px;padding:6px 14px;color:var(--dim)}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.chip.sim .dot{background:var(--caution-amber)}
+.chip.obs .dot{background:var(--compliant-green)}
+
+/* ---------- the glance: the whole chain as one dense mark --------------- */
+/* Thirteen ticks per ruling, coloured by what each guard actually returned.
+   It is the page's only decorative-looking object and it is not decorative:
+   every tick is one verdict, and the amber one is the reason the episode has
+   a story. Clicking a row runs that ruling on the board. */
+.glance{border:1px solid var(--hairline-firm);border-radius:6px;background:var(--panel);
+  overflow:hidden;backdrop-filter:blur(2px)}
+.glance .gh{padding:13px 16px;border-bottom:1px solid var(--hairline);background:var(--ink-lift);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dimmer)}
+.glance .grow2{all:unset;display:block;box-sizing:border-box;width:100%;cursor:pointer;
+  padding:14px 16px;border-bottom:1px solid var(--hairline);transition:background-color .16s}
+.glance .grow2:hover,.glance .grow2:focus-visible{background:rgba(255,255,255,.028)}
+.glance .gl1{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.glance .gwhen{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:var(--dim);
+  font-variant-numeric:tabular-nums}
+.glance .gres{margin-left:auto;font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.13em}
+.bars{display:flex;gap:3px;align-items:flex-end;height:26px}
+.bars i{flex:1 1 0;min-width:2px;border-radius:1px;display:block;
+  transform-origin:bottom;transition:height .34s cubic-bezier(.2,.8,.2,1),background-color .2s}
+.bars i.b-na{height:7px;background:rgba(90,104,138,.5)}
+.bars i.b-allow{height:14px;background:rgba(0,201,109,.55)}
+.bars i.b-defer{height:26px;background:var(--caution-amber);box-shadow:0 0 9px rgba(244,196,48,.55)}
+.bars i.b-escalate{height:26px;background:var(--signal-blue);box-shadow:0 0 9px rgba(45,104,230,.6)}
+.bars i.b-block{height:26px;background:var(--violation-red);box-shadow:0 0 9px rgba(209,59,59,.6)}
+.glance .gseal{display:flex;flex-direction:column;gap:8px}
+.glance .ghash{font-family:var(--font-mono);font-size:10px;color:var(--dim);
+  word-break:break-all;letter-spacing:.02em}
+.glance .gfoot{padding:12px 16px;font-family:var(--font-mono);font-size:10.5px;line-height:1.65;
+  color:var(--dimmer)}
+.glance .gfoot b{color:var(--dim);font-weight:400}
+
+/* ---------- the wait -------------------------------------------------- */
+/* The one thing worth remembering about this episode is that a machine which
+   could have sent the message at 19:30 did not, and waited twelve hours and
+   thirty-nine minutes because a rule said so. That belongs at hero scale, in
+   the display face, with the clause that caused it underneath -- not as the
+   third of four stat boxes. Every number in it is read from the ledger. */
+.wait{border-top:1px solid var(--hairline-firm);border-bottom:1px solid var(--hairline);
+  padding:26px 0 24px;position:relative}
+.wait .wl{font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dimmer);margin-bottom:20px}
+.wait .track{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0 18px;
+  align-items:center}
+.wait .anchor{font-family:var(--font-mono);font-size:12.5px;color:var(--paper);line-height:1.5;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.wait .anchor small{display:block;font-size:10px;color:var(--dimmer);letter-spacing:.06em;
+  margin-top:4px}
+.wait .anchor.to{text-align:right}
+.wait .rail2{position:relative;height:56px;display:flex;align-items:center}
+.wait .rail2::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;
+  background:linear-gradient(90deg,var(--caution-amber),rgba(244,196,48,.28));border-radius:1px}
+.wait .rail2 .cap{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+  background:var(--caution-amber);transform:translateY(-50%);box-shadow:0 0 12px rgba(244,196,48,.7)}
+.wait .rail2 .cap.a{left:-1px} .wait .rail2 .cap.b{right:-1px}
+.wait .span{position:relative;margin:0 auto;padding:0 20px;background:var(--ink);
+  font-family:var(--font-display);font-size:clamp(30px,4.4vw,46px);font-weight:600;
+  line-height:1;color:var(--caution-amber);font-variation-settings:"opsz" 40;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.wait .why{margin-top:20px;font-family:var(--font-mono);font-size:11.5px;line-height:1.75;
+  color:var(--dim);max-width:84ch}
+.wait .why b{color:var(--paper);font-weight:500}
+.wait .why .clause{color:var(--caution-amber)}
+.wait .why q{color:#B9C4DA;font-style:normal}
+/* the no-deferral variant: one moment, and a refusal */
+.wait.stood .rail2::before{background:linear-gradient(90deg,var(--stood),rgba(255,255,255,.06))}
+.wait.stood .rail2 .cap{background:var(--stood);box-shadow:0 0 12px var(--stood)}
+.wait.stood .track{grid-template-columns:auto minmax(0,1fr)}
+.wait.stood .span{color:var(--stood);font-size:clamp(24px,3.4vw,36px)}
+
+/* a single confident line of facts, not four boxes saying it again */
+.facts-line{margin-top:22px;display:flex;flex-wrap:wrap;gap:6px 0;
+  font-family:var(--font-mono);font-size:11.5px;color:var(--dim);letter-spacing:.03em}
+/* `:not(.prov-path)` on both rules, because a bare `.facts-line span` beats
+   `.prov-path{display:none}` on specificity and was showing every JSON path
+   with provenance mode switched off. */
+.facts-line span:not(.prov-path){display:inline-flex;align-items:center;gap:6px}
+.facts-line span:not(.prov-path)+span:not(.prov-path)::before{content:'·';
+  color:var(--hairline-firm);margin:0 12px 0 6px}
+.facts-line b{color:var(--paper);font-weight:500}
+.facts-line b.sim{color:var(--caution-amber)}
+.facts-line b.obs{color:var(--compliant-green)}
+.facts-line span:not(.prov-path) span::before{content:none}
+.tile .tv{font-family:var(--font-display);font-size:31px;font-weight:600;line-height:1.04;
+  color:var(--paper);font-variation-settings:"opsz" 40;font-variant-numeric:tabular-nums}
+.tile .tv.word{font-family:var(--font-mono);font-size:13.5px;font-weight:500;letter-spacing:.12em;
+  padding:7px 0 8px}
+.tile .tl{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);margin-top:9px;
+  line-height:1.6}
+
+/* ---------- act scaffolding ---------------------------------------------- */
+/* Exhibit scaffolding, identical to the dashboard's. Volume two of the same
+   document: the report card runs A-I, this one runs T1-T3. */
+.exhibit{margin-bottom:80px;margin-top:72px;position:relative;scroll-margin-top:24px}
+.band-tag{display:inline-block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;padding:4px 10px;border-radius:3px;margin-bottom:15px}
+.band-independent .band-tag{background:rgba(12,163,12,.15);color:var(--status-good)}
+.band-dependent .band-tag{background:rgba(250,178,25,.13);color:var(--status-warning)}
+.exhibit-title{font-family:var(--font-mono);font-size:13px;color:#94A3B8;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:24px;display:flex;
+  align-items:center}
+.exhibit-title::before{content:'';display:inline-block;width:24px;height:1px;
+  background:var(--hairline);margin-right:12px;flex:0 0 auto}
+.standfirst{font-size:15.5px;line-height:1.68;color:var(--dim);max-width:74ch}
+.standfirst b{color:var(--paper);font-weight:500}
+.standfirst em{font-style:italic;color:#B9C4DA}
+.footnote{margin-top:22px;padding-top:15px;border-top:1px solid var(--hairline);
+  font-family:var(--font-mono);font-size:11.5px;line-height:1.75;color:var(--dim);max-width:90ch}
+.footnote b{color:var(--paper);font-weight:500}
+
+/* ---------- THE BOARD: thirteen guards, ruling ---------------------------- */
+.board{margin-top:26px;border:1px solid var(--hairline-firm);border-radius:6px;
+  background:var(--panel);overflow:hidden}
+
+.transport{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  padding:13px 16px;border-bottom:1px solid var(--hairline);background:var(--ink-lift)}
+.tbtn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  background:none;border:1px solid var(--hairline-firm);border-radius:3px;color:var(--paper);
+  padding:8px 12px;transition:.16s}
+.tbtn:hover:not([disabled]){border-color:#CBD5E1}
+.tbtn[disabled]{opacity:.35;cursor:not-allowed}
+.tbtn.play{background:var(--signal-blue);border-color:var(--signal-blue)}
+.tbtn.play:hover:not([disabled]){background:var(--blue-lift);border-color:var(--blue-lift)}
+.tbtn .glyph{font-size:9px;line-height:1}
+.transport .spacer{flex:1 1 auto}
+.cycle-dots{display:flex;gap:6px}
+.cycle-dots button{width:9px;height:9px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid var(--hairline-firm);background:none;transition:.16s}
+.cycle-dots button[aria-current="true"]{background:var(--signal-blue);border-color:var(--signal-blue)}
+.cycle-dots button:hover{border-color:#CBD5E1}
+.transport .pos{font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;
+  color:var(--dim);font-variant-numeric:tabular-nums}
+
+.slate{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-start;
+  padding:16px;border-bottom:1px solid var(--hairline)}
+.slate .cell{min-width:0}
+.slate .lb{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--dimmer);margin-bottom:6px}
+.slate .vv{font-family:var(--font-mono);font-size:13px;color:var(--paper);word-break:break-word}
+.slate .when{color:var(--caution-amber)}
+.slate .verdict-cell{margin-left:auto;text-align:right}
+.slate .big{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1;
+  font-variation-settings:"opsz" 40;transition:opacity .3s}
+.slate .big.pending{opacity:.16;color:var(--dimmer)}
+
+/* the day strip lives in the slate: it is what makes "why 08:09" legible */
+.strip{width:100%;padding:2px 0 0}
+.strip svg{display:block;width:100%;height:auto;overflow:visible}
+
+.rows{list-style:none}
+.grow{display:grid;grid-template-columns:34px minmax(0,1fr) 128px;gap:0 14px;align-items:baseline;
+  padding:11px 16px;border-bottom:1px solid var(--hairline);
+  transition:background-color .28s ease,opacity .28s ease}
+.grow:last-child{border-bottom:0}
+.grow .ix{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);
+  font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.grow .gname{font-family:var(--font-mono);font-size:13px;color:var(--paper);line-height:1.42}
+.grow .gstat{display:block;font-family:var(--font-mono);font-size:10px;color:var(--dimmer);
+  line-height:1.55;margin-top:4px}
+.grow .gsaid{display:block;font-family:var(--font-mono);font-size:11px;line-height:1.6;
+  margin-top:7px;color:var(--dim);max-width:64ch}
+.grow .gobl{display:block;font-family:var(--font-mono);font-size:10px;line-height:1.55;
+  margin-top:5px;color:var(--signal-blue)}
+.grow .call{font-family:var(--font-mono);text-align:right;white-space:nowrap}
+/* Three visual weights, and the ramp is the semantics: a filled chip is a
+   guard that intervened, an outlined one allowed, a dashed hollow one had no
+   jurisdiction. NOT_APPLICABLE must never be able to read as a green tick --
+   the enum's own docstring insists on the distinction and so does the page. */
+.chipd{display:inline-flex;align-items:center;padding:4px 9px;border-radius:3px;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:.12em;
+  border:1px solid transparent}
+.chipd.c-allow{color:var(--compliant-green);background:rgba(0,201,109,.09);
+  border-color:rgba(0,201,109,.3)}
+.chipd.c-na{color:var(--na);background:none;border-color:rgba(90,104,138,.45);border-style:dashed}
+.chipd.c-defer{color:#231A00;background:var(--caution-amber);border-color:var(--caution-amber)}
+.chipd.c-block{color:#fff;background:var(--violation-red);border-color:var(--violation-red)}
+.chipd.c-escalate{color:#fff;background:var(--signal-blue);border-color:var(--signal-blue)}
+.grow .held{display:block;font-family:var(--font-mono);font-size:10px;color:var(--caution-amber);
+  margin-top:5px;letter-spacing:.02em}
+
+/* the reveal: each guard rules in turn, so the chain is something you watch */
+.grow:hover{background:rgba(255,255,255,.022)}
+.grow.pending{opacity:.12;transform:translateY(3px)}
+.grow.pending .call{visibility:hidden}
+.grow.settled{opacity:1;transform:none}
+.grow.just{background:rgba(45,104,230,.14)}
+.grow{transition:background-color .28s ease,opacity .26s ease,transform .26s cubic-bezier(.2,.8,.2,1)}
+.grow.loud{box-shadow:inset 3px 0 0 currentColor}
+.grow.loud.is-defer{color:var(--caution-amber)}
+.grow.loud.is-block{color:var(--violation-red)}
+.grow.loud.is-escalate{color:var(--signal-blue)}
+.grow.quiet .gname{color:#B9C4DA}
+.grow.na .gname{color:var(--na)} .grow.na .gstat{color:#2E3A54}
+.grow.moved .gname::after{content:'moved';font-family:var(--font-mono);font-size:8.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--signal-blue);
+  border-radius:2px;padding:2px 5px;margin-left:10px;vertical-align:2px}
+
+.d-allow{color:var(--compliant-green)} .d-defer{color:var(--caution-amber)}
+.d-block{color:var(--violation-red)} .d-escalate{color:var(--signal-blue)} .d-na{color:var(--na)}
+
+.tally{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline;
+  padding:14px 16px;border-top:1px solid var(--hairline-firm);background:rgba(255,255,255,.022)}
+.tally .lb{font-family:var(--font-mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--dimmer)}
+.tally .txt{font-family:var(--font-mono);font-size:11.5px;color:var(--dim);line-height:1.6}
+.tally .txt b{color:var(--paper);font-weight:500}
+.tally .agree{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:var(--dim);
+  letter-spacing:.03em}
+.tally .agree::before{content:'✓ ';color:var(--compliant-green)}
+.tally .agree.no::before{content:'✕ ';color:var(--violation-red)}
+.tally .agree.no{color:var(--violation-red)}
+
+/* compare-all-cycles table, folded away by default */
+.compare{margin-top:20px}
+.compare>summary{cursor:pointer;font-family:var(--font-mono);font-size:11.5px;color:var(--dim);
+  letter-spacing:.05em;padding:8px 0}
+.compare>summary:hover{color:var(--paper)}
+.scroller{margin-top:12px;overflow-x:auto;border:1px solid var(--hairline);border-radius:6px}
+table.chain{border-collapse:collapse;width:100%;min-width:620px;background:var(--panel)}
+table.chain caption{text-align:left;padding:13px 15px;font-family:var(--font-mono);font-size:10.5px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer);
+  border-bottom:1px solid var(--hairline)}
+table.chain th,table.chain td{text-align:left;vertical-align:top;padding:11px 15px;
+  border-bottom:1px solid var(--hairline)}
+table.chain thead th{background:var(--ink-lift);font-family:var(--font-mono);font-weight:400;
+  font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dimmer);
+  border-bottom-color:var(--hairline-firm)}
+table.chain thead th .at{display:block;margin-top:5px;font-size:11px;letter-spacing:.02em;
+  text-transform:none;color:var(--caution-amber)}
+table.chain tbody th{position:sticky;left:0;z-index:2;background:var(--panel);font-weight:400;
+  min-width:200px}
+table.chain tbody th .gn{font-family:var(--font-mono);font-size:12px;color:var(--paper)}
+table.chain tbody th .st{display:block;font-family:var(--font-mono);font-size:9.5px;
+  color:var(--dimmer);line-height:1.5;margin-top:4px}
+table.chain td .dc{font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.11em}
+tr.dim th .gn{color:var(--na)} tr.dim th .st{color:#2E3A54}
+tr.moved{background:rgba(45,104,230,.085)}
+tr.moved th{background:var(--panel-lift);box-shadow:inset 2px 0 0 var(--signal-blue)}
+table.chain tfoot th,table.chain tfoot td{border-top:1px solid var(--hairline-firm);border-bottom:0;
+  background:rgba(255,255,255,.022);font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer)}
+table.chain tfoot td{color:var(--paper)}
+table.chain tfoot th{position:sticky;left:0;background:#141C31}
+
+/* ---------- the record --------------------------------------------------- */
+.reel{margin-top:26px}
+.beat{position:relative;padding:0 0 2px 44px}
+.beat::before{content:'';position:absolute;left:13px;top:26px;bottom:-2px;width:1px;
+  background:var(--hairline)}
+.beat:last-child::before{display:none}
+.beat .pin{position:absolute;left:0;top:9px;width:27px;height:27px;border-radius:50%;
+  border:1px solid var(--hairline-firm);background:var(--ink);color:var(--dimmer);
+  font-family:var(--font-mono);font-size:10.5px;display:flex;align-items:center;
+  justify-content:center;font-variant-numeric:tabular-nums}
+.beat.is-ruling .pin{border-color:var(--signal-blue);color:var(--paper)}
+.beat.is-seal .pin{border-color:var(--compliant-green);color:var(--compliant-green)}
+.beat .hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 14px;padding:13px 0 0}
+.beat .ttl{font-family:var(--font-mono);font-size:13px;letter-spacing:.03em;color:var(--paper)}
+.beat .when{font-family:var(--font-mono);font-size:11px;color:var(--dimmer);letter-spacing:.04em}
+.beat .body{padding:11px 0 24px}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:0 30px;
+  border-top:1px solid var(--hairline)}
+.facts.wide{grid-template-columns:1fr}
+.facts>div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--hairline);align-items:baseline}
+.facts dt{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer)}
+.facts dd{font-family:var(--font-mono);font-size:12.5px;color:var(--paper);word-break:break-word}
+.transcript{margin-top:13px;font-family:var(--font-mono);font-size:11.5px;line-height:1.78;
+  color:var(--dim);border-left:2px solid var(--hairline-firm);padding:2px 0 2px 14px;max-width:82ch}
+
+.recap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+  border:1px solid var(--hairline);border-radius:5px;background:var(--panel);padding:13px 16px}
+.recap .rv{font-family:var(--font-display);font-size:21px;font-weight:600;line-height:1;
+  font-variation-settings:"opsz" 30}
+.recap .rt{font-family:var(--font-mono);font-size:11.5px;color:var(--dim);line-height:1.6;min-width:0}
+.recap .rt b{color:var(--paper);font-weight:500}
+.recap .jump{margin-left:auto;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;background:none;border:1px solid var(--hairline-firm);border-radius:3px;
+  color:var(--dim);padding:8px 11px;cursor:pointer;transition:.16s;flex:0 0 auto}
+.recap .jump:hover{color:var(--paper);border-color:#CBD5E1}
+
+.stub{border:1px solid var(--hairline);border-radius:5px;background:var(--panel);padding:13px 16px}
+.stub .l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+.stub .rid{font-family:var(--font-mono);font-size:12.5px;color:var(--paper)}
+.stub .oc{font-family:var(--font-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  margin-left:auto}
+.stub .hs{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);margin-top:8px;
+  line-height:1.75;word-break:break-all}
+.stub .hs b{color:var(--dim);font-weight:400}
+
+.replay{margin-top:26px;border:1px solid var(--hairline);border-radius:5px;overflow:hidden;
+  background:var(--ink-lift)}
+.replay .cap{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dimmer);padding:9px 14px;border-bottom:1px solid var(--hairline)}
+.replay .cmd{display:flex;align-items:flex-start;gap:12px;padding:12px 14px}
+.replay .cmd pre{margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.7;
+  color:var(--paper);white-space:pre-wrap;word-break:break-word;flex:1 1 auto}
+.replay .cmd pre .sigil{color:var(--dimmer)}
+.copy{flex:0 0 auto;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;background:none;border:1px solid var(--hairline-firm);border-radius:3px;
+  color:var(--dim);padding:6px 10px;cursor:pointer;transition:.16s}
+.copy:hover{color:var(--paper);border-color:#CBD5E1}
+
+/* ---------- the seal ----------------------------------------------------- */
+.links{margin-top:26px}
+.node{border:1px solid var(--hairline);border-radius:5px;background:var(--panel);
+  transition:border-color .16s,box-shadow .16s}
+.node.sel{border-color:var(--signal-blue);box-shadow:0 0 0 1px rgba(45,104,230,.32)}
+.node>button{all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;padding:14px 16px}
+.node>button:hover .rid{color:var(--blue-lift)}
+.node .l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:9px}
+.node .rid{font-family:var(--font-mono);font-size:12.5px;color:var(--paper);transition:color .16s}
+.node .oc{font-family:var(--font-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  margin-left:auto}
+.node .hs{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);line-height:1.85;
+  word-break:break-all}
+.node .hs b{color:var(--dim);font-weight:400}
+.node.broken{border-color:var(--violation-red);
+  box-shadow:0 0 0 1px rgba(209,59,59,.3),0 0 22px rgba(209,59,59,.14)}
+.node.broken .rid{color:var(--violation-red)}
+.node.broken .l1::after{content:'seal broken';font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.15em;text-transform:uppercase;color:#fff;background:var(--violation-red);
+  border-radius:2px;padding:3px 6px;order:9}
+.node.tainted{border-style:dashed;border-color:rgba(209,59,59,.4);opacity:.62}
+.node.tainted .l1::after{content:'unverifiable';font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--violation-red);
+  border:1px dashed rgba(209,59,59,.55);border-radius:2px;padding:2px 6px;order:9}
+.tie{display:flex;align-items:center;gap:11px;padding:8px 0 8px 19px;font-family:var(--font-mono);
+  font-size:10.5px;color:var(--dimmer);letter-spacing:.05em;transition:color .2s}
+.tie .el{color:var(--hairline-firm);font-size:15px}
+.tie.severed{color:var(--violation-red)}
+.tie.severed .el{color:var(--violation-red)}
+
+/* Exhibit H's verifier, same chrome. The interaction differs on purpose: the
+   dashboard looks a receipt up, this page hands you its bytes and invites you
+   to break them, which is the thing a static page cannot fake. */
+.verifier-box{background:var(--panel);border:1px solid var(--hairline);padding:32px;
+  border-radius:2px;font-family:var(--font-mono);position:relative;margin-top:32px}
+.verifier-box h3{font-family:var(--font-display);font-size:20px;font-weight:600;
+  margin-bottom:16px;font-variation-settings:"opsz" 30}
+.verifier-box .lede2{margin-bottom:24px;color:#94A3B8;font-family:var(--font-body);
+  font-size:14px;line-height:1.62;max-width:72ch}
+.verifier-box .lede2 b{color:var(--paper);font-weight:500}
+.input-group{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+#verifier-console{background:var(--ink);padding:16px;min-height:120px;font-size:13px;
+  color:#94A3B8;white-space:pre-wrap;word-wrap:break-word;line-height:1.7;
+  border:1px solid var(--hairline)}
+.console-success{color:var(--compliant-green)}
+.console-error{color:var(--violation-red)}
+
+/* The stamp the dashboard uses for a failed claim. A forged receipt earns it. */
+.rubber-stamp{position:absolute;top:24px;right:24px;font-family:var(--font-display);
+  font-size:22px;font-weight:600;color:rgba(209,59,59,.95);border:4px solid rgba(209,59,59,.95);
+  padding:8px 16px;text-transform:uppercase;letter-spacing:2px;transform:rotate(-15deg);
+  z-index:10;pointer-events:none;mix-blend-mode:screen}
+textarea.bytes{display:block;font-family:var(--font-mono);font-size:11px;line-height:1.9;width:100%;
+  margin-bottom:24px;min-height:150px;resize:vertical;background:var(--ink);color:var(--dim);
+  border:1px solid var(--hairline-firm);border-radius:5px;padding:14px;word-break:break-all;
+  transition:border-color .16s,color .16s}
+textarea.bytes:focus{border-color:var(--caution-amber);color:var(--paper)}
+textarea.bytes.dirty{border-color:var(--violation-red)}
+/* Sixty-four hex digits are the most graphic object on this page and they were
+   set at body size. At this scale the comparison is the exhibit: two rows,
+   digit under digit, and when a byte is forged you can see from across the
+   room how little of the digest survived. */
+.hexrow{margin-top:22px}
+.hexrow .lb{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dimmer);margin-bottom:9px}
+.hexline{display:flex;flex-wrap:wrap;gap:6px clamp(7px,1vw,13px);font-family:var(--font-mono);
+  font-size:clamp(12px,1.62vw,21px);line-height:1.5;font-variant-numeric:tabular-nums}
+.hexline .grp{display:flex}
+.hexline .grp span{width:1.08ch;text-align:center;color:var(--dim);
+  transition:color .18s,background-color .18s}
+.hexline .grp span.on{color:var(--compliant-green)}
+.hexline .grp span.off{color:#fff;background:var(--violation-red);border-radius:2px;
+  box-shadow:0 0 10px rgba(209,59,59,.45)}
+.hexrow.sealed .hexline{color:var(--paper)}
+.hexrow.sealed .grp span{color:#B9C4DA}
+.state{margin-top:24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px}
+.state .word{font-family:var(--font-display);font-size:clamp(28px,4.2vw,40px);font-weight:600;
+  line-height:1;font-variation-settings:"opsz" 40}
+.state .word.ok{color:var(--compliant-green)} .state .word.bad{color:var(--violation-red)}
+.state .said{font-size:14px;color:var(--dim);max-width:60ch;line-height:1.62}
+.state .said b{color:var(--paper);font-weight:500}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.btn{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:1px solid var(--hairline-firm);border-radius:3px;color:var(--paper);
+  padding:10px 14px;cursor:pointer;transition:.16s}
+.btn:hover:not([disabled]){border-color:#CBD5E1}
+.btn.p{background:var(--signal-blue);border-color:var(--signal-blue)}
+.btn.p:hover{background:var(--blue-lift);border-color:var(--blue-lift)}
+.btn.danger{border-color:rgba(209,59,59,.55);color:#F2A9A9}
+.btn.danger:hover{border-color:var(--violation-red);color:#fff}
+.btn[disabled]{opacity:.38;cursor:not-allowed}
+
+/* ---------- colophon ----------------------------------------------------- */
+.colophon{margin:clamp(70px,9vw,104px) 0 0;padding:40px 0 72px;
+  border-top:1px solid var(--hairline);font-family:var(--font-mono);font-size:11.5px;
+  line-height:1.9;color:var(--dimmer);max-width:94ch}
+.colophon b{color:var(--dim);font-weight:400}
+.colophon a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--hairline)}
+.colophon a:hover{color:#fff}
+
+/* ---------- no JavaScript ------------------------------------------------ */
+.noscript-panel{max-width:760px;margin:56px auto;padding:28px 32px;border:1px solid var(--hairline);
+  background:var(--panel);font-size:15px;line-height:1.65}
+.noscript-panel h1{font-family:var(--font-display);font-size:27px;margin:0 0 14px}
+.noscript-panel p{margin:0 0 12px;color:var(--dim)}
+.noscript-panel code{color:#B9C4DA}
+
+/* ---------- responsive --------------------------------------------------- */
+/* The strip is a bonus, not load-bearing: below this width its labels scale
+   down with the viewBox until they are unreadable, and every fact it carries
+   -- the moment, the hold, the span -- is already set in type in the slate. */
+@media(max-width:640px){
+  .strip{display:none}
+  /* Stacked, because a wrapped inline list leaves separators orphaned at the
+     start and end of lines. */
+  .facts-line{flex-direction:column;align-items:flex-start;gap:8px}
+  .facts-line span:not(.prov-path)+span:not(.prov-path)::before{content:none}
+  .wait .track{grid-template-columns:1fr;gap:14px 0}
+  .wait .anchor.to{text-align:left}
+  .wait .rail2{height:42px}
+}
+@media(max-width:820px){
+  .grow{grid-template-columns:28px minmax(0,1fr);gap:0 11px}
+  .grow .call{grid-column:2;text-align:left;margin-top:7px}
+  .slate .verdict-cell{margin-left:0;text-align:left}
+  .beat{padding-left:37px}
+  .beat .pin{width:23px;height:23px;font-size:10px}
+  .beat::before{left:11px}
+}
+
+/* ---------- motion ------------------------------------------------------- */
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+  html{scroll-behavior:auto}
+  .grow.pending{opacity:1;transform:none}
+  .grow.pending .call{visibility:visible}
+}
+
+/* ---------- print. Judges save PDFs; a dark ground prints as a slab. ------ */
+@media print{
+  :root{--ink:#fff;--ink-lift:#fff;--panel:#fff;--panel-lift:#fff;--paper:#111;--body-text:#111;
+    --dim:#444;--dimmer:#666;--hairline:rgba(0,0,0,.16);--hairline-firm:rgba(0,0,0,.28)}
+  body{background:#fff;color:#111}
+  #spine,.prov-toggle,.transport,.hero-acts,.copy,.acts,.recap .jump,.picker{display:none!important}
+  #content{margin-left:0;padding:0}
+  .lockup img{filter:none}
+  .act{break-inside:avoid;page-break-inside:avoid;margin-top:14mm}
+  .act-title,h1,h2,h3{break-after:avoid;page-break-after:avoid}
+  .grow.pending{opacity:1;transform:none}
+  .grow.pending .call{visibility:visible}
+  /* Colours set as literals rather than tokens do not follow the palette
+     inversion above, and on white they come out as near-invisible grey.
+     Every one of them is named here so nothing prints washed out. */
+  code,.grow.quiet .gname,.grow.na .gname,.standfirst em,.hexline .grp span{color:#111}
+  .grow.na .gstat,.tie,.node .hs{color:#555}
+  .glance .gh,.slate .lb,.tally .lb,.hexrow .lb,.beat .when{color:#555}
+  .node.tainted{opacity:1}
+  .compare[open]>summary,.compare{display:block}
+  .scroller,.bench-body{overflow:visible!important}
+  textarea.bytes{min-height:0;height:auto;color:#111;border-color:rgba(0,0,0,.28)}
+  .colophon{padding-bottom:0}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:9px;word-break:break-all}
+}
+</style>
+</head>
+<body>
+
+<nav id="spine" aria-label="Exhibits"><!-- built by JS from the exhibits present --></nav>
+
+<button class="prov-toggle" id="prov" type="button" aria-pressed="false"
+        title="Show the JSON field behind every figure on this page">
+  <span class="prov-dot"></span> trace every number
+</button>
+
+<main id="content"></main>
+
+<noscript>
+  <div class="noscript-panel">
+    <h1>This page replays a run, so it needs JavaScript</h1>
+    <p>Every figure here is computed in your browser from <code>episodes.js</code> &mdash;
+       including the SHA-256 digests, which are recomputed with the Web Crypto API rather
+       than asserted. There is no server to do it for you, and a page that printed hashes it
+       had not checked would be the one thing this project exists to argue against.</p>
+    <p>The same episodes are in <code>docs/theatre/episodes/*.json</code>, and the run they
+       came from is one command: <code>python -m vasool.demo --scenario card_expired
+       --time 19:30 --replay</code>.</p>
+  </div>
+</noscript>
+
+<script src="episodes.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var EPISODES = window.VASOOL_EPISODES || [];
+  var GENESIS = "0".repeat(64);
+
+  /* The policy plane's own severity order. `resolve()` below reproduces
+     `verdict.py::resolve`, and the tally under the board checks the result
+     against the `resolved` field the demo exported from the domain object on a
+     different code path -- so agreement is shown per ruling, not claimed. */
+  var SEV = { NOT_APPLICABLE: 0, ALLOW: 1, DEFER: 2, ESCALATE: 3, BLOCK: 4 };
+  var CLS = { NOT_APPLICABLE: "na", ALLOW: "allow", DEFER: "defer",
+              ESCALATE: "escalate", BLOCK: "block" };
+  var HUE = { NOT_APPLICABLE: "na", ALLOW: "compliant-green", DEFER: "caution-amber",
+              ESCALATE: "signal-blue", BLOCK: "violation-red" };
+
+  /* The headline is assembled from decisions and receipt outcomes, in order --
+     never from the summary sentence. An ALLOW is dropped: it is the permission,
+     not the event, and the receipt that follows says what actually happened. */
+  var SPOKEN = { DEFER: ["Deferred", "defer"], ESCALATE: ["Escalated", "escalate"],
+                 BLOCK: ["Blocked", "block"] };
+  var OUTCOME = { executed: ["Executed", "allow"], recovered: ["Recovered", "recover"],
+                  blocked: ["Blocked", "block"], escalated: ["Escalated", "escalate"],
+                  refused: ["Refused", "block"] };
+
+  var STEP_MS = 52, CYCLE_PAUSE_MS = 850;
+
+  var cur = 0, sel = 0;
+  var boardCycle = 0, playing = false, timer = null, built = null, mount = null;
+  var sealNodes = [], sealTies = [];
+
+  function reduced() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  /* ---------- tiny DOM -------------------------------------------------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined && text !== null) { n.textContent = String(text); }
+    return n;
+  }
+  function t(x) { return document.createTextNode(x); }
+  function put(parent) {
+    for (var i = 1; i < arguments.length; i++) {
+      if (arguments[i]) { parent.appendChild(arguments[i]); }
+    }
+    return parent;
+  }
+  function sv(tag, attrs) {
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+  function svText(attrs, text) { var n = sv("text", attrs); n.textContent = text; return n; }
+
+  /* Provenance mode, as on the dashboard: every rendered value can name the
+     JSON path it was read from. The claim this page makes is that it shows a
+     run it did not invent, and a value you cannot trace is not evidence. */
+  function from(node, path) {
+    node.setAttribute("data-src", path);
+    put(node, el("span", "prov-path", path));
+    return node;
+  }
+
+  /* ---------- reading an episode ---------------------------------------- */
+  function ep() { return EPISODES[cur]; }
+  function fieldOf(step, label) {
+    if (!step) { return null; }
+    var f = (step.fields || []).find(function (x) { return x.label === label; });
+    return f ? f.value : null;
+  }
+  function notesOf(node) { return (node.notes || []).join(" ").trim(); }
+  function rulings(e) { return e.steps.filter(function (s) { return s.verdicts.length; }); }
+  function receiptsOf(e) {
+    var out = [];
+    e.steps.forEach(function (s) { s.receipts.forEach(function (r) { out.push(r); }); });
+    return out;
+  }
+  function resolve(verdicts) {
+    return verdicts.reduce(function (top, v) {
+      return SEV[v.decision] > SEV[top] ? v.decision : top;
+    }, "NOT_APPLICABLE");
+  }
+  /* Every time in an episode is IST and is only ever compared with another
+     from the same episode, so reading them all as if UTC leaves differences
+     exact and keeps the arithmetic in one place. */
+  function minutes(iso) {
+    if (!iso || iso.length < 16) { return null; }
+    var d = iso.slice(0, 10).split("-"), c = iso.slice(11, 16).split(":");
+    var ms = Date.UTC(+d[0], +d[1] - 1, +d[2], +c[0], +c[1]);
+    return isFinite(ms) ? ms / 60000 : null;
+  }
+  function hhmm(iso) { return iso ? iso.slice(11, 16) : ""; }
+  function ymd(iso) { return iso ? iso.slice(0, 10) : ""; }
+  function hourOf(iso) { return iso ? +iso.slice(11, 13) + (+iso.slice(14, 16)) / 60 : null; }
+  function span(a, b) {
+    var m = minutes(b) - minutes(a);
+    if (!isFinite(m) || m <= 0) { return null; }
+    return { total: m, text: Math.floor(m / 60) + "h "
+      + String(Math.round(m % 60)).padStart(2, "0") + "m" };
+  }
+  function isSimulated() {
+    var f = (ep().banner.fields || []).find(function (x) { return x.label === "provenance"; });
+    return /SIMULATED/i.test(f ? f.value : "");
+  }
+  function lower(x) { return String(x).toLowerCase().replace(/_/g, " "); }
+  function pretty(name) { return name.replace(/_/g, " ").replace(/1930/g, "19:30"); }
+  function rupees(paise) {
+    return "₹" + (paise / 100).toLocaleString("en-IN",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function outcomeHue(outcome) {
+    return { executed: "compliant-green", recovered: "compliant-green",
+             blocked: "violation-red", escalated: "signal-blue" }[outcome] || "dim";
+  }
+
+  /* A ruling that resolved to DEFER, the instant it was held to, and the guard
+     that decided it -- read off the verdicts rather than off any sentence. */
+  function deferrals(e) {
+    var chains = rulings(e), found = [];
+    chains.forEach(function (c, i) {
+      if (resolve(c.verdicts) !== "DEFER" || !c.at) { return; }
+      var by = c.verdicts
+        .filter(function (v) { return v.decision === "DEFER" && v.defer_until; })
+        .sort(function (a, b) { return minutes(a.defer_until) - minutes(b.defer_until); })
+        .pop();
+      if (by) { found.push({ from: c, until: by.defer_until, by: by, next: chains[i + 1] || null }); }
+    });
+    return found;
+  }
+
+  /* The clause that decided the episode belongs to its most severe ruling --
+     not to the last one, and never merely to the first verdict carrying a
+     statute. On a page whose whole subject is which regulation refused what,
+     an episode deferred under RBI FPC 55 and then allowed would otherwise be
+     credited to whichever guard happened to sit first in the chain. */
+  function decider(e) {
+    var best = null;
+    rulings(e).forEach(function (c) {
+      var top = resolve(c.verdicts);
+      if (SEV[top] > SEV.ALLOW && (!best || SEV[top] > SEV[best.decision])) {
+        best = { ruling: c, decision: top };
+      }
+    });
+    if (!best) { return null; }
+    var by = best.ruling.verdicts.filter(function (v) {
+      return v.decision === best.decision && v.statute;
+    })[0];
+    return by ? { ruling: best.ruling, decision: best.decision, verdict: by } : null;
+  }
+
+  function headline(e) {
+    var words = [];
+    e.steps.forEach(function (s) {
+      if (s.verdicts.length) {
+        var spoken = SPOKEN[resolve(s.verdicts)];
+        if (spoken) { words.push(spoken); }
+      }
+      s.receipts.forEach(function (r) {
+        words.push(OUTCOME[r.outcome]
+          || [r.outcome.charAt(0).toUpperCase() + r.outcome.slice(1), "allow"]);
+      });
+    });
+    return words.filter(function (w, i) { return i === 0 || w[0] !== words[i - 1][0]; });
+  }
+
+  /* The `resolved` field reads "DEFER -> 2026-08-22 08:09 IST": the decision is
+     the first token, the rest is the instant it was held to. */
+  function statedResolution(e, ruling) {
+    var i = e.steps.indexOf(ruling), found = null;
+    for (var k = i + 1; k < e.steps.length && k <= i + 2; k++) {
+      found = found || fieldOf(e.steps[k], "resolved");
+    }
+    return found;
+  }
+
+  function sha(text) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
+      var out = "";
+      new Uint8Array(buf).forEach(function (b) { out += b.toString(16).padStart(2, "0"); });
+      return out;
+    });
+  }
+
+  /* ====================================================================== */
+  /* the hero                                                                */
+  /* ====================================================================== */
+  function heroNode() {
+    var e = ep(), chains = rulings(e), rs = receiptsOf(e), holds = deferrals(e);
+    var hero = el("header", "hero");
+    var main = el("div", "hero-main");
+
+    var kicker = el("p", "kicker");
+    put(kicker, t("Episode record"), el("span", "sep", "·"), t(pretty(e.name)));
+    put(main, kicker);
+
+    var h1 = el("h1", "verdict");
+    headline(e).forEach(function (w, i) {
+      if (i) { put(h1, el("span", "join", ", then ")); }
+      put(h1, el("span", "v-" + w[1], w[0]));
+    });
+    put(h1, t("."));
+    put(main, from(h1, "steps[].verdicts[].decision + steps[].receipts[].outcome"));
+
+    var dek = el("p", "dek");
+    var entity = null, intervention = null;
+    e.steps.forEach(function (s) {
+      entity = entity || fieldOf(s, "entity_id");
+      intervention = intervention || fieldOf(s, "intervention");
+    });
+    if (intervention) {
+      put(dek, el("b", null, intervention), t(" for "),
+        el("code", null, entity || "this payment"), t("."));
+    }
+    var deciding = decider(e);
+    if (deciding) {
+      put(dek, t(" The chain resolved on "),
+        el("span", "clause", deciding.verdict.statute),
+        t(" — " + deciding.verdict.guard + ", ruling " + lower(deciding.decision)
+          + (deciding.ruling.at ? " at " + hhmm(deciding.ruling.at) + " IST" : "") + "."));
+    } else if (chains.length) {
+      put(dek, t(" All " + chains[0].verdicts.length
+        + " guards evaluated it and none objected."));
+    }
+    var recovered = rs.reduce(function (a, r) {
+      return Math.max(a, r.amount_recovered_paise || 0);
+    }, 0);
+    if (recovered) { put(dek, t(" "), el("b", null, rupees(recovered)), t(" recovered.")); }
+    if (dek.childNodes.length) { put(main, dek); }
+
+    var acts = el("div", "hero-acts");
+    var watch = el("button", "cta primary");
+    watch.type = "button";
+    put(watch, el("span", "glyph", "▶"), t("Watch the chain rule"));
+    watch.onclick = function () {
+      var board = document.getElementById("exhibit-t1");
+      if (board) { board.scrollIntoView({ block: "start" }); }
+      showCycle(0, true);
+      playing = true;
+      paintTransport();
+    };
+    var breakIt = el("a", "cta");
+    breakIt.href = "#exhibit-t3";
+    put(breakIt, el("span", "glyph", "✂"), t("Break the seal yourself"));
+    put(acts, watch, breakIt);
+    put(main, acts);
+
+    var sim = isSimulated();
+    var chip = el("p", "chip " + (sim ? "sim" : "obs"));
+    put(chip, el("span", "dot"),
+      t(sim ? "Simulated payload — this failure reason has never been produced live"
+            : "Captured live — this envelope came from Razorpay"));
+    put(main, from(chip, "banner.fields[provenance]"));
+    put(hero, main);
+    var glance = glanceNode(chains);
+    if (glance) { put(hero, glance); }
+
+    put(hero, waitNode(e, chains, holds));
+    put(hero, factsLine(e, chains, rs, sim));
+
+    var banner = el("div", "prov-banner");
+    put(banner, el("b", null, "Provenance mode. "),
+      t("Every value on this page now shows the field of "),
+      el("code", null, "docs/theatre/episodes/" + e.name + ".json"),
+      t(" it was read from. Nothing here is typed by hand and nothing is recovered by parsing prose — the demo's English summary appears once, in quotation marks, as the log line it is. The same rule governs the dashboard, and for the same reason: a number you cannot trace is not a result."));
+    put(hero, banner);
+    return hero;
+  }
+
+  /* The episode's one memorable fact, at the scale it deserves. A machine that
+     could have sent the message at 19:30 did not, and waited twelve hours and
+     thirty-nine minutes because a clause said so -- so the span is set in the
+     display face on the rail between the two moments, with the guard and its
+     own sentence underneath. Where nothing was deferred the same object says
+     the opposite thing: it never waited, and it never acted either. */
+  function waitNode(e, chains, holds) {
+    var box = el("div", "wait");
+    var d = holds[0];
+    var held = d ? span(d.from.at, d.until) : null;
+
+    if (d && held) {
+      put(box, el("p", "wl", "It did not wait because it was idle"));
+      var track = el("div", "track");
+      var fromCell = el("div", "anchor");
+      put(fromCell, t(hhmm(d.from.at) + " IST"), el("small", null, ymd(d.from.at)));
+      var toCell = el("div", "anchor to");
+      put(toCell, t(hhmm(d.until) + " IST"), el("small", null, ymd(d.until)));
+      var rail = el("div", "rail2");
+      put(rail, el("span", "cap a"), el("span", "cap b"), el("span", "span", held.text));
+      put(track, fromCell, rail, toCell);
+      put(box, from(track, "verdicts[].defer_until"));
+
+      var why = el("p", "why");
+      put(why, t("Held by "), el("b", null, d.by.guard), t(" under "),
+        el("span", "clause", d.by.statute || "no clause"), t("."));
+      if (d.by.reason) {
+        put(why, t(" In its own words: "), el("q", null, d.by.reason));
+      }
+      put(why, t(" The check runs when the action is dispatched, not when it was queued — "
+        + "an action queued at 17:05 and due at 19:05 is judged at 19:05."));
+      put(box, why);
+      return box;
+    }
+
+    /* No deferral. The interesting fact is the refusal itself, or its absence. */
+    var deciding = decider(e);
+    var only = chains.length ? chains[0] : null;
+    var top = only ? resolve(only.verdicts) : null;
+    box.className = "wait stood";
+    box.style.setProperty("--stood", "var(--" + (top ? HUE[top] : "na") + ")");
+    put(box, el("p", "wl", deciding ? "It never acted" : "Nothing barred it"));
+    var track2 = el("div", "track");
+    var at = el("div", "anchor");
+    if (only && only.at) { put(at, t(hhmm(only.at) + " IST"), el("small", null, ymd(only.at))); }
+    /* One cap, not two: there is a single moment here and a rail with a dot at
+       each end would imply a second one that never happened. The past-tense
+       word comes from the same table the headline uses, so the figure and the
+       headline cannot drift into disagreeing about what took place. */
+    var rail2 = el("div", "rail2");
+    var word = deciding
+      ? (SPOKEN[deciding.decision] ? SPOKEN[deciding.decision][0] : deciding.decision)
+      : "Allowed";
+    put(rail2, el("span", "cap a"), el("span", "span", word.toUpperCase()));
+    put(track2, at, rail2, el("div", "anchor to"));
+    put(box, track2);
+
+    var why2 = el("p", "why");
+    if (deciding) {
+      put(why2, t("Refused by "), el("b", null, deciding.verdict.guard), t(" under "),
+        el("span", "clause", deciding.verdict.statute), t("."));
+      if (deciding.verdict.reason) {
+        put(why2, t(" In its own words: "), el("q", null, deciding.verdict.reason));
+      }
+      put(why2, t(" Nothing was retried, nothing was sent, and the refusal was written to the "
+        + "ledger with the clause attached — a receipt is issued for the decision not to act."));
+    } else if (only) {
+      put(why2, t("All " + only.verdicts.length + " guards evaluated the action and none "
+        + "objected, so no statute barred it. What happens next is the taxonomy's routing, "
+        + "not a refusal."));
+    }
+    put(box, why2);
+    return box;
+  }
+
+  /* One line where four boxes used to repeat what the panel already said. */
+  function factsLine(e, chains, rs, sim) {
+    var guards = chains.length ? chains[0].verdicts.length : 0;
+    var line = el("p", "facts-line");
+    var cell = function (build) { var s = el("span"); build(s); put(line, s); };
+    cell(function (s) {
+      put(s, el("b", null, String(chains.length * guards || "—")), el("span", null, "guard rulings"));
+    });
+    cell(function (s) {
+      put(s, el("b", null, String(guards)), el("span", null, "guards × " + chains.length
+        + " evaluation" + (chains.length === 1 ? "" : "s") + ", never short-circuited"));
+    });
+    cell(function (s) {
+      put(s, el("b", null, String(rs.length)),
+        el("span", null, "hash-chained receipt" + (rs.length === 1 ? "" : "s")));
+    });
+    cell(function (s) {
+      put(s, el("b", sim ? "sim" : "obs", sim ? "SIMULATED" : "OBSERVED"),
+        el("span", null, "payload"));
+    });
+    return from(line, "steps[].verdicts + steps[].receipts + banner.fields[provenance]");
+  }
+
+  /* The whole chain as one dense mark: one tick per guard, per ruling, sized
+     and coloured by what that guard actually returned. It is the only object
+     on the page that looks decorative and it is not -- every tick is a verdict,
+     and the tall amber one is the reason this episode has a story at all.
+     Clicking a row runs that ruling on the board below. */
+  function glanceNode(chains) {
+    if (!chains.length) { return null; }
+    var box = el("div", "glance");
+    put(box, el("div", "gh", "The episode at a glance"));
+
+    chains.forEach(function (c, i) {
+      var top = resolve(c.verdicts);
+      var row = el("button", "grow2");
+      row.type = "button";
+
+      var l1 = el("span", "gl1");
+      put(l1, el("span", "gwhen", "Ruling " + (i + 1)
+        + (c.at ? "  ·  " + hhmm(c.at) + " IST" : "")));
+      put(l1, el("span", "gres d-" + CLS[top], top));
+      put(row, l1);
+
+      var bars = el("span", "bars");
+      c.verdicts.forEach(function (v) {
+        var tick = el("i", "b-" + CLS[v.decision]);
+        tick.title = v.guard + " — " + v.decision;
+        put(bars, tick);
+      });
+      put(row, bars);
+
+      row.setAttribute("aria-label", "Ruling " + (i + 1)
+        + (c.at ? " at " + hhmm(c.at) + " IST" : "") + " resolved " + lower(top)
+        + ". Replay it on the board.");
+      row.onclick = function () {
+        playing = false;
+        showCycle(i, true);
+        var board = document.getElementById("exhibit-t1");
+        if (board) { board.scrollIntoView({ block: "start" }); }
+      };
+      put(box, row);
+    });
+
+    /* The arc closes with what the rulings produced. Without this the panel
+       stops mid-story and leaves the column short; with it, the reader has the
+       whole episode -- every ruling and every seal -- in one object. */
+    receiptsOf(ep()).forEach(function (r, k) {
+      var row = el("button", "grow2 gseal");
+      row.type = "button";
+      var l1 = el("span", "gl1");
+      put(l1, el("span", "gwhen", "Receipt " + (k + 1)));
+      var oc = el("span", "gres");
+      oc.textContent = r.outcome.toUpperCase();
+      oc.style.color = "var(--" + outcomeHue(r.outcome) + ")";
+      put(l1, oc);
+      put(row, l1);
+      put(row, el("span", "ghash", r.hash.slice(0, 24) + "…"));
+      row.setAttribute("aria-label", "Receipt " + (k + 1) + ", outcome " + r.outcome
+        + ". Verify it yourself.");
+      row.onclick = function () {
+        sel = k;
+        render();
+        var seal = document.getElementById("exhibit-t3");
+        if (seal) { seal.scrollIntoView({ block: "start" }); }
+      };
+      put(box, row);
+    });
+
+    var foot = el("div", "gfoot");
+    put(foot, el("b", null, chains[0].verdicts.length + " guards"),
+      t(", every one of them, every time. A tall mark is a guard that intervened; "
+        + "a short one allowed; the shortest had no jurisdiction and says so."));
+    put(box, foot);
+    return box;
+  }
+
+  /* ====================================================================== */
+  /* ACT I -- the board                                                      */
+  /* ====================================================================== */
+  function actRuling() {
+    var e = ep(), chains = rulings(e);
+    if (!chains.length) { return null; }
+
+    var act = el("section", "exhibit band-independent");
+    act.id = "exhibit-t1";
+    act.setAttribute("aria-labelledby", "exhibit-t1-h");
+    put(act, el("span", "band-tag",
+      "§2a · simulator-independent — read from the ledger, not from the code"));
+    var h2 = el("h2", "exhibit-title", "EXHIBIT T1 — The Ruling Board");
+    h2.id = "exhibit-t1-h";
+    put(act, h2);
+
+    var stand = el("p", "standfirst");
+    put(stand, el("b", null, "Every guard rules, every time, and severity decides. "),
+      t("The chain never stops at the first objection — which is the design ablation A4 measures the absence of, and the reason a receipt can name every clause an action violated rather than whichever guard happened to be checked first. "),
+      el("b", null, "NOT_APPLICABLE is a ruling, not a gap"),
+      t(": the guard had no jurisdiction over this action, which is a different compliance claim from having examined it and allowed it."));
+    put(act, stand);
+
+    mount = el("div");
+    put(act, mount);
+
+    if (chains.length > 1) { put(act, compareNode(e, chains)); }
+    return act;
+  }
+
+  /* One evaluation, built once: the rows are kept so the reveal can settle
+     them one at a time rather than rebuilding the DOM on every tick. */
+  function buildBoard(e, chains, i) {
+    var chain = chains[i], verdicts = chain.verdicts;
+    var top = resolve(verdicts);
+    var stepIndex = e.steps.indexOf(chain);
+    var board = el("div", "board");
+
+    /* -- transport ----------------------------------------------------- */
+    var bar = el("div", "transport");
+    var play = el("button", "tbtn play");
+    play.type = "button";
+    var prev = el("button", "tbtn");
+    prev.type = "button";
+    put(prev, el("span", "glyph", "◀"), t("Prev"));
+    prev.disabled = i === 0;
+    prev.onclick = function () { playing = false; showCycle(i - 1, false); };
+    var next = el("button", "tbtn");
+    next.type = "button";
+    put(next, t("Next"), el("span", "glyph", "▶"));
+    next.disabled = i >= chains.length - 1;
+    next.onclick = function () { playing = false; showCycle(i + 1, false); };
+    play.onclick = function () {
+      if (playing) { playing = false; stopTimer(); paintTransport(); return; }
+      playing = true;
+      showCycle(0, true);
+      paintTransport();
+    };
+    var pos = el("span", "pos num", "Ruling " + (i + 1) + " of " + chains.length
+      + (chain.at ? "  ·  " + hhmm(chain.at) + " IST · " + ymd(chain.at) : ""));
+    var dots = el("div", "cycle-dots");
+    chains.forEach(function (c, k) {
+      var d = el("button");
+      d.type = "button";
+      d.setAttribute("aria-label", "Ruling " + (k + 1));
+      d.setAttribute("aria-current", k === i ? "true" : "false");
+      d.onclick = function () { playing = false; showCycle(k, false); };
+      put(dots, d);
+    });
+    put(bar, play, prev, next, el("span", "spacer"), pos, dots);
+    put(board, bar);
+
+    /* -- slate ---------------------------------------------------------- */
+    var slate = el("div", "slate");
+    function cell(label, value, path, cls) {
+      var c = el("div", "cell" + (cls ? " " + cls : ""));
+      put(c, el("div", "lb", label), el("div", "vv" + (cls === "when-cell" ? " when" : ""), value));
+      return path ? from(c, path) : c;
+    }
+    var proposal = fieldOf(chain, "proposal");
+    if (proposal) {
+      put(slate, cell("Proposed action", proposal, "steps[" + stepIndex + "].fields[proposal]"));
+    }
+    if (chain.at) {
+      put(slate, cell("Evaluated at", hhmm(chain.at) + " IST · " + ymd(chain.at),
+        "steps[" + stepIndex + "].at", "when-cell"));
+    }
+    var verdictCell = el("div", "cell verdict-cell");
+    put(verdictCell, el("div", "lb", "Resolved · most severe"));
+    var big = el("div", "big pending", top);
+    big.style.color = "var(--" + HUE[top] + ")";
+    put(verdictCell, big);
+    put(slate, from(verdictCell, "resolve(steps[" + stepIndex + "].verdicts[].decision)"));
+    var strip = clockStrip(e, chains, i);
+    if (strip) { put(slate, strip); }
+    put(board, slate);
+
+    /* -- the rows ------------------------------------------------------- */
+    var list = el("ul", "rows");
+    var rows = [];
+    verdicts.forEach(function (v, gi) {
+      var loud = v.decision !== "ALLOW" && v.decision !== "NOT_APPLICABLE";
+      var movedHere = i > 0 && chains[i - 1].verdicts[gi]
+        && chains[i - 1].verdicts[gi].decision !== v.decision;
+      var row = el("li", "grow pending "
+        + (loud ? "loud is-" + CLS[v.decision] + " " : "")
+        + (v.decision === "NOT_APPLICABLE" ? "na " : "quiet ")
+        + (movedHere ? "moved" : ""));
+      put(row, el("span", "ix num", String(gi + 1).padStart(2, "0")));
+
+      var mid = el("span");
+      put(mid, el("span", "gname", v.guard));
+      if (v.statute) { put(mid, el("span", "gstat", v.statute)); }
+      if (loud && v.reason) { put(mid, el("span", "gsaid", v.reason)); }
+      (v.obligations || []).forEach(function (o) {
+        put(mid, el("span", "gobl", "obligation · "
+          + (typeof o === "string" ? o : JSON.stringify(o))));
+      });
+      put(row, mid);
+
+      var call = el("span", "call");
+      put(call, el("span", "chipd c-" + CLS[v.decision], v.decision));
+      if (v.decision === "DEFER" && v.defer_until) {
+        put(call, el("span", "held", "→ " + hhmm(v.defer_until) + " IST"));
+      }
+      put(row, from(call, "steps[" + stepIndex + "].verdicts[" + gi + "].decision"));
+
+      put(list, row);
+      rows.push(row);
+    });
+    put(board, list);
+
+    /* -- tally ---------------------------------------------------------- */
+    var allowed = verdicts.filter(function (v) { return v.decision === "ALLOW"; }).length;
+    var na = verdicts.filter(function (v) { return v.decision === "NOT_APPLICABLE"; }).length;
+    var loudN = verdicts.length - allowed - na;
+    var tally = el("div", "tally");
+    put(tally, el("span", "lb", "Tally"));
+    var txt = el("span", "txt");
+    put(txt, el("b", null, verdicts.length + " ruled"), t(": "));
+    if (loudN) { put(txt, el("b", null, loudN + " objected"), t(", ")); }
+    put(txt, t(allowed + " allowed, " + na + " had no jurisdiction."));
+    put(tally, txt);
+
+    var stated = statedResolution(e, chain);
+    if (stated) {
+      var agrees = stated.trim().split(/\s+/)[0].toUpperCase() === top;
+      put(tally, el("span", "agree" + (agrees ? "" : " no"), agrees
+        ? "recomputed here, and it agrees with the run's own decision line"
+        : "DISAGREES with the run: " + stated));
+    }
+    put(board, tally);
+
+    return {
+      node: board,
+      rows: rows,
+      play: play,
+      settleTo: function (k) {
+        rows.forEach(function (r, ri) {
+          r.classList.toggle("pending", ri >= k);
+          r.classList.toggle("settled", ri < k);
+          r.classList.toggle("just", ri === k - 1);
+        });
+      },
+      settleAll: function () {
+        rows.forEach(function (r) {
+          r.classList.toggle("pending", false);
+          r.classList.toggle("settled", true);
+          r.classList.toggle("just", false);
+        });
+        big.classList.toggle("pending", false);
+      }
+    };
+  }
+
+  function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
+
+  function showCycle(i, animate) {
+    stopTimer();
+    var e = ep(), chains = rulings(e);
+    if (!chains.length || !mount) { return; }
+    boardCycle = Math.max(0, Math.min(i, chains.length - 1));
+    built = buildBoard(e, chains, boardCycle);
+    mount.textContent = "";
+    mount.appendChild(built.node);
+    paintTransport();
+    if (animate && !reduced()) { stepReveal(0); } else { built.settleAll(); }
+  }
+
+  function stepReveal(k) {
+    if (!built) { return; }
+    built.settleTo(k);
+    if (k < built.rows.length) {
+      timer = setTimeout(function () { stepReveal(k + 1); }, STEP_MS);
+      return;
+    }
+    built.settleAll();
+    var chains = rulings(ep());
+    if (playing && boardCycle < chains.length - 1) {
+      timer = setTimeout(function () { showCycle(boardCycle + 1, true); }, CYCLE_PAUSE_MS);
+    } else {
+      playing = false;
+      paintTransport();
+    }
+  }
+
+  function paintTransport() {
+    if (!built) { return; }
+    built.play.textContent = "";
+    put(built.play, el("span", "glyph", playing ? "❚❚" : "▶"),
+      t(playing ? "Pause" : "Replay"));
+  }
+
+  /* The day, the moments the chain was consulted, and the span it was held
+     across. No regulatory window is drawn: this page is not the source of what
+     the law says -- the guard is, and the guard's own sentence is on its row. */
+  function clockStrip(e, chains, current) {
+    var timed = chains.filter(function (c) { return c.at; });
+    if (!timed.length) { return null; }
+    var holds = deferrals(e);
+    var W = 1000, H = 62, L = 10, R = 990, y = 40, bandH = 15;
+    var x = function (h) { return L + (R - L) * (Math.max(0, Math.min(24, h)) / 24); };
+
+    var wrap = el("div", "strip");
+    var svg = sv("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    put(svg, sv("rect", { x: L, y: y - bandH / 2, width: R - L, height: bandH,
+      fill: "rgba(255,255,255,.03)", stroke: "rgba(255,255,255,.09)", rx: 2 }));
+
+    holds.forEach(function (d) {
+      var a = hourOf(d.from.at), b = hourOf(d.until);
+      var segs = b >= a ? [[a, b]] : [[a, 24], [0, b]];
+      segs.forEach(function (s) {
+        put(svg, sv("rect", { x: x(s[0]), y: y - bandH / 2,
+          width: Math.max(1, x(s[1]) - x(s[0])), height: bandH,
+          fill: "rgba(244,196,48,.26)", stroke: "rgba(244,196,48,.62)", rx: 2 }));
+      });
+      /* Labelled inside its widest segment: an unlabelled amber band is just a
+         second track, and the span is the only number this figure carries. */
+      var held = span(d.from.at, d.until);
+      var widest = segs.slice().sort(function (m, n) {
+        return (n[1] - n[0]) - (m[1] - m[0]);
+      })[0];
+      if (held && x(widest[1]) - x(widest[0]) > 88) {
+        put(svg, svText({ x: (x(widest[0]) + x(widest[1])) / 2, y: y + 3.5, fill: "#F4C430",
+          "font-size": "9", "letter-spacing": ".16em",
+          "font-family": "IBM Plex Mono, monospace", "text-anchor": "middle" },
+          "HELD " + held.text.toUpperCase()));
+      }
+    });
+    [0, 6, 12, 18, 24].forEach(function (hr) {
+      put(svg, svText({ x: x(hr), y: y + bandH / 2 + 15, fill: "#64748B", "font-size": "9.5",
+        "letter-spacing": ".08em", "font-family": "IBM Plex Mono, monospace",
+        "text-anchor": hr === 0 ? "start" : hr === 24 ? "end" : "middle" },
+        String(hr).padStart(2, "0") + ":00"));
+    });
+
+    var marks = [];
+    timed.forEach(function (c) {
+      var hr = hourOf(c.at), k = chains.indexOf(c);
+      var at = marks.find(function (m) { return Math.abs(m.hour - hr) < 0.3; });
+      if (at) { at.cycles.push(k); } else { marks.push({ hour: hr, at: c.at, cycles: [k] }); }
+    });
+    marks.forEach(function (m) {
+      var here = m.cycles.indexOf(current) >= 0;
+      var hx = x(m.hour);
+      var colour = here ? "#EDEAE0" : "#5A688A";
+      put(svg, sv("line", { x1: hx, y1: y - 20, x2: hx, y2: y + bandH / 2,
+        stroke: colour, "stroke-width": here ? 2 : 1 }));
+      put(svg, sv("circle", { cx: hx, cy: y, r: here ? 4.5 : 3, fill: colour,
+        stroke: "#121B30", "stroke-width": 1.5 }));
+      put(svg, svText({ x: hx, y: y - 25, fill: colour, "font-size": "10.5",
+        "font-family": "IBM Plex Mono, monospace",
+        "text-anchor": m.hour > 21 ? "end" : m.hour < 3 ? "start" : "middle" }, hhmm(m.at)));
+    });
+
+    /* role="img" means assistive technology reads this label and ignores every
+       mark inside it, so the label carries the same facts the marks do. */
+    svg.setAttribute("aria-label", "A 24-hour strip. The chain was evaluated at "
+      + marks.map(function (m) { return hhmm(m.at); }).join(", ")
+      + (holds.length ? ". The action was held from " + hhmm(holds[0].from.at)
+          + " to " + hhmm(holds[0].until)
+          + (ymd(holds[0].until) !== ymd(holds[0].from.at) ? " the following day" : "") + "."
+        : ". Nothing was held."));
+    put(wrap, svg);
+    return wrap;
+  }
+
+  function compareNode(e, chains) {
+    var box = el("details", "compare");
+    put(box, el("summary", null, "Compare all " + chains.length
+      + " rulings side by side, with the rows that moved"));
+    var scroller = el("div", "scroller");
+    var table = el("table", "chain");
+    put(table, el("caption", null, "Guard rulings by evaluation · "
+      + chains[0].verdicts.length + " guards × " + chains.length + " evaluations"));
+
+    var thead = el("thead"), hrow = el("tr");
+    var corner = el("th", null, "Guard · clause");
+    corner.scope = "col";
+    put(hrow, corner);
+    chains.forEach(function (c, i) {
+      var th = el("th");
+      th.scope = "col";
+      put(th, t("Ruling " + (i + 1)));
+      if (c.at) { put(th, el("span", "at", hhmm(c.at) + " IST · " + ymd(c.at))); }
+      put(hrow, th);
+    });
+    put(thead, hrow);
+    put(table, thead);
+
+    var tbody = el("tbody");
+    chains[0].verdicts.forEach(function (v0, gi) {
+      var row = chains.map(function (c) { return c.verdicts[gi]; });
+      var moved = row.some(function (v, i) { return i && v.decision !== row[i - 1].decision; });
+      var dim = row.every(function (v) { return v.decision === "NOT_APPLICABLE"; });
+      var tr = el("tr", (moved ? "moved " : "") + (dim ? "dim" : ""));
+      var th = el("th");
+      th.scope = "row";
+      put(th, el("span", "gn", v0.guard));
+      if (v0.statute) { put(th, el("span", "st", v0.statute)); }
+      put(tr, th);
+      row.forEach(function (v) {
+        var td = el("td");
+        put(td, el("span", "dc d-" + CLS[v.decision], v.decision));
+        put(tr, td);
+      });
+      put(tbody, tr);
+    });
+    put(table, tbody);
+
+    var tfoot = el("tfoot"), frow = el("tr");
+    var fth = el("th", null, "Resolved");
+    fth.scope = "row";
+    put(frow, fth);
+    chains.forEach(function (c) { put(frow, el("td", null, resolve(c.verdicts))); });
+    put(tfoot, frow);
+    put(table, tfoot);
+
+    put(scroller, table);
+    put(box, scroller);
+    return box;
+  }
+
+  /* ====================================================================== */
+  /* ACT II -- the record                                                    */
+  /* ====================================================================== */
+  function actRecord() {
+    var e = ep();
+    var act = el("section", "exhibit band-independent");
+    act.id = "exhibit-t2";
+    act.setAttribute("aria-labelledby", "exhibit-t2-h");
+    put(act, el("span", "band-tag",
+      "replay · every step the demo took, in the order it took them"));
+    var h2 = el("h2", "exhibit-title", "EXHIBIT T2 — The Complete Transcript");
+    h2.id = "exhibit-t2-h";
+    put(act, h2);
+
+    var stand = el("p", "standfirst");
+    put(stand, el("b", null, "This page does not know what a card is. "),
+      t("A step carrying verdicts renders as a ruling, a step carrying receipts renders as a seal, and a step carrying neither renders as fact — that is the entire dispatch, which is why the same page will replay a mandate episode without an edit. The lines in grey are the run's own transcript, unedited."));
+    put(act, stand);
+
+    var reel = el("div", "reel");
+    e.steps.forEach(function (s) { put(reel, beatNode(s, e)); });
+    put(act, reel);
+
+    put(act, replayNode(e));
+
+    var summary = e.conclusion && e.conclusion.text;
+    if (summary) {
+      var note = el("p", "footnote");
+      put(note, el("b", null, "The demo's own last line, verbatim: "),
+        t("“" + summary + "” "),
+        t("It is quoted rather than parsed. Every verdict, time and outcome on this page is read from the structured fields beside it — turn on provenance mode and each one will name the field it came from."));
+      put(act, note);
+    }
+    return act;
+  }
+
+  function beatNode(step, e) {
+    var kind = step.verdicts.length ? "is-ruling" : step.receipts.length ? "is-seal" : "is-fact";
+    var beat = el("div", "beat " + kind);
+    put(beat, el("div", "pin num", step.n));
+
+    var hd = el("div", "hd");
+    put(hd, el("span", "ttl",
+      step.title.replace(/\s+--\s+/g, " · ").replace(/\s*\([^)]*\)\s*$/, "")));
+    if (step.at) { put(hd, el("span", "when", hhmm(step.at) + " IST · " + ymd(step.at))); }
+    put(beat, hd);
+
+    var body = el("div", "body");
+    if (step.verdicts.length) { put(body, recapNode(step, e)); }
+    else if (step.receipts.length) {
+      step.receipts.forEach(function (r) { put(body, stubNode(r)); });
+    } else {
+      var facts = factsNode(step.fields, e.steps.indexOf(step));
+      if (facts) { put(body, facts); }
+    }
+    var notes = notesOf(step);
+    if (notes) { put(body, el("p", "transcript", notes)); }
+    put(beat, body);
+    return beat;
+  }
+
+  /* A ruling appears here in one line and sends you to the board rather than
+     reprinting thirteen rows the board already shows. Two full copies of the
+     same chain is how a page starts disagreeing with itself. */
+  function recapNode(step, e) {
+    var chains = rulings(e), i = chains.indexOf(step);
+    var top = resolve(step.verdicts);
+    var box = el("div", "recap");
+    var word = el("span", "rv", top);
+    word.style.color = "var(--" + HUE[top] + ")";
+    put(box, word);
+
+    /* Only an objection decides anything. Naming the first ALLOW verdict that
+       happens to carry a statute would credit a cycle nobody refused to
+       whichever guard sits first in the chain with a clause on it -- the same
+       misattribution `decider()` exists to prevent, one layer down. */
+    var by = SEV[top] > SEV.ALLOW ? step.verdicts.filter(function (v) {
+      return v.decision === top && v.statute;
+    })[0] : null;
+    var rt = el("span", "rt");
+    put(rt, t(step.verdicts.length + " guards ruled"));
+    if (by) { put(rt, t(" · decided by "), el("b", null, by.guard), t(" · " + by.statute)); }
+    else { put(rt, t(" · none objected, so nothing barred the action")); }
+    put(box, rt);
+
+    var jump = el("button", "jump");
+    jump.type = "button";
+    jump.textContent = "Watch ruling " + (i + 1);
+    jump.onclick = function () {
+      playing = false;
+      showCycle(i, true);
+      var board = document.getElementById("exhibit-t1");
+      if (board) { board.scrollIntoView({ block: "start" }); }
+    };
+    put(box, jump);
+    return box;
+  }
+
+  function factsNode(fields, stepIndex) {
+    if (!fields || !fields.length) { return null; }
+    var wide = fields.some(function (f) { return String(f.value).length > 88; });
+    var dl = el("dl", "facts" + (wide ? " wide" : ""));
+    fields.forEach(function (f) {
+      var row = el("div");
+      put(row, el("dt", null, f.label), el("dd", null, f.value));
+      put(dl, from(row, "steps[" + stepIndex + "].fields[" + f.label + "]"));
+    });
+    return dl;
+  }
+
+  function stubNode(r) {
+    var box = el("div", "stub");
+    var l1 = el("div", "l1");
+    put(l1, el("span", "rid", r.receipt_id));
+    var oc = el("span", "oc", r.outcome);
+    oc.style.color = "var(--" + outcomeHue(r.outcome) + ")";
+    put(l1, oc);
+    put(box, l1);
+    var hs = el("p", "hs");
+    put(hs, el("b", null, "hash  "), t(r.hash));
+    if (r.amount_recovered_paise) {
+      put(hs, el("br"), el("b", null, "value "), t(rupees(r.amount_recovered_paise)));
+    }
+    put(box, hs);
+    return box;
+  }
+
+  /* The argv the exporter recorded, offered as the command that reproduces
+     this page's data. It is in the JSON and was going unused, which is a
+     strange thing to withhold from a page whose argument is reproducibility. */
+  function replayNode(e) {
+    var line = "python -m vasool.demo " + (e.argv || []).join(" ");
+    var box = el("div", "replay");
+    put(box, el("div", "cap", "Reproduce every byte above"));
+    var row = el("div", "cmd");
+    var pre = el("pre");
+    put(pre, el("span", "sigil", "$ "), t(line));
+    var copy = el("button", "copy", "Copy");
+    copy.type = "button";
+    copy.onclick = function () {
+      var done = function () {
+        copy.textContent = "Copied";
+        setTimeout(function () { copy.textContent = "Copy"; }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(line).then(done, function () { copy.textContent = "Select it"; });
+      } else { copy.textContent = "Select it"; }
+    };
+    put(row, pre, copy);
+    put(box, row);
+    return from(box, "argv");
+  }
+
+  /* ====================================================================== */
+  /* ACT III -- the seal                                                     */
+  /* ====================================================================== */
+  function actSeal() {
+    var e = ep(), rs = receiptsOf(e);
+    var act = el("section", "exhibit band-independent");
+    act.id = "exhibit-t3";
+    act.setAttribute("aria-labelledby", "exhibit-t3-h");
+    put(act, el("span", "band-tag",
+      "verifiable · recomputed in your browser, from the bytes shipped"));
+    var h2 = el("h2", "exhibit-title", "EXHIBIT T3 — Cryptographic Ledger");
+    h2.id = "exhibit-t3-h";
+    put(act, h2);
+
+    var stand = el("p", "standfirst");
+    put(stand, t("A receipt's digest covers its own contents "), el("em", null, "and"),
+      t(" the digest before it — including every verdict in Exhibit T1. "),
+      el("b", null, "A ruling cannot be rewritten after the fact without breaking every receipt that follows"),
+      t(". Nothing below asks you to trust this page: the bytes are shipped verbatim and hashed by your own browser."));
+    put(act, stand);
+
+    if (!rs.length) { return act; }
+    if (sel >= rs.length) { sel = 0; }
+
+    var links = el("div", "links");
+    sealNodes = [];
+    sealTies = [];
+    rs.forEach(function (r, i) {
+      if (i) {
+        var tie = el("div", "tie");
+        put(tie, el("span", "el", "└"),
+          el("span", "tietext", "its prev_hash is the digest above, character for character"));
+        put(links, tie);
+        sealTies.push(tie);
+      }
+      var node = el("div", "node" + (i === sel ? " sel" : ""));
+      var b = el("button");
+      b.type = "button";
+      b.setAttribute("aria-pressed", i === sel ? "true" : "false");
+      var l1 = el("div", "l1");
+      put(l1, el("span", "rid", r.receipt_id));
+      var oc = el("span", "oc", r.outcome);
+      oc.style.color = "var(--" + outcomeHue(r.outcome) + ")";
+      put(l1, oc);
+      put(b, l1);
+      var hs = el("p", "hs");
+      put(hs, el("b", null, "prev  "),
+        t(r.prev_hash === GENESIS ? "genesis — nothing precedes it" : r.prev_hash),
+        el("br"), el("b", null, "hash  "), t(r.hash));
+      put(b, hs);
+      b.onclick = function () {
+        sel = i;
+        render();
+        var target = document.getElementById("exhibit-t3");
+        if (target) { target.scrollIntoView({ block: "start" }); }
+      };
+      put(node, b);
+      put(links, node);
+      sealNodes.push(node);
+    });
+    put(act, links);
+    put(act, benchNode(rs));
+    return act;
+  }
+
+  function benchNode(rs) {
+    var r = rs[sel];
+    var bench = el("div", "verifier-box");
+    var stamp = null;
+
+    put(bench, el("h3", null, "Live Cryptographic Verifier"));
+    var bp = el("p", "lede2");
+    put(bp, t("Recompute the deterministic SHA-256 digest live in-browser with the Web Crypto API. Below are the "),
+      el("b", null, "exact bytes"), t(" " + r.receipt_id
+      + "'s hash was computed over — not a rendering of them. Change one character, or press "),
+      el("b", null, "Forge the amount"),
+      t(", and watch how much of the digest moves. A verifier that can only ever succeed proves nothing."));
+    put(bench, bp);
+
+    var body = el("div");
+    var ta = el("textarea", "bytes");
+    ta.spellcheck = false;
+    ta.setAttribute("aria-label", "Canonical payload for " + r.receipt_id + ", editable");
+    ta.value = r.canonical_payload;
+    put(body, from(el("div"), "steps[].receipts[" + sel + "].canonical_payload"));
+
+    var rowNodes = {};
+    function hexRow(label, extra) {
+      var wrap = el("div", "hexrow" + (extra ? " " + extra : ""));
+      put(wrap, el("p", "lb", label));
+      var line = el("div", "hexline");
+      put(wrap, line);
+      rowNodes[label] = wrap;
+      return line;
+    }
+    /* Grouped in bytes: sixty-four evenly spaced characters are a wall, pairs
+       with a gap every eight are countable -- and how many moved is the whole
+       point of the row. */
+    function paint(line, digest, against) {
+      line.textContent = "";
+      var moved = 0;
+      for (var g = 0; g < 8; g++) {
+        var grp = el("span", "grp");
+        for (var k = 0; k < 8; k++) {
+          var idx = g * 8 + k, ch = digest.charAt(idx);
+          var same = !against || ch === against.charAt(idx);
+          if (!same) { moved++; }
+          put(grp, el("span", against ? (same ? "on" : "off") : null, ch));
+        }
+        put(line, grp);
+      }
+      return moved;
+    }
+    var sealed = hexRow("Sealed on the receipt", "sealed");
+    var sealedRow = rowNodes["Sealed on the receipt"];
+    var fresh = hexRow("Recomputed in your browser, character by character");
+    var freshRow = rowNodes["Recomputed in your browser, character by character"];
+    paint(sealed, r.hash, null);
+
+    var console_ = el("div");
+    console_.id = "verifier-console";
+    console_.setAttribute("role", "status");
+    console_.setAttribute("aria-live", "polite");
+    put(body, console_);
+
+    /* The dashboard's console voice, because this is the same instrument in
+       the same document. A rubber stamp lands on the box when the seal is
+       broken -- the mark Exhibit F uses for a claim that did not hold. */
+    function say(ok, build) {
+      console_.textContent = "";
+      var line = el("span", ok ? "console-success" : "console-error",
+        (ok ? "> INTACT. " : "> BROKEN. "));
+      put(console_, line);
+      var rest = el("span");
+      build(rest);
+      put(console_, rest);
+
+      if (stamp) { stamp.remove(); stamp = null; }
+      if (!ok) {
+        stamp = el("div", "rubber-stamp", "Forged");
+        put(bench, stamp);
+      }
+    }
+    /* Forging a byte has to be visible where the claim was made. The sentence
+       says every receipt after this one becomes unverifiable; the chain above
+       is where a reader can see whether that is true, so it is where the
+       breakage is drawn -- this receipt's seal broken, and every one that
+       commits to it marked unverifiable, with the links between them severed. */
+    function markChain(broken) {
+      sealNodes.forEach(function (node, i) {
+        node.classList.toggle("broken", broken && i === sel);
+        node.classList.toggle("tainted", broken && i > sel);
+      });
+      sealTies.forEach(function (tie, i) {
+        /* tie i sits between receipt i and receipt i+1 */
+        tie.classList.toggle("severed", broken && i >= sel);
+        var text = tie.querySelector(".tietext");
+        if (text) {
+          text.textContent = (broken && i >= sel)
+            ? "broken — the digest above is no longer the one this receipt commits to"
+            : "its prev_hash is the digest above, character for character";
+        }
+      });
+    }
+
+    function refresh() {
+      var edited = ta.value !== r.canonical_payload;
+      ta.classList.toggle("dirty", edited);
+      restore.disabled = !edited;
+      return sha(ta.value).then(function (h) {
+        var moved = paint(fresh, h, r.hash);
+        markChain(moved !== 0);
+        say(moved === 0, function (into) {
+          if (moved === 0) {
+            put(into, t("These are the bytes that were sealed, and your browser computed that digest just now. None of it was taken on trust."));
+          } else {
+            put(into, el("b", null, moved + " of 64 hex digits changed"),
+              t(". That is the avalanche: one edited character flips about half the bits of the digest, so almost every hex digit lands somewhere else — there is no such thing as a small change to a hash. A forged ledger cannot be quietly patched, and because each receipt commits to the one before it, every receipt after this one is now unverifiable too."));
+          }
+        });
+      });
+    }
+    ta.addEventListener("input", refresh);
+
+    var acts = el("div", "input-group");
+    var verify = el("button", "btn p", "Verify the whole chain");
+    verify.type = "button";
+    verify.onclick = function () {
+      ta.value = r.canonical_payload;
+      refresh().then(function () { verifyChain(rs, say); });
+    };
+
+    /* The design asks for a control that breaks the seal on purpose, so the
+       page ships one rather than hoping a visitor edits a byte of JSON by
+       hand: it raises the money by a factor of ten -- the forgery somebody
+       would actually attempt -- and lets the arithmetic answer. */
+    var tamper = el("button", "btn danger", "Forge the amount");
+    tamper.type = "button";
+    tamper.onclick = function () {
+      var money = /"(amount_recovered_paise|amount_paise)":([1-9]\d*)/;
+      var hit = ta.value.match(money);
+      if (hit) {
+        ta.value = ta.value.replace(money, '"' + hit[1] + '":' + hit[2] + "0");
+      } else {
+        var digit = ta.value.search(/[1-9]/);
+        if (digit >= 0) { ta.value = ta.value.slice(0, digit) + "0" + ta.value.slice(digit + 1); }
+      }
+      refresh().then(function () { ta.focus(); });
+    };
+
+    var restore = el("button", "btn", "Restore the bytes");
+    restore.type = "button";
+    restore.disabled = true;
+    restore.onclick = function () { ta.value = r.canonical_payload; refresh(); };
+
+    put(acts, verify, tamper, restore);
+    put(bench, ta, acts, sealedRow, freshRow, body);
+
+    refresh();
+    return bench;
+  }
+
+  function verifyChain(rs, say) {
+    var prev = GENESIS, bad = [];
+    rs.reduce(function (chain, r) {
+      return chain.then(function () {
+        return sha(r.canonical_payload).then(function (h) {
+          if (h !== r.hash) { bad.push(r.receipt_id + ": digest mismatch"); }
+          if (r.prev_hash !== prev) { bad.push(r.receipt_id + ": broken link"); }
+          prev = r.hash;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      say(!bad.length, function (into) {
+        if (bad.length) { put(into, t(bad.join(" · "))); }
+        else {
+          put(into, el("b", null, rs.length + " receipt" + (rs.length === 1 ? "" : "s")),
+            t(" recomputed and linked back to genesis, in your browser, just now. The shipped bytes are the bytes that were sealed."));
+        }
+      });
+    });
+  }
+
+  /* ====================================================================== */
+  /* chrome -- the dashboard's, so the two pages read as one document        */
+  /* ====================================================================== */
+  function brandHeader() {
+    var head = el("div", "brand-header");
+    var logo = document.createElement("img");
+    logo.src = "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg";
+    logo.alt = "Razorpay";
+    logo.height = 32;
+    logo.onerror = function () { logo.style.display = "none"; };
+    put(head, logo);
+    var h2 = el("h2");
+    put(h2, el("span", "vasool-tag", "VASOOL"));
+    put(head, h2);
+    var back = el("a", "back", "← Back to Full Report Card");
+    back.href = "../index.html";
+    put(head, back);
+    return head;
+  }
+
+  /* Five episodes need a selector and the dashboard has no equivalent, so it
+     lives in the content column rather than in a masthead this page no longer
+     has. Arrow keys move between them, as a tablist should. */
+  function picker() {
+    var box = el("div", "picker");
+    put(box, el("span", "plabel", "Episode"));
+    var list = el("div", "tablist");
+    list.setAttribute("role", "tablist");
+    list.setAttribute("aria-label", "Episode");
+    EPISODES.forEach(function (e, i) {
+      var b = el("button", "tab", pretty(e.name));
+      b.type = "button";
+      b.id = "tab-" + i;
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", i === cur ? "true" : "false");
+      b.tabIndex = i === cur ? 0 : -1;
+      b.onclick = function () { show(i); };
+      b.onkeydown = function (ev) {
+        var d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+        if (!d) { return; }
+        ev.preventDefault();
+        var n = (i + d + EPISODES.length) % EPISODES.length;
+        show(n);
+        var next = document.getElementById("tab-" + n);
+        if (next) { next.focus(); }
+      };
+      put(list, b);
+    });
+    put(box, list);
+    return box;
+  }
+
+  /* Lifted from docs/index.html: a mark per exhibit, the current one lit, a
+     progress fill at the foot. `T` is the top of the record; I, II and III are
+     the three exhibits, so the rail reads as a table of contents rather than
+     as three unexplained letters. */
+  function buildSpine(exhibits) {
+    var spine = document.getElementById("spine");
+    spine.textContent = "";
+    var entries = [{ id: "content", label: "T", title: "Top of the record" }];
+    var numerals = ["I", "II", "III", "IV", "V"];
+    exhibits.forEach(function (node, i) {
+      var title = node.querySelector(".exhibit-title");
+      entries.push({
+        id: node.id,
+        label: numerals[i] || String(i + 1),
+        title: title ? title.textContent.trim() : node.id,
+      });
+    });
+
+    var marks = [];
+    entries.forEach(function (entry) {
+      var a = el("a", "spine-mark", entry.label);
+      a.href = "#" + entry.id;
+      a.title = entry.title;
+      a.setAttribute("aria-label", "Jump to " + entry.title);
+      put(spine, a);
+      marks.push(a);
+    });
+
+    var progress = el("div", "spine-progress");
+    var fill = el("div", "spine-progress-fill");
+    put(progress, fill);
+    put(spine, progress);
+
+    function onScroll() {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      fill.style.height = max > 0
+        ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) + "%"
+        : "0%";
+      /* Sticky: in the gaps between exhibits no section owns the band, and
+         clearing the mark there makes the spine flicker off and read as
+         broken. Hold the last one. */
+      var active = entries[0].id;
+      entries.forEach(function (entry) {
+        var node = document.getElementById(entry.id);
+        if (node && node.getBoundingClientRect().top <= window.innerHeight * 0.34) {
+          active = entry.id;
+        }
+      });
+      marks.forEach(function (a, i) {
+        a.classList.toggle("is-here", entries[i].id === active);
+      });
+    }
+    if (window.__spineScroll) { window.removeEventListener("scroll", window.__spineScroll); }
+    window.__spineScroll = onScroll;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+  }
+
+  function show(i) {
+    stopTimer();
+    playing = false;
+    cur = i;
+    sel = 0;
+    boardCycle = 0;
+    render();
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function render() {
+    var content = document.getElementById("content");
+    content.textContent = "";
+    put(content, brandHeader(), picker(), heroNode());
+
+    var exhibits = [actRuling(), actRecord(), actSeal()].filter(Boolean);
+    exhibits.forEach(function (node) { content.appendChild(node); });
+
+    var colophon = el("footer", "colophon");
+    put(colophon,
+      t("Replayed from "), el("b", null, "vasool/demo.py"),
+      t("'s own traversal through a second emitter — the same walk "),
+      el("b", null, "data/golden/*.txt"),
+      t(" pins byte for byte, so this page cannot show an episode the agent did not run. Receipts are hashed with the fixed test pepper so anyone can reproduce them. "),
+      el("b", null, "tests/test_theatre.py"),
+      t(" checks every digest, every link, that the guards named here are the registered chain, and that every clause quoted here still matches the guard that owns it — so this page cannot go on quoting a regulation the code has stopped citing. "),
+      el("b", null, "The dashboard"),
+      t(" reports the hundred thousand runs behind this one: "));
+    var link = el("a", null, "the agent report card");
+    link.href = "../index.html";
+    put(colophon, link, t("."));
+    content.appendChild(colophon);
+
+    buildSpine(exhibits);
+
+    /* The board is mounted last so the reveal starts against a laid-out page,
+       and it opens on the ruling that actually decided the episode rather than
+       on the last one. Playing straight through would leave a visitor who
+       scrolls down later looking at a cycle where nothing objected -- the
+       least interesting thirteen rows on the page. `Replay` still runs the
+       whole sequence from the first ruling, and reduced motion never animates. */
+    var chains = rulings(ep());
+    if (chains.length) {
+      var d = decider(ep());
+      playing = false;
+      showCycle(d ? chains.indexOf(d.ruling) : 0, true);
+    }
+  }
+
+  var prov = document.getElementById("prov");
+  prov.onclick = function () {
+    var on = document.body.classList.toggle("provenance");
+    prov.setAttribute("aria-pressed", on ? "true" : "false");
+  };
+
+  if (!EPISODES.length) {
+    document.getElementById("content").textContent =
+      "episodes.js did not load. Run: python3 tools/export_episodes.py";
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>

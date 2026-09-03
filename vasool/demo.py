@@ -51,6 +51,7 @@ import pathlib
 import sys
 import textwrap
 from datetime import datetime, timedelta, timezone
+from typing import Protocol
 
 from dotenv import load_dotenv
 
@@ -279,31 +280,127 @@ def clock_start(event: FailureEvent, time_str: str | None) -> datetime:
 
 
 # ---------------------------------------------------------------------------
-# printing
+# emitting
 # ---------------------------------------------------------------------------
+class StageEmitter(Protocol):
+    """Where a stage's narration goes.
+
+    Every `print` this module used to make now passes through one of these
+    seven calls, and the module has no other opinion about output. Two things
+    consume them: `TextEmitter`, which reproduces the screen recording
+    byte-for-byte, and `tools/export_episodes.py`'s JSON emitter, which feeds
+    the episode theatre.
+
+    **Why a seam rather than a second exporter.** The theatre replays a real
+    episode, and a page that re-derived one from a parallel implementation
+    could drift from the agent without anything failing. Here there is one
+    traversal and two renderings of it, so `data/golden/*.txt` -- which pins
+    the text to the byte -- also pins the traversal the JSON is built from. A
+    divergence would have to survive five byte-exact fixtures to reach the
+    page.
+
+    `verdict` and `receipt` take the domain objects rather than formatted
+    strings, because the JSON needs `canonical_payload` and every statute
+    verbatim, and reformatting text back into structure is how a demo starts
+    lying about what it demonstrated.
+    """
+
+    def rule(self, char: str = "=") -> None: ...
+    def stage(self, n: int, title: str) -> None: ...
+    def kv(self, label: str, value: object, *, width: int = 13) -> None: ...
+    def block(self, label: str, text: str, *, width: int = 13) -> None: ...
+    def verdict(self, v: Verdict) -> None: ...
+    def receipt(self, r: Receipt) -> None: ...
+    def line(self, text: str = "") -> None: ...
+    def summary(self, text: str, *, receipt_hash: str | None) -> None: ...
+
+
+class TextEmitter:
+    """The screen recording. Byte-identical to what this module printed before
+    the seam existed -- `tests/test_demo.py` holds it to that."""
+
+    def rule(self, char: str = "=") -> None:
+        print(char * WIDTH)
+
+    def stage(self, n: int, title: str) -> None:
+        print()
+        print(f"[{n}] {title}")
+
+    def kv(self, label: str, value: object, *, width: int = 13) -> None:
+        print(f"{INDENT}{label:<{width}}: {value}")
+
+    def block(self, label: str, text: str, *, width: int = 13) -> None:
+        wrapped = textwrap.wrap(text, width=WIDTH - width - len(INDENT) - 2) or [""]
+        print(f"{INDENT}{label:<{width}}: {wrapped[0]}")
+        for line in wrapped[1:]:
+            print(f"{INDENT}{'':<{width}}  {line}")
+
+    def verdict(self, v: Verdict) -> None:
+        name_w, decision_w = 20, 15
+        line = f"{INDENT}{v.guard:<{name_w}}{v.decision.value:<{decision_w}}"
+        if v.decision is Decision.DEFER and v.defer_until is not None:
+            line += f"-> {_fmt_ist(v.defer_until)}"
+        print(line.rstrip())
+        pad = " " * (name_w + decision_w)
+        wrap_width = WIDTH - len(INDENT) - len(pad)
+        if v.statute:
+            for line in textwrap.wrap(v.statute, width=wrap_width):
+                print(f"{INDENT}{pad}{line}")
+        if v.reason:
+            for line in textwrap.wrap(v.reason, width=wrap_width):
+                print(f"{INDENT}{pad}{line}")
+
+    def receipt(self, r: Receipt) -> None:
+        self.kv("outcome", r.outcome.value)
+        self.kv("receipt_id", r.receipt_id)
+        self.kv("hash", r.hash)
+        self.kv("prev_hash", r.prev_hash)
+        if r.amount_recovered_paise:
+            self.kv("recovered", _rupees(r.amount_recovered_paise))
+        print()
+
+    def line(self, text: str = "") -> None:
+        print(text)
+
+    def summary(self, text: str, *, receipt_hash: str | None) -> None:
+        for line in textwrap.wrap(text, width=WIDTH):
+            print(line)
+        if receipt_hash:
+            print(f"Receipt: {receipt_hash}")
+
+
+_EMIT: StageEmitter = TextEmitter()
+"""The active emitter. A module global rather than an argument threaded through
+forty functions: this is a CLI script with one entry point, and `run()` sets it
+on every invocation so a caller can never inherit the previous run's."""
+
+
+def set_emitter(emitter: StageEmitter) -> StageEmitter:
+    """Swap the emitter and return the one replaced. `run()` resets it."""
+    global _EMIT
+    previous, _EMIT = _EMIT, emitter
+    return previous
+
+
 class _Stages:
     def __init__(self) -> None:
         self._n = 0
 
     def next(self, title: str) -> None:
         self._n += 1
-        print()
-        print(f"[{self._n}] {title}")
+        _EMIT.stage(self._n, title)
 
 
 def _rule(char: str = "=") -> None:
-    print(char * WIDTH)
+    _EMIT.rule(char)
 
 
 def _kv(label: str, value: object, *, width: int = 13) -> None:
-    print(f"{INDENT}{label:<{width}}: {value}")
+    _EMIT.kv(label, value, width=width)
 
 
 def _block(label: str, text: str, *, width: int = 13) -> None:
-    wrapped = textwrap.wrap(text, width=WIDTH - width - len(INDENT) - 2) or [""]
-    print(f"{INDENT}{label:<{width}}: {wrapped[0]}")
-    for line in wrapped[1:]:
-        print(f"{INDENT}{'':<{width}}  {line}")
+    _EMIT.block(label, text, width=width)
 
 
 def _rupees(paise: int) -> str:
@@ -315,19 +412,7 @@ def _fmt_ist(when: datetime) -> str:
 
 
 def _print_verdict(v: Verdict) -> None:
-    name_w, decision_w = 20, 15
-    line = f"{INDENT}{v.guard:<{name_w}}{v.decision.value:<{decision_w}}"
-    if v.decision is Decision.DEFER and v.defer_until is not None:
-        line += f"-> {_fmt_ist(v.defer_until)}"
-    print(line.rstrip())
-    pad = " " * (name_w + decision_w)
-    wrap_width = WIDTH - len(INDENT) - len(pad)
-    if v.statute:
-        for line in textwrap.wrap(v.statute, width=wrap_width):
-            print(f"{INDENT}{pad}{line}")
-    if v.reason:
-        for line in textwrap.wrap(v.reason, width=wrap_width):
-            print(f"{INDENT}{pad}{line}")
+    _EMIT.verdict(v)
 
 
 _LIVE_CAVEAT = (
@@ -348,21 +433,15 @@ def _print_live_caveat() -> None:
     of item 1 is that this is on screen before anything acts, not tucked
     into the `mode:` line after the run is already under way."""
     _rule("-")
-    print("LIVE MODE")
+    _EMIT.line("LIVE MODE")
     for line in textwrap.wrap(_LIVE_CAVEAT, width=WIDTH):
-        print(line)
+        _EMIT.line(line)
     _rule("-")
-    print()
+    _EMIT.line()
 
 
 def _print_receipt(r: Receipt) -> None:
-    _kv("outcome", r.outcome.value)
-    _kv("receipt_id", r.receipt_id)
-    _kv("hash", r.hash)
-    _kv("prev_hash", r.prev_hash)
-    if r.amount_recovered_paise:
-        _kv("recovered", _rupees(r.amount_recovered_paise))
-    print()
+    _EMIT.receipt(r)
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +451,7 @@ def _print_banner(
     args: argparse.Namespace, event: FailureEvent, simulated: bool, start: datetime, *, rolled: bool
 ) -> None:
     _rule()
-    print("  VASOOL -- recovery episode demo")
+    _EMIT.line("  VASOOL -- recovery episode demo")
     _rule()
     _kv("scenario", args.scenario)
     _kv("world", args.world)
@@ -402,12 +481,12 @@ def _stage_signature(stages: _Stages, fixture: dict, simulated: bool) -> None:
             "sent -- tests/test_receiver.py, from data/observed_payloads/."
         )
         for line in textwrap.wrap(note, width=WIDTH - len(INDENT)):
-            print(f"{INDENT}{line}")
+            _EMIT.line(f"{INDENT}{line}")
         return
 
     secret = os.environ.get("RAZORPAY_WEBHOOK_SECRET")
     if not secret:
-        print(f"{INDENT}skipped -- RAZORPAY_WEBHOOK_SECRET not set")
+        _EMIT.line(f"{INDENT}skipped -- RAZORPAY_WEBHOOK_SECRET not set")
         return
 
     raw_body = json.dumps(fixture["body"], separators=(",", ":")).encode()
@@ -427,8 +506,8 @@ def _stage_dedupe(stages: _Stages, fixture: dict, event: FailureEvent, at: datet
     )
     _kv("1st delivery", "stored" if first else "duplicate (unexpected)")
     _kv("2nd delivery", "duplicate, ignored" if not second else "stored (unexpected)")
-    print(f"{INDENT}Razorpay delivers every webhook at least twice (docs/VERIFIED.md);")
-    print(f"{INDENT}dedupe on x-razorpay-event-id is required, not defensive.")
+    _EMIT.line(f"{INDENT}Razorpay delivers every webhook at least twice (docs/VERIFIED.md);")
+    _EMIT.line(f"{INDENT}dedupe on x-razorpay-event-id is required, not defensive.")
 
 
 def _stage_classified_and_proposed(stages: _Stages, scheduled: list[Transition]) -> None:
@@ -443,7 +522,7 @@ def _stage_classified_and_proposed(stages: _Stages, scheduled: list[Transition])
         p = t.proposal
         assert p is not None
         if n:
-            print()
+            _EMIT.line()
         _kv("intervention", f"{p.intervention.value} ({p.role.value})")
         _kv("execute_at", _fmt_ist(p.execute_at))
         if p.channel is not None:
@@ -460,7 +539,7 @@ def _gate_cycle(
 
     stages.next(f"guard chain -- cycle {cycle} ({_fmt_ist(gated.at)})")
     _kv("proposal", f"{gated.proposal.intervention.value} ({gated.proposal.role.value})")
-    print()
+    _EMIT.line()
     for v in gated.chain.verdicts:
         _print_verdict(v)
 
@@ -483,15 +562,15 @@ def _gate_cycle(
 
     consumed = 2
     if outcome.to_state is State.EXECUTING:
-        print(f"{INDENT}executing {gated.proposal.intervention.value}...")
+        _EMIT.line(f"{INDENT}executing {gated.proposal.intervention.value}...")
         consumed = 3  # EXECUTING is immediately followed by AWAITING
     elif outcome.to_state is State.DEFERRED:
         assert outcome.proposal is not None
-        print(f"{INDENT}re-queued for {_fmt_ist(outcome.proposal.execute_at)}")
+        _EMIT.line(f"{INDENT}re-queued for {_fmt_ist(outcome.proposal.execute_at)}")
     elif outcome.to_state is State.BLOCKED:
-        print(f"{INDENT}blocked -- no action will be taken")
+        _EMIT.line(f"{INDENT}blocked -- no action will be taken")
     elif outcome.to_state is State.ESCALATED:
-        print(f"{INDENT}escalated -- handed to a human queue, executor never called")
+        _EMIT.line(f"{INDENT}escalated -- handed to a human queue, executor never called")
 
     return i + consumed
 
@@ -601,7 +680,21 @@ def _stage_settlement_retry(
     machine.settled(entity_id, reason="payment.captured", amount_paise=amount)
 
 
-def run(args: argparse.Namespace) -> int:
+def run(args: argparse.Namespace, *, emitter: StageEmitter | None = None) -> int:
+    """Drive one episode. `emitter` decides what the traversal renders into.
+
+    Defaulted rather than optional-in-spirit: every run installs an emitter and
+    restores the previous one on the way out, so a JSON export cannot leave the
+    module rendering into a buffer that a later `make demo` then writes to.
+    """
+    previous = set_emitter(emitter or TextEmitter())
+    try:
+        return _run(args)
+    finally:
+        set_emitter(previous)
+
+
+def _run(args: argparse.Namespace) -> int:
     # This script's own printed stages are the narrative; the operational
     # log.warning() calls scattered through vasool/ (unregistered templates,
     # unmapped reasons, no comms transport wired) are real signal in
@@ -677,8 +770,8 @@ def run(args: argparse.Namespace) -> int:
             break
         next_time = min(item.proposal.execute_at for item in pending)
         if next_time > clock.now():
-            print()
-            print(f"{INDENT}-- clock fast-forwarded to {_fmt_ist(next_time)} --")
+            _EMIT.line()
+            _EMIT.line(f"{INDENT}-- clock fast-forwarded to {_fmt_ist(next_time)} --")
             clock.advance_to(next_time)
     else:
         print("warning: hit the demo's cycle cap with work still pending", file=sys.stderr)
@@ -750,7 +843,7 @@ def _print_summary(stages: _Stages, machine: PolicyMachine, event: FailureEvent,
     gated = [t for t in machine.transitions if t.to_state is State.GATED]
     final_state = machine.state_of(event.entity_id)
 
-    print()
+    _EMIT.line()
     _rule()
     if gated:
         first_gate = gated[0]
@@ -767,10 +860,7 @@ def _print_summary(stages: _Stages, machine: PolicyMachine, event: FailureEvent,
         )
     else:
         summary = f"SUMMARY: no action was gated for {event.entity_id}."
-    for line in textwrap.wrap(summary, width=WIDTH):
-        print(line)
-    if receipts:
-        print(f"Receipt: {receipts[-1].hash}")
+    _EMIT.summary(summary, receipt_hash=receipts[-1].hash if receipts else None)
     _rule()
 
 
@@ -873,12 +963,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, emitter: StageEmitter | None = None) -> int:
     """`run()` already turns the two expected failure modes (an unknown
     scenario, a malformed --time) into a clean `error:` line and exit 1 —
     nothing is caught here, so a genuine bug still surfaces as a real
     traceback rather than being misreported as one of those two."""
-    return run(parse_args(argv))
+    return run(parse_args(argv), emitter=emitter)
 
 
 if __name__ == "__main__":

@@ -19,9 +19,34 @@ as long as somebody remembers.
 **What is covered, and the one rule behind it.** A file belongs in the
 fingerprint when its contents can change the bytes of a shard row. That reaches
 all of `vasool/` and all of `windtunnel/`, because the agent decides and the
-windtunnel measures and both land in the row. Two files are excluded and each
-exclusion is a claim `tests/windtunnel/test_fingerprint.py` checks rather than
-a judgement recorded here:
+windtunnel measures and both land in the row.
+
+**It also reaches two directories of data, and that is not an afterthought.**
+`windtunnel/payloads.py` does not build events; it reads envelopes off disk and
+overwrites the fields that are the simulator's, leaving the four error fields
+exactly as captured. So the contents of `data/observed_payloads/` and
+`data/stubbed_payloads/` are inputs to every simulated episode, and its index is
+built with `setdefault` over a sorted glob with observed ahead of stubbed --
+which means adding one capture for a reason that already has a stub silently
+changes which envelope every episode of that reason is stamped from. Shard bytes
+move; without these globs the digest would not, and a resume would skip the
+seeds as if nothing had happened. That is INC-003 again, wearing the input
+surface instead of the code surface, and it is the reason the rule is "can it
+change a row" rather than "is it Python".
+
+Nothing else under `data/` is covered, and the omissions are deliberate rather
+than lazy. `data/cassettes/` belongs to the shadow lane, which the runner and
+the evaluator never import, so a re-recording there cannot reach a shard;
+`data/golden/` is read by tests and `tools/update_golden.py`, never on the run
+path; `data/seeds/` holds a `.gitkeep`. Coupling any of them to the fingerprint
+would invalidate an evaluation for a change that provably cannot have touched
+it. `tests/windtunnel/test_fingerprint.py` holds the covered set to exactly the
+directories `windtunnel/payloads.py` actually reads, so a third payload
+directory appearing there fails a test rather than opening the gap again.
+
+Two files are excluded and each exclusion is a claim
+`tests/windtunnel/test_fingerprint.py` checks rather than a judgement recorded
+here:
 
   - `vasool/demo.py` — a CLI entry point. Nothing on the run path imports it,
     which the test asserts by loading `windtunnel.runner` and inspecting
@@ -53,6 +78,7 @@ __all__ = [
     "AGENT_SOURCES",
     "EXCLUDED",
     "MANIFEST_PATH",
+    "PAYLOAD_DIRS",
     "ManifestDrift",
     "agent_fingerprint",
     "agent_sources",
@@ -68,9 +94,23 @@ the environment, because no module in windtunnel/ may read the environment —
 AGENT_SOURCES: tuple[str, ...] = (
     "vasool/**/*.py",
     "windtunnel/**/*.py",
+    "data/observed_payloads/*.json",
+    "data/stubbed_payloads/*.json",
 )
 """Globs, POSIX, relative to ROOT. Broad on purpose: see the module docstring
-on why the rule is "can it change a row" rather than "is it a guard"."""
+on why the rule is "can it change a row" rather than "is it a guard", and on why
+the two payload directories are in here while the rest of `data/` is not."""
+
+PAYLOAD_DIRS: tuple[str, ...] = (
+    "data/observed_payloads",
+    "data/stubbed_payloads",
+)
+"""The payload directories the fingerprint claims to cover.
+
+Named separately from the globs so a test can compare them against the ones
+`windtunnel/payloads.py` actually reads. The claim being checked is not "these
+globs resolve to some files" but "the set of directories feeding the simulator
+is the set being hashed" -- which is the part that would go quietly wrong."""
 
 EXCLUDED: tuple[str, ...] = (
     "vasool/demo.py",

@@ -63,9 +63,16 @@ shadow: ## SS4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls 
 redteam: ## 22 attacks, scored against the registered survival criterion -- writes out/adversary/
 	$(PYTHON) tools/redteam.py
 
-report: ## builds out/report.html and README.md's forest plot from the manifest
+report: ## builds out/report.html, publishes it to docs/, and rebuilds README's forest plot
 	$(PYTHON) tools/report.py
 	$(PYTHON) tools/make_forest_svg.py
+	@# docs/index.html is what GitHub Pages serves. It used to be copied by
+	@# hand and went stale -- publishing a manifest from before shard
+	@# fingerprints existed. Copying it here means the published page cannot
+	@# drift from the generator without somebody skipping this target, and
+	@# tests/test_report.py fails if they do.
+	cp out/report.html docs/index.html
+	@echo "published out/report.html -> docs/index.html"
 
 replay: ## where the determinism assertion actually lives (it is not run here)
 	@echo "make replay: covered by 'make eval', which runs the determinism check"

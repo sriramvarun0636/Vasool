@@ -22,11 +22,15 @@ from windtunnel.evaluate import StaleShard, StaleShards, _done
 from windtunnel.fingerprint import (
     EXCLUDED,
     MANIFEST_PATH,
+    PAYLOAD_DIRS,
+    ROOT,
     ManifestDrift,
     agent_fingerprint,
     agent_sources,
     read_manifest,
 )
+
+MANIFEST = ROOT / "out" / "development" / "evaluation.json"
 
 
 def _tree(root, files: dict[str, str]) -> None:
@@ -83,6 +87,59 @@ class TestTheDeclaredSet:
         sources = agent_sources()
         for excluded in EXCLUDED:
             assert excluded not in sources
+
+    def test_the_covered_payload_dirs_are_the_ones_the_simulator_reads(self):
+        """The gap this closes, held shut by a test rather than by a comment.
+
+        `windtunnel/payloads.py` stamps every simulated event off an envelope on
+        disk and never touches the four error fields, so those directories are
+        inputs to every shard row. Hashing the wrong set of them -- or a third
+        one appearing there later -- would leave the digest blind to an input
+        that moves the data, which is INC-003 on the input surface. So the claim
+        under test is not "these globs match some files" but "the directories
+        the simulator reads are the directories being hashed".
+        """
+        from windtunnel import payloads
+
+        read = {payloads.OBSERVED_DIR.resolve(), payloads.STUBBED_DIR.resolve()}
+        covered = {(ROOT / d).resolve() for d in PAYLOAD_DIRS}
+        assert read == covered, (
+            "windtunnel/payloads.py reads a payload directory the fingerprint "
+            "does not cover (or vice versa). Reconcile PAYLOAD_DIRS and "
+            "AGENT_SOURCES with it deliberately -- a payload directory outside "
+            "the digest can change every shard row without moving the stamp."
+        )
+
+    def test_every_payload_the_simulator_can_load_is_in_the_set(self):
+        sources = set(agent_sources())
+        for directory in PAYLOAD_DIRS:
+            found = sorted((ROOT / directory).glob("*.json"))
+            assert found, f"{directory} is empty — the glob would cover nothing"
+            for path in found:
+                assert path.relative_to(ROOT).as_posix() in sources
+
+    def test_a_changed_payload_changes_the_fingerprint(self, tmp_path):
+        """The whole point of covering them, stated as an assertion."""
+        _tree(tmp_path, dict(BASELINE, **{
+            "data/stubbed_payloads/SIMULATED__payment_failed__card_expired.json":
+                '{"error_reason": "card_expired"}\n',
+        }))
+        before = agent_fingerprint(tmp_path, check_manifest=False)
+        (tmp_path / "data/stubbed_payloads/SIMULATED__payment_failed__card_expired.json"
+         ).write_text('{"error_reason": "card_declined"}\n')
+        assert agent_fingerprint(tmp_path, check_manifest=False) != before
+
+    def test_the_rest_of_data_is_not_in_the_set(self, tmp_path):
+        """Cassettes and goldens are deliberately out. Coupling them would
+        invalidate an evaluation for a change that cannot reach a shard."""
+        _tree(tmp_path, dict(BASELINE, **{
+            "data/cassettes/gemini__abc.json": "{}\n",
+            "data/golden/demo_card_expired_1930.txt": "text\n",
+        }))
+        before = agent_fingerprint(tmp_path, check_manifest=False)
+        (tmp_path / "data/cassettes/gemini__abc.json").write_text('{"changed": true}\n')
+        (tmp_path / "data/golden/demo_card_expired_1930.txt").write_text("other\n")
+        assert agent_fingerprint(tmp_path, check_manifest=False) == before
 
     def test_the_set_covers_the_guards_and_the_outcome_model(self):
         """A fingerprint that missed either would be worse than none: it would
@@ -187,3 +244,32 @@ class TestTheRefusal:
         path = tmp_path / "vasool.jsonl"
         path.write_text(json.dumps({"seed": 0, "agent": "aa"}) + "\n" + '{"seed": 1, "ag')
         assert sorted(_done(path, expected="aa")) == [0]
+
+
+class TestTheManifestRecordsIt:
+    """§1.5: no number is reported from a run whose agent fingerprint is
+    unknown. The evaluator refuses at compute time; this is the other half —
+    that the artifact a reader actually opens carries the stamp."""
+
+    def _manifest(self) -> dict:
+        if not MANIFEST.exists():
+            pytest.skip("no manifest on disk — run `make sweeps` first")
+        return json.loads(MANIFEST.read_text())
+
+    def test_evaluation_json_records_an_agent_fingerprint(self):
+        found = self._manifest().get("agent_fingerprint")
+        assert isinstance(found, str) and len(found) == 64
+        assert all(c in "0123456789abcdef" for c in found)
+
+    def test_every_shard_row_behind_it_carries_that_fingerprint(self):
+        """The manifest and the rows it was aggregated from must name the same
+        agent. A manifest stamped with one digest over shards written by
+        another is precisely the reconciliation INC-003 skipped."""
+        expected = self._manifest().get("agent_fingerprint")
+        shards = sorted((ROOT / "out" / "development" / "base").glob("*.jsonl"))
+        if not shards:
+            pytest.skip("shards are gitignored — nothing to check on a fresh clone")
+        for shard in shards:
+            for line in shard.read_text().splitlines():
+                if line.strip():
+                    assert json.loads(line).get("agent") == expected, shard.name

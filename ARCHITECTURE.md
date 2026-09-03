@@ -143,7 +143,10 @@ shards recorded no evidence of the code that produced them, so a resume by seed
 was correct for a fixed agent and wrong across a change to one, and the
 mitigation was procedural. `windtunnel/fingerprint.py` now hashes the agent-side
 source set into every shard row, and a resume that meets rows from another agent
-refuses rather than skipping the seeds. The entry is recorded as closed rather
+refuses rather than skipping the seeds. "Source" there covers the simulator's
+inputs as well as its code — the two payload directories `windtunnel/payloads.py`
+stamps every event from are inside the digest, because a capture added there
+changes shard bytes exactly as an edited guard does (§10, 2026-09-03). The entry is recorded as closed rather
 than deleted, because INC-003 is the reason the check exists and a reader
 arriving at `_done`'s refusal path deserves to find out why it is there. See
 §10's row of 2026-09-03.

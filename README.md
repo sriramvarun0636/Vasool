@@ -163,7 +163,12 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 ## Verify it yourself
 
-Nothing here asks for trust. The whole artifact regenerates from source.
+Nothing here asks for trust. The whole artifact regenerates from source — and if
+you would rather watch it than run it, **[the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/)**
+replays a real episode in the browser: thirteen guards ruling one at a time, the
+most severe verdict deciding, and a receipt whose hash you can recompute yourself.
+Edit one character of the sealed bytes and the chain breaks in front of you. No
+clone, no Python, no network.
 
 > ⚠️ **Read this before running the block.** `make eval` **overwrites the committed
 > manifest** with a base-protocol-only run. The values reproduce, but the `sweeps`
@@ -179,7 +184,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
 
-pytest                        # 1,412 tests
+pytest                        # 1,471 tests
 make demo                     # one episode, narrated, no network
 make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
 make eval                     # 9 arms x 1,000 seeds (~20 min) -- OVERWRITES out/, see note above
@@ -241,7 +246,10 @@ EOF
 # chain links: True
 ```
 
-Exhibit H on the dashboard does the same computation in your browser with the Web Crypto API.
+Exhibit H on the dashboard does the same computation in your browser with the Web
+Crypto API, and [the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/) hands you the bytes
+in an editable box so you can break a seal on purpose and watch every receipt after
+it fail. A verifier that can only ever succeed is not evidence of much.
 
 ---
 
@@ -470,7 +478,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — thirty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — thirty-eight of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -486,6 +494,7 @@ Every amendment to the protocol after registration — thirty-six of them — is
 | [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |
 | [`vasool/ledger/`](vasool/ledger/) | Hash-chained receipts and `verify_chain` |
 | [`windtunnel/`](windtunnel/) | The simulator, the outcome model, the evaluator, and the adversary |
+| [`docs/theatre/`](docs/theatre/) | **The episode theatre.** One episode replayed in the browser, exported from `vasool/demo.py`'s own traversal — the same one `data/golden/` pins byte-for-byte |
 | [`docs/EVALUATION.md`](docs/EVALUATION.md) | The pre-registered protocol. Append-only. |
 | [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, and §9's known limits |
 | [`docs/VERIFIED.md`](docs/VERIFIED.md) | Everything learned from the live account, including what did not work |

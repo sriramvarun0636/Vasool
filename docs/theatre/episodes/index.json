@@ -1,0 +1,32 @@
+[
+  {
+    "name": "card_expired_1930",
+    "file": "card_expired_1930.json",
+    "steps": 10,
+    "receipts": 1
+  },
+  {
+    "name": "card_expired_1930_settled",
+    "file": "card_expired_1930_settled.json",
+    "steps": 12,
+    "receipts": 2
+  },
+  {
+    "name": "card_expired_1930_hostile",
+    "file": "card_expired_1930_hostile.json",
+    "steps": 8,
+    "receipts": 1
+  },
+  {
+    "name": "payment_risk_check_failed",
+    "file": "payment_risk_check_failed.json",
+    "steps": 8,
+    "receipts": 1
+  },
+  {
+    "name": "insufficient_fund_1930_settled",
+    "file": "insufficient_fund_1930_settled.json",
+    "steps": 14,
+    "receipts": 3
+  }
+]

@@ -65,10 +65,13 @@ def derive_customer_id(contact: str | None, email: str | None, *, pepper: str) -
 
     KNOWN LIMITATION: keying on contact+email means the same human contacting
     with two different emails gets two different customer_ids, silently
-    bypassing FrequencyCapGuard's per-customer contact cap. See adversary
-    attack A13 (duplicate customer records, same human). Not fixed here —
-    fixing it needs a real identity resolution step this session doesn't
-    build.
+    bypassing FrequencyCapGuard's per-customer contact cap. The attack that
+    demonstrates it is **A07**, "one human, two customer ids" — four contacts
+    in seven days against a cap of three — and it is one of the three still
+    open. **A11**, "four episodes, one identity", is its registered control and
+    passes: if a fix ever makes A07 survive while A11 breaks, the failure moved
+    rather than closed. Not fixed here — fixing it needs a real identity
+    resolution step this session doesn't build.
     """
     basis = f"{contact or ''}|{email or ''}"
     return hmac.new(pepper.encode(), basis.encode(), hashlib.sha256).hexdigest()

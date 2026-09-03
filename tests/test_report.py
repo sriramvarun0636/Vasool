@@ -434,3 +434,47 @@ class TestDocsCiteRealExhibits:
                 if m.group(1) not in live:
                     bad.append(f"{name} cites Exhibit {m.group(1)}")
         assert not bad, f"stale exhibit references: {bad}. Live exhibits: {sorted(live)}"
+
+
+class TestThePublishedDashboardMatchesItsGenerator:
+    """`docs/index.html` is a copy, and copies go stale.
+
+    `tools/report.py` writes `out/report.html`; the page GitHub Pages actually
+    serves is a hand-made duplicate of it, and until this test nothing compared
+    the two. It had already drifted: the published dashboard was serving a
+    manifest written before shard fingerprints existed, so the page a reader
+    opens carried figures whose agent nobody could name — while the repository
+    it was published from had the fingerprint. Nothing caught it because
+    nothing was looking.
+
+    The build is byte-deterministic from the manifest plus the repository's own
+    import graph, so equality is a fair thing to demand. It is the same
+    discipline `data/golden/*.txt` imposes on the demo and
+    `windtunnel/agent_manifest.txt` on the fingerprint: a derived artifact that
+    ships is checked against the thing that derives it.
+    """
+
+    PUBLISHED = REPO_ROOT / "docs" / "index.html"
+
+    def test_the_published_copy_is_what_the_generator_writes(self, tmp_path):
+        if not MANIFEST.exists():
+            pytest.skip("no manifest on disk — run `make sweeps` first")
+        if not self.PUBLISHED.exists():
+            pytest.skip("docs/index.html is not present")
+
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_report", REPORT)
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        fresh = tmp_path / "report.html"
+        module.build_report(MANIFEST, fresh)
+
+        assert fresh.read_text(encoding="utf-8") == self.PUBLISHED.read_text(encoding="utf-8"), (
+            "docs/index.html has drifted from tools/report.py.\n"
+            "The published dashboard is not what this repository generates — "
+            "regenerate and republish it in the same commit:\n"
+            "    make report"
+        )
