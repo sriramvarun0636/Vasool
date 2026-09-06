@@ -43,7 +43,7 @@ endif
 .PHONY: demo golden eval sweeps sweep-one shadow redteam report replay all
 
 demo: ## one recovery episode, end to end, replay by default -- LIVE=1 make demo to opt in (see vasool/demo.py --help)
-	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
+	VASOOL_ID_PEPPER=$${VASOOL_ID_PEPPER:-vasool_demo_pepper} $(PYTHON) -m vasool.demo $(DEMO_ARGS)
 
 golden: ## regenerate data/golden/*.txt from a real demo run -- see tools/update_golden.py
 	$(PYTHON) tools/update_golden.py
