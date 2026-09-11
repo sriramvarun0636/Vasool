@@ -107,7 +107,7 @@ FAILURE CLASSES — choose exactly one:
                    state, no matter how many times it is presented. The
                    customer has to supply a different instrument, or change
                    something at their bank before this one can work.
-  CUSTOMER_ACTION  A human has to do something: complete an authentication 
+  CUSTOMER_ACTION  A human has to do something: complete an authentication
                    step, correct a mistake they made, or finish something
                    they abandoned. Re-presenting the same request without
                    them cannot help.
