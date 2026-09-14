@@ -18,7 +18,8 @@ from datetime import timedelta
 
 import pytest
 
-from vasool.demo import clock_start, load_scenario, main
+from tests.payloads import TEST_PEPPER as FIXTURE_PEPPER
+from vasool.demo import REPLAY_PEPPER, clock_start, load_scenario, main
 from vasool.diagnosis.rules import IST
 from vasool.diagnosis.taxonomy import known_reasons
 
@@ -113,6 +114,41 @@ class TestGoldenOutput:
         assert "outcome      : recovered" in out
         assert "recovered    : ₹500.00 (50000 paise)" in out
         assert "event        : payment.captured" in out
+
+
+# ---------------------------------------------------------------------------
+# a fresh clone: no .env, no pepper
+# ---------------------------------------------------------------------------
+class TestAFreshClone:
+    """What `make demo` does with nothing configured — the state a stranger,
+    a reviewer and CI are all in. It used to exit on a missing pepper; a
+    Makefile-wide default then papered over that for every target and, since
+    `load_dotenv()` never overrides a variable already set, displaced a
+    configured `.env` value while doing it (docs/EVALUATION.md §10,
+    2026-09-14). The fallback now lives in the demo, and only for a replay.
+    """
+
+    @pytest.fixture
+    def nothing_configured(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("VASOOL_ID_PEPPER", raising=False)
+        # A developer's own .env must not leak in: this is the fresh-clone path.
+        monkeypatch.setattr("vasool.demo.load_dotenv", lambda *args, **kwargs: False)
+
+    def test_a_replay_prints_exactly_the_golden_transcript(self, nothing_configured):
+        rc, out, err = run_demo(["--scenario", "card_expired", "--time", "19:30", "--replay"])
+        assert rc == 0
+        assert out == (GOLDEN_DIR / "demo_card_expired_1930.txt").read_text()
+        assert "public test pepper" in err
+
+    def test_live_refuses_rather_than_falling_back(self, nothing_configured):
+        """A run that calls Razorpay keys real payloads, so it needs a pepper
+        of the operator's own; a public one there would be a real leak."""
+        rc, _, err = run_demo(["--scenario", "card_expired", "--live"])
+        assert rc == 1
+        assert "--live needs VASOOL_ID_PEPPER" in err
+
+    def test_the_replay_pepper_is_the_one_every_fixture_is_built_under(self):
+        assert REPLAY_PEPPER == TEST_PEPPER == FIXTURE_PEPPER
 
 
 # ---------------------------------------------------------------------------

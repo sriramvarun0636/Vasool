@@ -81,6 +81,7 @@ windtunnel/metrics.py
 windtunnel/outcome.py
 windtunnel/parameters.py
 windtunnel/payloads.py
+windtunnel/pepper.py
 windtunnel/rng.py
 windtunnel/runner.py
 windtunnel/shadow.py

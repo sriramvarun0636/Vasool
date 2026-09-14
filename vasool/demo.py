@@ -86,6 +86,23 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 OBSERVED_DIR = REPO_ROOT / "data" / "observed_payloads"
 STUBBED_DIR = REPO_ROOT / "data" / "stubbed_payloads"
 
+REPLAY_PEPPER = "test-pepper-do-not-use-in-prod"
+"""What a replay keys customer ids with when no `VASOOL_ID_PEPPER` is set.
+
+The same literal as tests/payloads.py::TEST_PEPPER, which the golden fixtures
+and the episode theatre are built under (tools/update_golden.py,
+tools/export_episodes.py) — so on a fresh clone, `make demo` prints the receipt
+hashes those files pin rather than hashes nobody else can reproduce. A replay
+reaches no network and keys only the payloads on disk, so a public value costs
+nothing here. `--live` is different: it calls Razorpay and needs a pepper of
+the operator's own, so it refuses to fall back.
+
+This replaces a Makefile-wide `export VASOOL_ID_PEPPER ?= ...`, which reached
+every target and, because `load_dotenv()` never overrides a variable already
+set, silently displaced a configured `.env` value (docs/EVALUATION.md §10,
+2026-09-14). tests/test_demo.py holds the literal equal to TEST_PEPPER.
+"""
+
 WIDTH = 78
 INDENT = "    "
 
@@ -709,8 +726,20 @@ def _run(args: argparse.Namespace) -> int:
     load_dotenv()
     pepper = os.environ.get("VASOOL_ID_PEPPER")
     if not pepper:
-        print("error: VASOOL_ID_PEPPER is not set -- see .env.example", file=sys.stderr)
-        return 1
+        if live:
+            print(
+                "error: --live needs VASOOL_ID_PEPPER, a pepper of your own -- see "
+                ".env.example. A replay falls back to the public test pepper; a run "
+                "that calls Razorpay does not.",
+                file=sys.stderr,
+            )
+            return 1
+        pepper = REPLAY_PEPPER
+        print(
+            "note: no VASOOL_ID_PEPPER configured -- replaying under the public "
+            "test pepper, so receipt hashes match data/golden/ and the theatre.",
+            file=sys.stderr,
+        )
 
     try:
         fixture, simulated, event = load_scenario(args.scenario, pepper=pepper)

@@ -273,3 +273,44 @@ class TestTheManifestRecordsIt:
             for line in shard.read_text().splitlines():
                 if line.strip():
                     assert json.loads(line).get("agent") == expected, shard.name
+
+
+REMEASURE = (
+    "Re-measure before publishing: `EVAL_ARGS=--rebuild make sweeps` recomputes; "
+    "`EVAL_ARGS=--adopt-shards make sweeps` stamps, and only with a recomputation "
+    "on record in docs/EVALUATION.md §10. Then `make redteam` and `make report`."
+)
+
+
+class TestThePublishedArtifactsNameThisTree:
+    """§1.5 at publish time, not only at compute time.
+
+    `_done()` refuses foreign rows when numbers are computed, but until
+    2026-09-14 nothing compared the artifacts a reader opens with the tree
+    they sit beside. Merging `main` into this branch moved the tree to a
+    digest the manifest did not name, and every test still passed
+    (docs/EVALUATION.md §10). Both run on a fresh clone — the artifacts are
+    committed and the tree is the tree — so CI holds this line, which is also
+    §1.6's: a figure on `main` is this code's figure or the build is red.
+    """
+
+    def test_the_manifest_was_produced_by_this_tree(self):
+        if not MANIFEST.exists():
+            pytest.skip("no manifest on disk — run `make sweeps` first")
+        recorded = json.loads(MANIFEST.read_text()).get("agent_fingerprint", "")
+        current = agent_fingerprint()
+        assert recorded == current, (
+            f"out/development/evaluation.json names agent {recorded[:12]}…, but this "
+            f"tree is {current[:12]}…. {REMEASURE}"
+        )
+
+    def test_the_red_team_artifact_was_produced_by_this_tree(self):
+        path = ROOT / "out" / "adversary" / "redteam.json"
+        if not path.exists():
+            pytest.skip("no red-team artifact on disk — run `make redteam`")
+        recorded = json.loads(path.read_text()).get("agent_fingerprint", "")
+        current = agent_fingerprint()
+        assert recorded == current, (
+            f"out/adversary/redteam.json names agent {recorded[:12] or 'none'}…, but this "
+            f"tree is {current[:12]}…. {REMEASURE}"
+        )

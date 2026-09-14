@@ -163,40 +163,62 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 ## Verify it yourself
 
-Nothing here asks for trust. The whole artifact regenerates from source — and if
-you would rather watch it than run it, **[the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/)**
+Nothing here asks for trust. The whole artifact regenerates from source, on any
+machine, with nothing configured: the pepper that keys every simulated customer
+is registered in [`windtunnel/pepper.py`](windtunnel/pepper.py), so a seed deals
+the same world on your machine as on the one that wrote the manifest
+([§10, 2026-09-14](docs/EVALUATION.md) records why that was not true before). And
+if you would rather watch it than run it, **[the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/)**
 replays a real episode in the browser: thirteen guards ruling one at a time, the
 most severe verdict deciding, and a receipt whose hash you can recompute yourself.
 Edit one character of the sealed bytes and the chain breaks in front of you. No
 clone, no Python, no network.
 
-> ⚠️ **Read this before running the block.** `make eval` **overwrites the committed
-> manifest** with a base-protocol-only run. The values reproduce, but the `sweeps`
-> block and F6's verdict do not exist in it — only `make sweeps` writes those — so
-> the dashboard's sensitivity grid would render as dashes afterwards, and a dash on
-> that dashboard means *the manifest does not carry this*. `git checkout out/` puts
-> the shipped one back. **Every claim in this README is checkable without running
-> anything** — the manifest ships; see [the table below](#every-claim-and-where-it-comes-from).
-
 ```bash
 git clone https://github.com/sriramvarun0636/Vasool && cd Vasool
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # then set VASOOL_ID_PEPPER to any string
-
-pytest                        # 1,471 tests
-make demo                     # one episode, narrated, no network
-make redteam                  # 22 adversarial attacks -> out/adversary/redteam.json
-make eval                     # 9 arms x 1,000 seeds (~20 min) -- OVERWRITES out/, see note above
-make report                   # builds out/report.html from the manifest
-REPEATS=1 make shadow         # rules vs LLM, replayed from committed cassettes -- no network
-make replay                   # points at where determinism is asserted (make eval + tests)
+pytest
+make demo
+make redteam
+REPEATS=1 CELL=payment_failed/gateway make shadow
+make report
+git status --short
 ```
 
-Nothing above needs a key or a network. `make demo` and `make shadow` replay by
-default — `LIVE=1` and `RECORD=1` are the only ways to reach Razorpay or a model
-provider, and without them a missing recording is a hard failure rather than a
-silent live call. `REPEATS=1` matches the depth the corpus was recorded at;
+| Command | What it does |
+| :--- | :--- |
+| `pytest` | 1,490 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
+| `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
+| `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
+| `make report` | rebuilds the dashboard from the manifest, rewriting `docs/index.html` |
+| `git status --short` | prints nothing: every artifact those commands rewrote came back byte for byte |
+
+> ⚠️ **Read this before running `make eval`.** It **overwrites the committed
+> manifest** with a base-protocol-only run. Every value in it reproduces, but the
+> `sweeps` block and F6's verdict do not exist in it — only `make sweeps` writes
+> those — so the dashboard's sensitivity grid would render as dashes afterwards,
+> and a dash on that dashboard means *the manifest does not carry this*.
+> `git checkout out/` puts the shipped one back. **Every claim in this README is
+> checkable without running anything** — the manifest ships; see
+> [the table below](#every-claim-and-where-it-comes-from).
+
+```bash
+make eval
+```
+
+That is §5's nine arms over §6a's thousand seeds, recomputed from nothing — about
+twenty-five minutes on eight cores. It was run exactly that way on 2026-09-14: all
+9,000 rows came back byte-identical to the ones behind the manifest, and so did
+every one of its 576 base-protocol values, `0.4906981214797104` included
+([§10](docs/EVALUATION.md)).
+
+Nothing above needs a key, a `.env` or a network. `make demo` and `make shadow`
+replay by default — `LIVE=1` and `RECORD=1` are the only ways to reach Razorpay or
+a model provider, those two alone read credentials from `.env` (see
+`.env.example`), and without them a missing recording is a hard failure rather
+than a silent live call. `REPEATS=1` matches the depth the corpus was recorded at;
 bare `make shadow` asks for 15 repeats per cell, which only one cell has, and
 fails rather than quietly filling the gap. A run that cannot cover every cell
 writes to `classifier_comparison_partial.*` so it can never impersonate a full
@@ -242,9 +264,12 @@ print("hash == sha256(payload):", all(
     hashlib.sha256(r["canonical_payload"].encode()).hexdigest() == r["hash"] for r in rs))
 print("chain links:", all(b["prev_hash"] == a["hash"] for a, b in zip(rs, rs[1:])))
 EOF
-# hash == sha256(payload): True
-# chain links: True
 ```
+
+It prints `hash == sha256(payload): True` and `chain links: True`. Those twelve
+receipts are also the evidence for the registered pepper:
+[`tests/windtunnel/test_pepper.py`](tests/windtunnel/test_pepper.py) recomputes
+seed 0 under it and requires every one of them back, byte for byte.
 
 Exhibit H on the dashboard does the same computation in your browser with the Web
 Crypto API, and [the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/) hands you the bytes
@@ -394,9 +419,13 @@ Every cell was asked **once** (k=1) — forced by the free tier's observed cap o
 Reproduce it with no network and no key — the cassettes ship in this repo:
 
 ```bash
-REPEATS=1 make shadow                                   # the full 12-cell table
-REPEATS=1 CELL=payment_failed/gateway make shadow       # + the depth section
+REPEATS=1 make shadow
+REPEATS=1 CELL=payment_failed/gateway make shadow
 ```
+
+The first rebuilds the full twelve-cell table; the second adds the depth section,
+and is the command that wrote the committed artifact — it regenerates
+`out/shadow/` byte for byte, which CI checks on every push.
 
 ## F1–F7 — the criteria that could have killed this
 
@@ -478,7 +507,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — thirty-eight of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — forty-two of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -486,7 +515,7 @@ Every amendment to the protocol after registration — thirty-eight of them — 
 
 | Path | What lives there |
 | :--- | :--- |
-| [`POSTMORTEM.md`](POSTMORTEM.md) | **Six incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it. Start here. |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Seven incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 33 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, and the LLM shadow (which never touches a ledger) |

@@ -151,6 +151,16 @@ than deleted, because INC-003 is the reason the check exists and a reader
 arriving at `_done`'s refusal path deserves to find out why it is there. See
 §10's row of 2026-09-03.
 
+**Closed 2026-09-14 — the world, beside the code.** The fingerprint covered
+source and left one input outside it: the pepper that keys every `customer_id`,
+which decides §3c's split and so every metric, and which arrived from the
+author's `.env`. It is now `windtunnel/pepper.py::REGISTERED_PEPPER` — inside
+the digest, used by the evaluator directly, readable by no entry point from the
+environment — so the fingerprint pins the world the numbers were computed in as
+well as the code that computed them. And the check now runs at publish time as
+well as compute time: a test fails when a committed manifest names a different
+tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
+
 ## Repository map
 
 | Path | Contents |

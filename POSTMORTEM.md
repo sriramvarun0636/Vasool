@@ -1,12 +1,13 @@
 # POSTMORTEM — what broke, and how I got out
 
-Six incidents. Each one is recorded somewhere else in this repository as well —
+Seven incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
 
 Four of these were found by the system catching itself rather than by me
-noticing. Those are the four worth reading.
+noticing. Those are the four worth reading — and INC-007, for the opposite
+reason: nothing caught it until after the submission.
 
 ---
 
@@ -302,7 +303,73 @@ repository and it is recorded as such rather than quietly left.
 
 ---
 
-## The pattern across all six
+### INC-007 — The submission that did not reproduce on a clean clone
+
+**Symptom.** After the buildathon submission, on a fresh checkout with nothing
+configured — the state every reviewer is in — `pytest` failed eight tests, and
+the README's own reproduction command for the LLM comparison died on its first
+cell:
+
+```
+error: no cassette for provider='gemini' model='gemini-3.6-flash' repeat=0 key=547301f1020a…
+coverage: 0 of 12 cells, 0 of 12 classifications recorded
+```
+
+On the machine that built the submission, every test passed.
+
+**Investigation.** Three unrelated faults with one cause.
+
+1. `RazorpayClient.__init__` resolved `RazorpayConfig.from_env()` *before*
+   checking whether a client had been injected. Every test in
+   `tests/test_razorpay_client.py` injects a fake and none touches the network,
+   yet each one demanded credentials — present in my `.env`, absent everywhere
+   else.
+2. A cleanup commit on 2026-09-01 (`5232bb8`) left one trailing space inside
+   the classifier's prompt. A cassette is addressed by sha256 over provider,
+   model, repeat and the whole prompt, so all 50 recordings stopped matching at
+   once: the tagged prompt appears verbatim in **0 of 50** of them, and in
+   **50 of 50** once the space is removed. Every cassette test read the disk;
+   none asked the current code for the addresses on it.
+3. The evaluation's pepper came from my `.env` and was registered nowhere, and
+   §3c's split orders customers by an HMAC keyed on it. So *"the whole artifact
+   regenerates from source"* was true on one machine: under any other pepper,
+   **0 of 27** recomputed rows match the published shards. No test could see
+   this one; it was found by an audit after the submission.
+
+A fourth fault arrived with the fixes. To make `make demo` run with nothing
+configured, the Makefile gained `export VASOOL_ID_PEPPER ?= vasool_demo_pepper`
+for every target — and `load_dotenv()` never overrides a variable already set,
+so from 2026-09-07 every `make` target on my machine silently ran in a different
+world under an unchanged fingerprint. It was found before anything was written
+under it.
+
+**Root cause.** Nothing in the apparatus ever ran in a stranger's environment.
+Every test run, every `make` target and every verification quoted in this
+repository ran on a machine with credentials configured, so three
+environment-dependent faults were invisible to all of them. This is the one
+incident here the system did not catch. A person did, after the submission.
+
+**Fix.** Each fault is closed by a test that fails if it returns: an injected
+client must need no credentials (`tests/test_razorpay_client.py`); every
+cassette must be addressed by a prompt the code still builds
+(`tests/windtunnel/test_cassette_pin.py`); and the pepper is registered in
+`windtunnel/pepper.py`, no entry point may read it from the environment, and
+seed 0 under it must reproduce the manifest's twelve receipts byte for byte
+(`tests/windtunnel/test_pepper.py`; `docs/EVALUATION.md` §10, 2026-09-14). The
+Makefile default is gone: a replay falls back to the public test pepper inside
+`vasool/demo.py`, and `--live` refuses to. Then the cause itself, rather than
+its symptoms: `.github/workflows/tests.yml` runs the whole suite on a fresh
+clone with no secrets on every push, and `tests/test_ci.py` fails if the
+workflow is ever handed one.
+
+**What I'd do differently.** Treat the clean clone as the definition of done
+rather than a last check. A verification that passes only where it was written
+verifies the machine, not the code — and until this incident, every "the suite
+is green" in this repository's history had been measured on mine.
+
+---
+
+## The pattern across all seven
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -316,8 +383,14 @@ happened" became a number, an elapsed time too short to be real, an adversary
 whose verdict is scanned from the ledger rather than reported by the code under
 test, and a diagnostic that had to be added before the failure would speak.
 
+INC-007 is the exception, and it belongs in this section because it is one. It
+was not silent — eight tests failed loudly — it was simply never run anywhere
+it could fail. An apparatus that runs only on the machine that built it
+measures that machine. So the clean clone is part of the apparatus now: CI runs
+the suite from one on every push, with nothing configured.
+
 That is the argument this project is actually making. Not that the agent is
-correct — I have six incidents here that say otherwise, and three known
+correct — I have seven incidents here that say otherwise, and three known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

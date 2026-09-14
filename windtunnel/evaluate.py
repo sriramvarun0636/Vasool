@@ -29,17 +29,25 @@ resume then recomputes, because it is byte-identical (architectural invariant 5)
 it, `--cohort holdout` demands the unseal phrase, and its results go to a
 separate directory tree. See windtunnel/split.py.
 
-**Nothing here reads a secret, or the environment, at all.** `VASOOL_ID_PEPPER`
-keys the customer-id HMAC, so it is required — and it arrives as an argument.
-No module in windtunnel/ may read the environment or reach the network, which
-is enforced by a package scan rather than by intent
-(tests/windtunnel/test_runner.py), so the lookup lives in `tools/evaluate.py`
-and `make eval` goes through it. The report records only that a pepper was
-configured, never its value.
+**Nothing here reads a secret or the environment, and no caller chooses the
+pepper.** The customer-id HMAC is keyed by `windtunnel/pepper.py::
+REGISTERED_PEPPER`, which `main` uses directly, so every figure the protocol
+publishes is computed under the registered value whatever a caller's shell or
+`.env` holds. It used to arrive as an argument from `tools/evaluate.py`, read
+from the author's environment and registered nowhere — and since the pepper
+decides §3c's split, that made every published number unreproducible by anyone
+else (docs/EVALUATION.md §10, 2026-09-14). The functions below `main` still
+take `pepper` as a parameter: tests build worlds under their own literal, and
+that a different pepper is a different world is a property worth being able to
+test. The manifest records the digest of the pepper it ran under as
+`pepper_sha256`. No module in windtunnel/ may read the environment or reach the
+network either way; that is enforced by a package scan rather than by intent
+(tests/windtunnel/test_runner.py).
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -60,6 +68,7 @@ from windtunnel.inference import (
     survives,
 )
 from windtunnel.metrics import Metrics, measure
+from windtunnel.pepper import REGISTERED_PEPPER
 from windtunnel.runner import run_seed
 from windtunnel.split import UNSEAL_PHRASE, Cohort, HoldoutSealed, split_customers
 from windtunnel.sweeps import REFERENCE, sweep_configurations
@@ -827,17 +836,17 @@ def _receipt_sample(run, *, limit: int) -> list[dict]:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
-    """Run the protocol. `pepper` is required and is never read from here.
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the protocol, under the registered pepper and no other.
 
-    Nothing in windtunnel/ touches the environment or a secret — the rule is
-    structural and tests/windtunnel/test_runner.py scans the package for it, so
-    the `VASOOL_ID_PEPPER` lookup lives in `tools/evaluate.py` and the value
-    arrives as an argument. That is the same discipline
-    `windtunnel/universe.py` already holds to for `build_universe`.
+    There is deliberately no `pepper` parameter. Every number this writes is
+    a published number, and a published number has to be regenerable by
+    someone who is not the author — which is true only if nothing outside this
+    fingerprinted file can choose the world it was computed in. The pepper is
+    `windtunnel/pepper.py::REGISTERED_PEPPER`; see docs/EVALUATION.md §10,
+    2026-09-14, for why it used to be an argument and why that was a fault.
     """
-    if not pepper:
-        raise ValueError("a pepper is required — see tools/evaluate.py")
+    pepper = REGISTERED_PEPPER
 
     parser = argparse.ArgumentParser(description="Run EVALUATION.md's protocol.")
     parser.add_argument("--out", default="out", type=pathlib.Path)
@@ -917,6 +926,10 @@ def main(argv: Sequence[str] | None = None, *, pepper: str) -> int:
         "cohort": args.cohort,
         "arms": [a.name for a in ALL_ARMS],
         "agent_fingerprint": fingerprint,
+        # The world, beside the code. Redundant with the fingerprint, which
+        # covers windtunnel/pepper.py, but checkable without it: anyone can
+        # hash the registered value and compare.
+        "pepper_sha256": hashlib.sha256(pepper.encode()).hexdigest(),
     }
 
     if args.skip_base:
@@ -1060,5 +1073,4 @@ def _base_protocol(
         ),
         "determinism": determinism,
         "falsification": falsification(base, comparisons, determinism),
-        "pepper_configured": True,
     })

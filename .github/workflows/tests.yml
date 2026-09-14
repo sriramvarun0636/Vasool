@@ -1,0 +1,51 @@
+name: tests
+
+# A fresh clone with nothing configured, on every push: the state a reader, a
+# reviewer and a judge are all in. The buildathon submission failed eight tests
+# and could not replay its own LLM comparison in exactly that state, while every
+# local run was green because every local run had credentials configured
+# (POSTMORTEM.md, INC-007). Never hand this workflow a secret: having none is
+# the whole of its value, and tests/test_ci.py fails if it is given one.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-clone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the pinned requirements
+        run: pip install -r requirements.txt
+
+      - name: Run the whole suite
+        run: pytest
+
+      - name: Replay the demo with nothing configured
+        run: make -s demo TIME=19:30
+
+      - name: Regenerate the red-team artifact byte for byte
+        run: |
+          make -s redteam
+          git diff --exit-code -- out/adversary/redteam.json
+
+      - name: Regenerate the LLM comparison byte for byte, from committed cassettes
+        run: |
+          REPEATS=1 CELL=payment_failed/gateway make -s shadow
+          git diff --exit-code -- out/shadow/
+
+      - name: Regenerate the published dashboard byte for byte
+        run: |
+          make -s report
+          git diff --exit-code -- docs/index.html docs/assets/

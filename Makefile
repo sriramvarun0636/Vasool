@@ -3,8 +3,12 @@
 VENV_PY := .venv/bin/python
 PYTHON  := $(shell test -x $(VENV_PY) && echo $(VENV_PY) || echo python3)
 
-# Default fallback so any target runs hermetically with zero setup
-export VASOOL_ID_PEPPER ?= vasool_demo_pepper
+# No target exports VASOOL_ID_PEPPER, and none needs to. The evaluator and the
+# shadow lane use the registered pepper (windtunnel/pepper.py) whatever the
+# environment holds, and a replay falls back to the public test pepper on its
+# own. A Makefile-wide default once displaced .env's value in every target,
+# because load_dotenv() never overrides a variable already set
+# (docs/EVALUATION.md §10, 2026-09-14).
 
 SCENARIO ?= card_expired
 TARGET   ?=

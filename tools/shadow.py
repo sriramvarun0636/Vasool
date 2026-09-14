@@ -1,9 +1,18 @@
 """`make shadow` — spec §4.5's classifier comparison, run and rendered.
 
-This file exists for the same reason `tools/evaluate.py` does: no module in
-`windtunnel/` may read the environment, reach the network, or touch a secret,
-and that is enforced by a package scan rather than trusted. So the two
-environment lookups happen out here and the values are passed in.
+No module in `windtunnel/` may read the environment, reach the network, or
+touch a secret, and that is enforced by a package scan rather than trusted. So
+the one environment lookup — the provider key, needed only by `--record` —
+happens out here and is passed in.
+
+**The corpus is built under the registered pepper, never the environment's.**
+The pepper decides which customers are in the development cohort, so it decides
+every cell's weight: under another value all twelve move (`payment_failed /
+gateway` 757 → 756). This file used to read `VASOOL_ID_PEPPER` and pass it in,
+which made the published weights reproducible on one machine; it now uses
+`windtunnel/pepper.py::REGISTERED_PEPPER` (docs/EVALUATION.md §10, 2026-09-14),
+and tests/windtunnel/test_evaluate.py fails if the environment variable
+reappears here.
 
 **Replay is the default, and a missing recording is fatal.** Without
 `--record` this process constructs no provider client at all — the `respond`
@@ -45,6 +54,7 @@ from windtunnel.shadow import (  # noqa: E402
     render_table,
     to_document,
 )
+from windtunnel.pepper import REGISTERED_PEPPER  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
@@ -182,7 +192,7 @@ def _recording(store, client, provider, labels, clock):
     return respond
 
 
-def main(argv, *, pepper: str, api_key: str | None) -> int:
+def main(argv, *, api_key: str | None) -> int:
     args = _parse(argv)
 
     from tools.gemini import DEFAULT_RPM
@@ -198,7 +208,7 @@ def main(argv, *, pepper: str, api_key: str | None) -> int:
         )
     PROVIDER = PINNED_PROVIDER
     store = CassetteStore(args.cassettes)
-    corpus = build_corpus(pepper=pepper)
+    corpus = build_corpus(pepper=REGISTERED_PEPPER)
 
     print(
         f"corpus: {len(corpus)} cells, "
@@ -326,14 +336,4 @@ def main(argv, *, pepper: str, api_key: str | None) -> int:
 
 if __name__ == "__main__":
     load_dotenv()
-    configured_pepper = os.environ.get("VASOOL_ID_PEPPER")
-    if not configured_pepper:
-        print("error: VASOOL_ID_PEPPER is not set -- see .env.example", file=sys.stderr)
-        raise SystemExit(2)
-    raise SystemExit(
-        main(
-            sys.argv[1:],
-            pepper=configured_pepper,
-            api_key=os.environ.get("GEMINI_API_KEY"),
-        )
-    )
+    raise SystemExit(main(sys.argv[1:], api_key=os.environ.get("GEMINI_API_KEY")))

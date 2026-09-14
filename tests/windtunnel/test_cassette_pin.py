@@ -21,7 +21,9 @@ import pathlib
 
 import pytest
 
-from windtunnel.shadow import PINNED_MODEL, PINNED_PROVIDER
+from windtunnel.cassette import CassetteStore, Request
+from windtunnel.pepper import REGISTERED_PEPPER
+from windtunnel.shadow import PINNED_MODEL, PINNED_PROVIDER, build_corpus
 
 CASSETTE_DIR = pathlib.Path(__file__).resolve().parent.parent.parent / "data" / "cassettes"
 
@@ -82,3 +84,51 @@ class TestTheDiskAgreesWithThePin:
         import tools.shadow as shadow
 
         assert shadow.default_model() == PINNED_MODEL
+
+
+class TestEveryRecordingIsStillReachable:
+    """A recording is evidence only while the code can still ask for it.
+
+    A cassette's address is sha256 over provider, model, repeat and the whole
+    prompt, so a one-byte edit to the prompt orphans every recording at once.
+    That happened: on 2026-09-01 a cleanup commit left a trailing space inside
+    the classifier's prompt, all 50 cassettes stopped matching, and `make
+    shadow` failed on the submitted commit while the suite stayed green —
+    because every test here reads the disk, and none asked the current code for
+    the addresses on it (POSTMORTEM.md, INC-007). These do. The pin tests above
+    guard the model half of the address; these guard the prompt half.
+    """
+
+    def test_every_recording_carries_a_prompt_the_code_still_builds(self):
+        recorded = cassettes()
+        if not recorded:
+            pytest.skip("no cassettes recorded yet")
+        prompts = {cell.prompt for cell in build_corpus(pepper=REGISTERED_PEPPER)}
+        orphaned = sorted(c["label"] for c in recorded if c["prompt"] not in prompts)
+        assert not orphaned, (
+            f"{len(orphaned)} of {len(recorded)} cassettes carry a prompt no cell "
+            f"builds any more ({orphaned[:3]}…). An edit to "
+            "vasool/diagnosis/llm.py's prompt — whitespace included — changes "
+            "every address; restore the prompt, or re-record deliberately."
+        )
+
+    def test_every_address_on_disk_is_the_one_its_request_hashes_to(self):
+        recorded = cassettes()
+        if not recorded:
+            pytest.skip("no cassettes recorded yet")
+        for c in recorded:
+            request = Request(c["provider"], c["model"], c["prompt"], c["repeat"])
+            assert request.key == c["key"], c["label"]
+
+    def test_every_cell_replays_at_the_recorded_depth(self):
+        """`REPEATS=1 make shadow` — the README's reproduction command —
+        needs repeat 0 of every cell, from the code as it stands."""
+        if not cassettes():
+            pytest.skip("no cassettes recorded yet")
+        store = CassetteStore(CASSETTE_DIR)
+        missing = [
+            cell.label
+            for cell in build_corpus(pepper=REGISTERED_PEPPER)
+            if not store.has(Request(PINNED_PROVIDER, PINNED_MODEL, cell.prompt, 0))
+        ]
+        assert not missing, f"no replayable recording for {missing}"

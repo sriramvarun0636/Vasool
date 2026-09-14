@@ -12,7 +12,11 @@ the registered protocol is 1000 seeds and lives behind `make eval`.
 """
 from __future__ import annotations
 
+import ast
+import hashlib
+import inspect
 import json
+import pathlib
 
 import pytest
 
@@ -38,10 +42,12 @@ from windtunnel.evaluate import (
     sweep_targets,
     sweep_verdicts,
 )
+from windtunnel.pepper import REGISTERED_PEPPER
 from windtunnel.split import Cohort, HoldoutSealed
 from windtunnel.sweeps import REFERENCE, sweep_configurations
 
 PEPPER = "test-pepper-do-not-use-in-prod"
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 ARMS = (VASOOL, arm_named("vasool_ungated"))
 
 
@@ -129,7 +135,7 @@ class TestTheHoldoutStaysSealed:
 
     def test_the_cli_refuses_a_holdout_without_the_phrase(self, tmp_path):
         with pytest.raises(HoldoutSealed, match="once"):
-            main(["--cohort", "holdout", "--seeds", "1", "--out", str(tmp_path)], pepper=PEPPER)
+            main(["--cohort", "holdout", "--seeds", "1", "--out", str(tmp_path)])
 
     def test_development_and_holdout_write_to_different_trees(self, tmp_path):
         assert Cohort.DEVELOPMENT.directory != Cohort.HOLDOUT.directory
@@ -193,7 +199,7 @@ class TestDeterminismCheck:
 
 class TestEndToEnd:
     def test_the_cli_writes_a_report(self, tmp_path):
-        assert main(["--seeds", "2", "--workers", "2", "--out", str(tmp_path)], pepper=PEPPER) == 0
+        assert main(["--seeds", "2", "--workers", "2", "--out", str(tmp_path)]) == 0
 
         report = json.loads((tmp_path / "development" / "evaluation.json").read_text())
         assert report["cohort"] == "development"
@@ -201,30 +207,43 @@ class TestEndToEnd:
         assert set(report["per_arm"]) == set(report["arms"])
         assert report["determinism"]["identical"]
 
-    def test_the_report_never_contains_the_pepper(self, tmp_path):
-        """the project rules: never write a secret's value into any file. The customer
-        ids in a universe are HMACs keyed on it, and the report records only
-        that it was configured."""
-        main(["--seeds", "1", "--workers", "1", "--out", str(tmp_path)], pepper=PEPPER)
-        text = (tmp_path / "development" / "evaluation.json").read_text()
-        assert PEPPER not in text
-        assert json.loads(text)["pepper_configured"] is True
+    def test_the_report_names_its_world_by_digest(self, tmp_path):
+        """`pepper_sha256` lets a reader confirm which world a figure was
+        computed in by hashing windtunnel/pepper.py's value — checkable
+        without the fingerprint. It replaced `pepper_configured: true`, which
+        said a pepper existed and nothing about which one."""
+        main(["--seeds", "1", "--workers", "1", "--out", str(tmp_path)])
+        report = json.loads((tmp_path / "development" / "evaluation.json").read_text())
+        assert report["pepper_sha256"] == hashlib.sha256(REGISTERED_PEPPER.encode()).hexdigest()
+        assert "pepper_configured" not in report
 
-    def test_a_missing_pepper_is_refused(self, tmp_path):
-        """The value arrives as an argument because nothing in windtunnel/ may
-        read the environment — `tools/evaluate.py` does that lookup. An empty
-        one would silently produce a universe nobody can reproduce."""
-        with pytest.raises(ValueError, match="pepper is required"):
-            main(["--seeds", "1", "--out", str(tmp_path)], pepper="")
+    def test_no_environment_can_choose_the_world(self, tmp_path, monkeypatch):
+        """docs/EVALUATION.md §10, 2026-09-14. The pepper decides §3c's split,
+        so a pepper taken from the environment made every published figure a
+        function of one machine's `.env` — and a Makefile default that
+        displaced it put every target in a different world under an unchanged
+        fingerprint. `main` takes no pepper and reads none."""
+        monkeypatch.setenv("VASOOL_ID_PEPPER", "a-different-world")
+        main(["--seeds", "1", "--workers", "1", "--out", str(tmp_path)])
+        report = json.loads((tmp_path / "development" / "evaluation.json").read_text())
+        assert report["pepper_sha256"] == hashlib.sha256(REGISTERED_PEPPER.encode()).hexdigest()
+        assert "pepper" not in inspect.signature(main).parameters
 
-    def test_the_entry_point_lives_outside_the_package(self):
-        """The env read has to be somewhere the package scan does not reach,
-        and `make eval` has to go through it."""
-        import pathlib
-
-        root = pathlib.Path(__file__).resolve().parent.parent.parent
-        assert "VASOOL_ID_PEPPER" in (root / "tools" / "evaluate.py").read_text()
-        assert "tools/evaluate.py" in (root / "Makefile").read_text()
+    def test_no_entry_point_reads_the_pepper_from_the_environment(self):
+        """`make eval` and `make shadow` are the two lanes that publish numbers.
+        Their entry points explain in prose why they no longer read the
+        variable, so this parses rather than greps: no expression in either
+        may name it, and `tools/evaluate.py` may not load `.env` at all."""
+        for name in ("evaluate.py", "shadow.py"):
+            tree = ast.parse((REPO_ROOT / "tools" / name).read_text())
+            named = [
+                node.lineno for node in ast.walk(tree)
+                if isinstance(node, ast.Constant) and node.value == "VASOOL_ID_PEPPER"
+            ]
+            assert not named, f"tools/{name} reads VASOOL_ID_PEPPER at line(s) {named}"
+        entry = (REPO_ROOT / "tools" / "evaluate.py").read_text()
+        assert "load_dotenv" not in entry and "os.environ" not in entry
+        assert "tools/evaluate.py" in (REPO_ROOT / "Makefile").read_text()
 
 
 # ---------------------------------------------------------------------------
@@ -399,13 +418,13 @@ class TestSweepTargetSelection:
         """Silently running nothing would produce an F6 verdict off an empty
         grid, which is the failure this whole flag has to avoid."""
         with pytest.raises(SystemExit) as exit:
-            main(["--sweep-target", "not_a_parameter", "--out", str(tmp_path)], pepper=PEPPER)
+            main(["--sweep-target", "not_a_parameter", "--out", str(tmp_path)])
         assert exit.value.code == 2
         assert not list(tmp_path.iterdir())
 
     def test_skip_base_without_sweeps_is_refused(self, tmp_path):
         with pytest.raises(SystemExit) as exit:
-            main(["--skip-base", "--out", str(tmp_path)], pepper=PEPPER)
+            main(["--skip-base", "--out", str(tmp_path)])
         assert exit.value.code == 2
         assert not list(tmp_path.iterdir())
 

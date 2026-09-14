@@ -20,6 +20,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from windtunnel.adversary.harness import run_all, summary  # noqa: E402
+from windtunnel.fingerprint import agent_fingerprint  # noqa: E402
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "out" / "adversary"
 
@@ -27,6 +28,10 @@ OUT = pathlib.Path(__file__).resolve().parent.parent / "out" / "adversary"
 def main(argv: list[str] | None = None) -> int:
     results = run_all()
     report = summary(results)
+    # §1.5: a survival count is a published number, so it names the agent it
+    # was measured against — and tests/windtunnel/test_fingerprint.py fails if
+    # the committed file names a different tree from the one beside it.
+    report["agent_fingerprint"] = agent_fingerprint()
 
     print(f"ADVERSARIAL   {report['survived']} / {report['attacks']} survived\n")
     for result in results:

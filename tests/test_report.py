@@ -350,8 +350,12 @@ class TestTestCountDoesNotDrift:
     it is checked here against what pytest actually collected.
     """
 
+    # The count used to be a shell comment inside README's command block —
+    # `pytest   # 1,471 tests` — which interactive zsh does not treat as a
+    # comment: pasted, it ran `pytest '#' 1,471 tests` and failed. It lives in
+    # the command table beside the block now, and the block holds only commands.
     DOCS = {
-        "README.md": re.compile(r"#\s*([\d,]+)\s*tests"),
+        "README.md": re.compile(r"\|\s*`pytest`\s*\|\s*([\d,]+)\s*tests"),
     }
 
     def test_the_documents_quote_the_real_count(self, request):
@@ -370,6 +374,75 @@ class TestTestCountDoesNotDrift:
             assert claimed == collected, (
                 f"{name} says {claimed} tests; pytest collected {collected}"
             )
+
+
+class TestIncidentCountDoesNotDrift:
+    """POSTMORTEM.md's size is quoted in four places.
+
+    "Six incidents" was spelled out in the postmortem's opening, its closing
+    heading, README's map and the dashboard's footer — and all four went stale
+    the moment INC-007 was written, found by a grep rather than a test. Same
+    lesson as the test count above: a number only a human remembers to update
+    will be wrong, so each is checked against the headings actually present.
+    """
+
+    WORDS = {"five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+             "eleven": 11, "twelve": 12}
+    CLAIMS = {
+        "POSTMORTEM.md": [
+            re.compile(r"^(\w+) incidents\.", re.M),
+            re.compile(r"^## The pattern across all (\w+)$", re.M),
+        ],
+        "README.md": [re.compile(r"\*\*(\w+) incidents, in detail\.\*\*")],
+        "tools/report.py": [re.compile(r">(\w+) incidents</a>")],
+    }
+
+    def test_every_quoted_count_matches_the_headings(self):
+        postmortem = (REPO_ROOT / "POSTMORTEM.md").read_text()
+        headings = len(re.findall(r"^### INC-\d{3} ", postmortem, re.M))
+        assert headings >= 7
+        for name, patterns in self.CLAIMS.items():
+            text = (REPO_ROOT / name).read_text()
+            for pattern in patterns:
+                match = pattern.search(text)
+                assert match, f"{name} no longer quotes an incident count ({pattern.pattern})"
+                claimed = self.WORDS.get(match.group(1).lower())
+                assert claimed == headings, (
+                    f"{name} says {match.group(1)!r} incidents; POSTMORTEM.md has {headings}"
+                )
+
+
+class TestAmendmentCountDoesNotDrift:
+    """README spells out how many rows docs/EVALUATION.md §10 holds.
+
+    It said "thirty-eight" on the day four more rows were written, and a grep
+    found it rather than a test — the third count in one change to go stale
+    that way, after the test count and the incident count above.
+    """
+
+    UNITS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+             "seven": 7, "eight": 8, "nine": 9}
+    TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60,
+            "seventy": 70, "eighty": 80, "ninety": 90}
+
+    def _number(self, words: str) -> int:
+        tens, _, unit = words.lower().partition("-")
+        return self.TENS[tens] + (self.UNITS[unit] if unit else 0)
+
+    def test_readme_quotes_the_real_number_of_amendment_rows(self):
+        protocol = (REPO_ROOT / "docs" / "EVALUATION.md").read_text()
+        section = protocol.split("## 10. Amendments", 1)[1].split("\n## 11.", 1)[0]
+        rows = len(re.findall(r"^\| 20\d\d-\d\d-\d\d \|", section, re.M))
+        assert rows >= 42
+
+        match = re.search(
+            r"Every amendment to the protocol after registration — ([a-z]+(?:-[a-z]+)?) of them",
+            (REPO_ROOT / "README.md").read_text(),
+        )
+        assert match, "README no longer quotes the amendment count"
+        assert self._number(match.group(1)) == rows, (
+            f"README says {match.group(1)!r} amendments; §10 has {rows} rows"
+        )
 
 
 class TestExhibitsAreOrdered:
