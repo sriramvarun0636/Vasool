@@ -84,6 +84,18 @@ class RazorpayClient:
     call or a real wait (the project's "no real API calls in tests" and the
     project's ban on unmocked wall-clock waits in a test suite that has to
     stay fast).
+
+    **Credentials are resolved only when this class has to build a client.**
+    An injected `sdk_client` is already authenticated by whoever built it, so
+    reading `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` on that path asks for a
+    secret that is never used. That is not a style point: `cfg` used to be
+    computed before the `sdk_client` branch, so every test in
+    tests/test_razorpay_client.py — all of which inject a fake and none of
+    which touch the network — demanded credentials, and the suite therefore
+    passed only on a machine that happened to have a populated .env. On a
+    fresh clone it was eight failures. A test suite whose result depends on
+    the environment it runs in is not a test suite, and this project's whole
+    claim is that a clean clone reproduces the artifact.
     """
 
     def __init__(
@@ -95,8 +107,11 @@ class RazorpayClient:
         base_delay_seconds: float = DEFAULT_BASE_DELAY_SECONDS,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        cfg = config or RazorpayConfig.from_env()
-        self._sdk = sdk_client or razorpay.Client(auth=(cfg.key_id, cfg.key_secret))
+        if sdk_client is not None:
+            self._sdk = sdk_client
+        else:
+            cfg = config or RazorpayConfig.from_env()
+            self._sdk = razorpay.Client(auth=(cfg.key_id, cfg.key_secret))
         self._max_attempts = max_attempts
         self._base_delay_seconds = base_delay_seconds
         self._sleep = sleep
