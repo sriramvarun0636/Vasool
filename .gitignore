@@ -23,6 +23,7 @@ out/*
 !out/holdout/
 !out/adversary/
 !out/shadow/
+!out/robustness/
 out/development/*
 !out/development/evaluation.json
 out/holdout/*
@@ -33,6 +34,11 @@ out/shadow/*
 # Both the JSON and the rendered .txt: the text table is what a reader
 # actually reads, and it carries the partial-run warning inline.
 !out/shadow/classifier_comparison*
+# §10 2026-09-14's registered split check: the result ships, its ~70 MB of
+# shards do not. A partial run is named *_partial and never ships.
+out/robustness/*
+!out/robustness/split_check.json
+!out/robustness/split_check.txt
 
 # Cassettes ship. They are 164 KB, they carry no credential (provider, model,
 # prompt, response_text), and without them `make shadow` fails with

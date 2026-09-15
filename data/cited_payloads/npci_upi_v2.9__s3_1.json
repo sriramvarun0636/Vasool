@@ -1,0 +1,678 @@
+{
+  "_PROVENANCE": {
+    "tier": "CITED",
+    "publisher": "National Payments Corporation of India (NPCI)",
+    "document": "Unified Payments Interface — Error and Response Codes",
+    "version": "2.9",
+    "version_date": "2024-01-17",
+    "marking": "Public - UPI V 2.9",
+    "retrieved": "2026-09-15",
+    "retrieved_from": "https://dth95m2xtyv8v.cloudfront.net/tesseract/assets/upi-tpap-sdk/UPI_Error_and_Response_Codes_2_9-HHLrJ.pdf",
+    "sha256": "93584968a0089d37c8cc7d730e1f06820841ea958a8a5bc0ee98bb14c6a231a4",
+    "transcribed_by": "tools/cite_npci.py",
+    "clause": "§3.1 Response codes in RespPay Debit, RespPay Credit, RespPay Debit (Mandate) & RespChkTxn API",
+    "pages": "6–11"
+  },
+  "codes": [
+    {
+      "code": "00",
+      "description": "APPROVED OR COMPLETED SUCCESSFULLY",
+      "remarks": null,
+      "td_bd": "-"
+    },
+    {
+      "code": "15",
+      "description": "ISSUER NOT LIVE ON UPI",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "59",
+      "description": "SUSPECTED FRAUD, DECLINE/TRANSACTIONS DECLINED BASED ON RISKSCORE BY REMITTER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "AM",
+      "description": "MPIN NOT SET BY CUSTOMER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "B1",
+      "description": "REGISTERED MOBILE NUMBER LINKED TO THE ACCOUNT HAS BEEN CHANGED/REMOVED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "B3",
+      "description": "TRANSACTION NOT PERMITTED TO THE ACCOUNT (EXAMPLE: MINOR ACCOUNT, PROPRIETOR ACCOUNT, LEGAL CASE AGAINST THIS ACCOUNT ETC., NRE (AS PER BANK’S POLICY))",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "B6",
+      "description": "MISMATCH IN PAYMENT DETAILS",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "CA",
+      "description": "COMPLIANCE ERROR CODE FOR ACQUIRER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "CI",
+      "description": "COMPLIANCE ERROR CODE FOR ISSUER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "DF",
+      "description": "DUPLICATE RRN FOUND IN THE TRANSACTION. (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "DT",
+      "description": "DUPLICATE RRN FOUND IN THE TRANSACTION. (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "HS",
+      "description": "BANKS HSM IS DOWN(REMITTER)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "IC",
+      "description": "DEBIT AMOUNT IS NOT BLOCKED FOR THE CUSTOMER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ID",
+      "description": "DEBIT AMOUNT GREATER THAN BLOCKED AMOUNT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "IE",
+      "description": "ADEQUATE FUNDS NOT AVAILABLE IN THE ACCOUNT BECAUSE FUNDS HAVE BEEN BLOCKED FOR MANDATE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "IR",
+      "description": "UNABLE TO PROCESS DUE TO INTERNAL EXCEPTION AT SERVER/CBS/ETC ON REMITTER SIDE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "K1",
+      "description": "SUSPECTED FRAUD, DECLINE / TRANSACTIONS DECLINED BASED ON RISK SCORE BY REMITTER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "LC",
+      "description": "UNABLE TO PROCESS CREDIT FROM BANK’S POOL/BGL ACCOUNT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "LD",
+      "description": "UNABLE TO PROCESS DEBIT IN BANK’S POOL/BGL ACCOUNT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "NO",
+      "description": "NO ORIGINAL REQUEST FOUND DURING DEBIT/CREDIT",
+      "remarks": "Members should not decline the original transaction with NO response code, it can be only used for a response to check transaction",
+      "td_bd": "TD"
+    },
+    {
+      "code": "PS",
+      "description": "MAXIMUM BALANCE EXCEEDED AS SET BY BENEFICIARY BANK",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "QU",
+      "description": "PAYER ACCOUNT HAS CHANGED(PAYER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "UA",
+      "description": "PSP NOT SUPPORTED BY UPI",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "UB",
+      "description": "UNABLE TO PROCESS DUE TO INTERNAL EXCEPTION AT SERVER/CBS/ETC ON BENEFICIARY SIDE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "UP",
+      "description": "PSP TIME-OUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "VA",
+      "description": "MANDATE HAS BEEN REVOKED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VB",
+      "description": "INCORRECT RECURRENCE PATTERN",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VC",
+      "description": "INCORRECT RECURRENCE PATTERN RULE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VD",
+      "description": "INCORRECT AMOUNT RULE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VE",
+      "description": "MANDATE IS ALREADY HONOURED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VF",
+      "description": "UMN DOES NOT EXIST (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VG",
+      "description": "PAYER VPA IS INCORRECT (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VH",
+      "description": "MANDATE SIGNATURE IS TAMPERED OR CORRUPT (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VI",
+      "description": "EXECUTION DAY AND EXECUTION RULE MISMATCH (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VJ",
+      "description": "PAYER ACCOUNT HAS CHANGED (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VK",
+      "description": "NUMBER OF MANDATES ALLOWED ON THIS ACCOUNT HAS EXCEEDED ISSUER'S LIMIT (OPTIONAL: AS PER BANK'S POLICY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VL",
+      "description": "MANDATE REGISTRATION NOT ALLOWED FOR CC PF PPF ACT (BANK'S POLICY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VM",
+      "description": "NATURE OF DEBIT NOT ALLOWED IN ACCOUNT TYPE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VO",
+      "description": "PAYMENT STOPPED BY COURT ORDER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VP",
+      "description": "WITHDRAWAL STOPPED OWING TO DEATH OF ACCOUNT HOLDER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VQ",
+      "description": "WITHDRAWAL STOPPED OWING TO INSOLVENCY OF ACCOUNT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VR",
+      "description": "WITHDRAWAL STOPPED OWING TO LUNACY OF ACCOUNT HOLD",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VS",
+      "description": "DUPLICATE MANDATE REQUEST FOR SAME ITEM",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VT",
+      "description": "MANDATE IS PAUSED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VU",
+      "description": "MANDATE HAS EXPIRED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VY",
+      "description": "PAYEE VPA IS INCORRECT (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "VZ",
+      "description": "PAYMENT STOPPED BY ATTACHMENT ORDER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "X6",
+      "description": "INVALID MERCHANT (ACQURIER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "X7",
+      "description": "MERCHANT NOT REACHABLE (ACQURIER)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "XB",
+      "description": "INVALID TRANSACTION OR IF MEMBER IS NOT ABLE TO FIND ANY APPROPRIATE RESPONSE CODE (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XC",
+      "description": "INVALID TRANSACTION OR IF MEMBER IS NOT ABLE TO FIND ANY APPROPRIATE RESPONSE CODE (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XD",
+      "description": "INVALID AMOUNT (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XE",
+      "description": "INVALID AMOUNT (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XF",
+      "description": "FORMAT ERROR (INVALID FORMAT) (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XG",
+      "description": "FORMAT ERROR (INVALID FORMAT) (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XH",
+      "description": "ACCOUNT DOES NOT EXIST (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XI",
+      "description": "ACCOUNT DOES NOT EXIST (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XJ",
+      "description": "REQUESTED FUNCTION NOT SUPPORTED (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XK",
+      "description": "REQUESTED FUNCTION NOT SUPPORTED (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XL",
+      "description": "EXPIRED CARD, DECLINE (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XM",
+      "description": "EXPIRED CARD, DECLINE (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XN",
+      "description": "NO CARD RECORD (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XO",
+      "description": "NO CARD RECORD (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XP",
+      "description": "TRANSACTION NOT PERMITTED TO CARDHOLDER (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XQ",
+      "description": "TRANSACTION NOT PERMITTED TO CARDHOLDER (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XR",
+      "description": "RESTRICTED CARD, DECLINE (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XS",
+      "description": "RESTRICTED CARD, DECLINE (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XT",
+      "description": "CUT-OFF IS IN PROCESS (REMITTER)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "XU",
+      "description": "CUT-OFF IS IN PROCESS (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "XV",
+      "description": "TRANSACTION CANNOT BE COMPLETED. COMPLIANCE VIOLATION (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XW",
+      "description": "TRANSACTION CANNOT BE COMPLETED. COMPLIANCE VIOLATION (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XX",
+      "description": "NO FINANCIAL ADDRESS RECORD FOUND",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "XY",
+      "description": "REMITTER CBS OFFLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "Y1",
+      "description": "BENEFICIARY CBS OFFLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "YA",
+      "description": "LOST OR STOLEN CARD (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YB",
+      "description": "LOST OR STOLEN CARD (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YC",
+      "description": "DO NOT HONOUR (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YD",
+      "description": "DO NOT HONOUR (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YE",
+      "description": "REMITTING ACCOUNT BLOCKED/FROZEN",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YF",
+      "description": "BENEFICIARY ACCOUNT BLOCKED/FROZEN",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YH",
+      "description": "MERCHANT ERROR(ACQUIRING BANK)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "YI",
+      "description": "INVALID RESPONSE CODE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "Z5",
+      "description": "INVALID BENEFICIARY CREDENTIALS",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "Z6",
+      "description": "NUMBER OF PIN TRIES EXCEEDED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "Z7",
+      "description": "TRANSACTION FREQUENCY LIMIT EXCEEDED AS SET BY REMITTING MEMBER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "Z8",
+      "description": "PER TRANSACTION LIMIT EXCEEDED AS SET BY REMITTING MEMBER",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "Z9",
+      "description": "INSUFFICIENT FUNDS IN CUSTOMER (REMITTER) ACCOUNT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZC",
+      "description": "ACQUIRER/BENEFICIARY UNAVAILABLE (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "ZD",
+      "description": "VALIDATION ERROR",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZF",
+      "description": "TRANSACTION NOT PERMITTED TO DEVICE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZI",
+      "description": "SUSPECTED FRAUD, DECLINE / TRANSACTIONS DECLINED BASED ON RISK SCORE BY BENEFICIARY",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZJ",
+      "description": "BENEFICIARY OR ACQUIRING SWITCH IS INOPERATIVE/NODE OFFLINE (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "ZK",
+      "description": "REMITTER SWITCH IS INOPERATIVE/NODE OFFLINE (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "ZL",
+      "description": "RECEIVED LATE RESPONSE (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "ZM",
+      "description": "INVALID MPIN",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZN",
+      "description": "FUNCTIONALITY NOT YET AVAILABLE FOR MERCHANT THROUGH THE ACQUIRING BANK",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZO",
+      "description": "FUNCTIONALITY NOT YET AVAILABLE FOR CUSTOMER THROUGH THE PAYEE PSP",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZP",
+      "description": "BANKS AS BENEFICIARY NOT LIVE ON PARTICULAR TXN TYPE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZQ",
+      "description": "UNABLE TO PROCESS REVERSAL (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZR",
+      "description": "INVALID OTP",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZS",
+      "description": "OTP EXPIRED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZT",
+      "description": "OTP TRANSACTION LIMIT EXCEEDED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZU",
+      "description": "LIMIT EXCEEDED FOR REMITTING BANK/ISSUING BANK",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZV",
+      "description": "INCORRECT OTP (Reserved for future purpose)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZX",
+      "description": "INACTIVE OR DORMANT ACCOUNT (REMITTER)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "ZY",
+      "description": "INACTIVE OR DORMANT ACCOUNT (BENEFICIARY)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "FL",
+      "description": "FIRST TRANSACTION LIMIT EXCEEDED",
+      "remarks": "SCENARIO: For a user doing 1st time transaction in UPI channel, 1st transaction limit will be limited to Rs5,000 only. Only transactions below Rs.5,000 will be approved and above Rs.5,000 will be rejected by the remitter bank.",
+      "td_bd": "BD"
+    },
+    {
+      "code": "FP",
+      "description": "FREEZE PERIOD FOR FIRST TIME USER",
+      "remarks": "SCENARIO: During the cool down period, the account holder has attempted a transaction of cumulative value greater than 5k (Including value of 1st txn) .This is valid for 24 hours from the first transaction.",
+      "td_bd": "BD"
+    },
+    {
+      "code": "MR",
+      "description": "Incorrect Account details due to Amalgamated/Merged Activity on Remitter Side (Remitter)",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "MB",
+      "description": "Incorrect Account details due to Amalgamated/Merged Activity on Beneficiary Side (Beneficiary)",
+      "remarks": null,
+      "td_bd": "BD"
+    }
+  ]
+}

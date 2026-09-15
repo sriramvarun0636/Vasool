@@ -165,13 +165,14 @@ tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
 
 | Path | Contents |
 |---|---|
-| `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation |
-| `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, and the LLM shadow |
+| `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation, and the three provenance tiers |
+| `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, and NPCI's UPI codes mapped to the taxonomy (not yet on any run path) |
 | `vasool/policy/` | Thirteen guards, the state machine, the transition log |
 | `vasool/actions/` | The executor — the only code permitted to call Razorpay |
 | `vasool/ledger/` | Hash-chained receipts and `verify_chain` |
 | `windtunnel/` | Simulator, universe, outcome model, evaluator, sweeps, adversary |
-| `tools/` | CLI entry points: demo, eval, redteam, shadow, report |
+| `tools/` | CLI entry points: demo, eval, redteam, shadow, report, the split check, and the NPCI transcription |
+| `data/` | Payloads in three tiers — observed, cited, simulated — plus cassettes and golden fixtures |
 | `docs/EVALUATION.md` | The pre-registered protocol. Append-only. |
-| `docs/taxonomy.md` | Why each failure class gets its intervention, and §9's known limits |
+| `docs/taxonomy.md` | Why each failure class gets its intervention, §9's known limits, and §11's UPI vocabulary |
 | `docs/VERIFIED.md` | What was learned from the live account, including what did not work |

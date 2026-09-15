@@ -1,0 +1,60 @@
+{
+  "_PROVENANCE": {
+    "tier": "CITED",
+    "publisher": "National Payments Corporation of India (NPCI)",
+    "document": "Unified Payments Interface — Error and Response Codes",
+    "version": "2.9",
+    "version_date": "2024-01-17",
+    "marking": "Public - UPI V 2.9",
+    "retrieved": "2026-09-15",
+    "retrieved_from": "https://dth95m2xtyv8v.cloudfront.net/tesseract/assets/upi-tpap-sdk/UPI_Error_and_Response_Codes_2_9-HHLrJ.pdf",
+    "sha256": "93584968a0089d37c8cc7d730e1f06820841ea958a8a5bc0ee98bb14c6a231a4",
+    "transcribed_by": "tools/cite_npci.py",
+    "clause": "§4.1 Response codes populated by UPI",
+    "pages": "23"
+  },
+  "codes": [
+    {
+      "code": "21",
+      "description": "NO ACTION TAKEN (FULL REVERSAL)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "32",
+      "description": "PARTIAL REVERSAL",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "BT",
+      "description": "ACQUIRER/BENEFICIARY UNAVAILABLE(TIMEOUT)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "RB",
+      "description": "CREDIT REVERSAL TIMEOUT(REVERSAL)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "RP",
+      "description": "PARTIAL DEBIT REVERSAL TIMEOUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "RR",
+      "description": "DEBIT REVERSAL TIMEOUT(REVERSAL)",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "UT",
+      "description": "REMITTER/ISSUER UNAVAILABLE (TIMEOUT)",
+      "remarks": null,
+      "td_bd": "TD"
+    }
+  ]
+}

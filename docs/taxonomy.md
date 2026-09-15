@@ -6,11 +6,15 @@ This is the intellectual core of the system. Everything downstream — the polic
 state machine, the guards, the evaluation — is mechanical once this is right.
 Get this wrong and a correct implementation still recovers nothing.
 
-**Provenance.** Every `error_reason` below has a payload in
-`data/observed_payloads/` (captured live) or `data/stubbed_payloads/`
-(documentation-derived, marked `_SIMULATED: true`). Per `the project rules`, a reason in
-neither directory does not exist. See `docs/VERIFIED.md` for why only
-`payment_failed` is reproducible live.
+**Provenance.** Every fact here carries one of three tiers
+(`vasool/events/provenance.py`): **observed**, captured live in
+`data/observed_payloads/`; **cited**, published by the operator of a rail, in
+`data/cited_payloads/`; or **simulated**, hand-built from documentation in
+`data/stubbed_payloads/` and marked `_SIMULATED: true`. Every Razorpay
+`error_reason` below has a payload in the first or the last — per `the project
+rules`, a reason in neither does not exist — and see `docs/VERIFIED.md` for why
+only `payment_failed` is reproducible live. The cited tier holds NPCI's UPI
+codes, which §11 maps.
 
 ---
 
@@ -751,3 +755,393 @@ If someone remembers nothing else about this file:
    payday, not on backoff.
 5. Unknown reasons fail safe to one silent retry and a human, logged loudly,
    because the unknown bucket filling up is how you learn the API changed.
+
+---
+
+## 11. UPI: NPCI's vocabulary, mapped
+
+Everything above classifies Razorpay's failure reasons. UPI had no vocabulary
+here at all, and the mandate rail (§2.5 of the programme) cannot be built
+without one. This section is that vocabulary and the judgement applied to it.
+
+**Provenance: `CITED`, a third tier.** The codes are NPCI's, transcribed
+verbatim into `data/cited_payloads/` from *Unified Payments Interface — Error
+and Response Codes*, version 2.9 (17 January 2024), a document NPCI marks
+"Public" on every page. Three sections, 225 codes: **§3.1**, the codes a
+remitter or beneficiary bank returns on a debit or credit, mandate debits
+included (printed pages 6–11); **§4.1**, the codes UPI itself returns on a
+timeout (page 23); and **§4.4**, errors from the UPI service layer (pages
+59–64). Those are the codes that end a payment. The rest of the document —
+reversals, meta APIs, mandate registration, message-level validation, UIDAI —
+describes other messages, and §2.5 extends the vocabulary when it needs them,
+with its own amendment. No copy hosted by NPCI was found, so every file pins
+the SHA-256 of the bytes it transcribes (`93584968…`), and
+`tools/cite_npci.py` re-derives the files from any copy with that hash.
+Registered in `docs/EVALUATION.md` §10, 2026-09-15.
+
+**The mapping is this project's judgement**, in `vasool/diagnosis/npci.py`,
+with every code's reason in the table below. The rules are that module's
+docstring. The line between `CUSTOMER_ACTION` and `INSTRUMENT_DEAD` is the one
+§4 already draws between `card_number_invalid` and
+`card_disabled_for_online_payments`. And the mapping is anchored to NPCI's own
+TD/BD column: no code marked TD lands in a class that blames the customer or
+the instrument, and no code marked BD lands in `TRANSIENT` — both tested.
+
+**Nothing uses it yet.** No classifier reads it, and nothing the simulator runs
+imports it. Which of these codes reach a merchant, and through which field of a
+Razorpay webhook, has never been observed. Nothing here assumes it.
+
+### What the vocabulary says about the taxonomy
+
+**92 of NPCI's 225 codes fit the five classes. 133 do not.** The rule was to
+record a misfit as unmapped, never to widen a class until the code fits, and
+the misfits are the most useful thing here. In order of consequence:
+
+1. **Money in flight — 30 codes (`RECONCILE`).** Timeouts on or after the
+   debit leg, pending, partial or failed reversals, duplicates, late responses,
+   and `VE MANDATE IS ALREADY HONOURED`. A timeout in the authorisation step
+   (`U09`, `U20`) comes before any debit and stays `TRANSIENT`. Every class above assumes a failed payment moved no money, but
+   these codes say it may have. `TRANSIENT`'s retry would be a second debit,
+   and so would the fifth sentence of §10: *unknown reasons fail safe to one
+   silent retry*. That sentence is right for the Razorpay reasons it was
+   written for and wrong for these thirty. The correct first action is a status
+   check (NPCI settles these through UDIR, §2.1 of its document), never a
+   retry. **§2.5 must not route an unmapped UPI code through the fail-safe.**
+2. **Legal stops — 5 codes (`LEGAL_STOP`).** Death of the account holder,
+   insolvency, incapacity, a court order, an attachment order.
+   `INSTRUMENT_DEAD` would send a re-authorisation link to a deceased
+   customer's phone, or into an insolvency moratorium. Like `RISK_BLOCK`, only
+   a human should act, but for a different reason and with a different
+   obligation, so these are not risk declines either.
+3. **Two codes, not one — 6 codes (`NO_CAUSE`).** `U30 DEBIT HAS BEEN FAILED`
+   reports an outcome and carries no cause. The cause is the bank's own code
+   that travels with it: NPCI defines an ErrorCode populated by UPI and a
+   RespCode populated by the bank (its §2.2 and §2.3). A UPI failure has to be
+   classified on the pair, which is §3's lesson — classify on
+   `(error_reason, error_source)`, not one field — arriving again on a new rail.
+4. **Caps — 10 codes (`CAP`).** Frequency, per-transaction and first-time-user
+   limits, the net-debit cap, a debit above its block. The instrument works and
+   the money is there. The request succeeds below the limit or once its window
+   resets: a time-shifted retry, as for `LIQUIDITY`, but timed to the cap's
+   window rather than to payday.
+5. **The merchant's own side — 26 codes (`PAYEE_SIDE`).** The beneficiary
+   account frozen, dormant or nonexistent, the merchant blocked, the acquirer
+   declining. Every class assumes the failure is the customer's or the rail's.
+   A message asking the customer to fix these would be false.
+6. **Integration faults — 50 codes (`INTEGRATION`).** Checksums, format and
+   validation errors, mismatches with the original request, and debits that
+   break their mandate's registered rules. An engineer's fault, found by an
+   engineer.
+7. **The rest — 4 `UNDESCRIBED`, 2 `NOT_A_DECLINE`.** NPCI's own catch-alls
+   (`XB`, `XC`, `YI`) and a code that does not say whose address failed to
+   resolve (`U29`). Then success (`00`), and `NO`, which NPCI reserves for
+   status checks.
+
+### What the document gets wrong, transcribed anyway
+
+The transcription is verbatim, so the document's own defects are part of it
+and are recorded here rather than silently fixed. **`U81` has two meanings**:
+"REMITTER BANK DEEMED CHECK DECLINE" in §4.4 and "UIDAI AUTH RES INVALID/FORMAT
+ERROR" in §4.5. That is why the vocabulary is keyed by `(section, code)`,
+never by code. **`MB7` and `MQ7`**, which describe mandate validity and
+merchant category, are printed inside §4.4's table under a repeated header.
+**Seven codes have no TD/BD value** (`ZL` in §3.1, and `S95`–`S98` and
+`HS1`–`HS3` in §4.4); they are left blank, not guessed. Typing errors such as
+"ACQURIER" are kept as printed. The one repair the extraction needed, `FL`'s
+flag wrapped past a page break, is recorded in `tools/cite_npci.py`.
+
+### Every code
+
+<!-- npci-table:start — generated by `python tools/cite_npci.py table`; do not edit -->
+
+#### `TRANSIENT` (48)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `HS` | BANKS HSM IS DOWN(REMITTER) | TD | a bank, switch or PSP failed technically; nothing moved |
+| 3.1 | `IR` | UNABLE TO PROCESS DUE TO INTERNAL EXCEPTION AT SERVER/CBS/ETC ON REMITTER SIDE | TD | a bank, switch or PSP failed technically; nothing moved |
+| 3.1 | `LD` | UNABLE TO PROCESS DEBIT IN BANK’S POOL/BGL ACCOUNT | TD | a bank, switch or PSP failed technically; nothing moved |
+| 3.1 | `UB` | UNABLE TO PROCESS DUE TO INTERNAL EXCEPTION AT SERVER/CBS/ETC ON BENEFICIARY SIDE | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 3.1 | `X7` | MERCHANT NOT REACHABLE (ACQURIER) | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 3.1 | `XT` | CUT-OFF IS IN PROCESS (REMITTER) | TD | the customer's bank is in its cut-off; nothing moved |
+| 3.1 | `XU` | CUT-OFF IS IN PROCESS (BENEFICIARY) | TD | the merchant's bank is in its cut-off; nothing moved |
+| 3.1 | `XY` | REMITTER CBS OFFLINE | TD | a bank, switch or PSP failed technically; nothing moved |
+| 3.1 | `Y1` | BENEFICIARY CBS OFFLINE | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 3.1 | `ZC` | ACQUIRER/BENEFICIARY UNAVAILABLE (Reserved for future purpose) | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 3.1 | `ZJ` | BENEFICIARY OR ACQUIRING SWITCH IS INOPERATIVE/NODE OFFLINE (Reserved for future purpose) | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 3.1 | `ZK` | REMITTER SWITCH IS INOPERATIVE/NODE OFFLINE (Reserved for future purpose) | TD | a bank, switch or PSP failed technically; nothing moved |
+| 4.1 | `21` | NO ACTION TAKEN (FULL REVERSAL) | TD | fully reversed: nothing moved, so a fresh attempt is safe |
+| 4.4 | `U08` | SYSTEM EXCEPTION | TD | a system exception inside UPI; nothing moved |
+| 4.4 | `U09` | REQAUTH TIME OUT FOR PAY | TD | the authorisation step timed out, before any debit |
+| 4.4 | `U13` | EXTERNAL ERROR | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U18` | REQUEST AUTHORISATION ACKNOWLEDGEMENT IS NOT RECEIVED | TD | the authorisation step went unacknowledged, before any debit |
+| 4.4 | `U20` | REQUEST AUTHORISATION TIMEOUT | TD | the authorisation step timed out, before any debit |
+| 4.4 | `U22` | CM REQUEST IS DECLINED | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U23` | CM REQUEST TIMEOUT | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U24` | CM REQUEST ACKNOWLEDGEMENT IS NOT RECEIVED | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U27` | NO RESPONSE FROM PSP | TD | the PSP did not respond, before any debit |
+| 4.4 | `U28` | REMITTER BANK NOT AVAILABLE | TD | a bank, switch or PSP failed technically; nothing moved |
+| 4.4 | `U40` | IMPS PROCESSING FAILED IN UPI | TD | a bank, switch or PSP failed technically; nothing moved |
+| 4.4 | `U41` | IMPS IS SIGNED OFF | TD | a bank, switch or PSP failed technically; nothing moved |
+| 4.4 | `U44` | FORM HAS BEEN SIGNED OFF | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U45` | FORM PROCESSING HAS BEEN FAILED IN UPI | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U72` | VAE FAILED | TD | NPCI marks it TD and describes it no further |
+| 4.4 | `U78` | BENEFICIARY BANK OFFLINE | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 4.4 | `U80` | PAYER PSP THROTTLE DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U81` | REMITTER BANK DEEMED CHECK DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U84` | BENEFICIARY BANK DEEMED CHECK DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U85` | CONNECTION TIMEOUT IN REQPAY DEBIT | TD | the request was never delivered, so nothing was debited |
+| 4.4 | `U86` | REMITTER BANK THROTTLING DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U89` | BENEFICIARY BANK THROTTLING DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U90` | REMITTER BANK DEEMED HIGH RESPONSE TIME CHECK DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U91` | BENEFICIARY BANK DEEMED HIGH RESPONSE TIME CHECK DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `U92` | PAYER PSP NOT AVAILABLE | TD | a bank, switch or PSP failed technically; nothing moved |
+| 4.4 | `U93` | PAYEE PSP NOT AVAILABLE | TD | the merchant's bank or acquirer failed technically; nothing moved, and the customer did nothing wrong |
+| 4.4 | `U94` | PAYEE PSP THROTTLE DECLINE | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `S93` | PAYEE_PSP_THROTTLE_DECLINE_OUTGOING_COUNT | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `S94` | PAYEE_PSP_THROTTLE_DECLINE_RESPONSE_TIME | TD | declined up front by a throttle or health check; nothing was sent |
+| 4.4 | `S96` | REMITTER_DISPATCH_FAILED | — | the request was never delivered, so nothing was debited |
+| 4.4 | `S97` | ADD_RESLN_DISPATCH_FAILED | — | address resolution was never dispatched, before any debit |
+| 4.4 | `S98` | ISSUER_DISPATCH_FAILED | — | the request was never delivered, so nothing was debited |
+| 4.4 | `HS1` | HSM_OFFINE | — | UPI's HSM was unavailable; nothing moved |
+| 4.4 | `HS2` | HSM_TIMEOUT | — | UPI's HSM was unavailable; nothing moved |
+| 4.4 | `HS3` | HSM_COMMUNICATION_ERROR | — | UPI's HSM was unavailable; nothing moved |
+
+#### `LIQUIDITY` (2)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `IE` | ADEQUATE FUNDS NOT AVAILABLE IN THE ACCOUNT BECAUSE FUNDS HAVE BEEN BLOCKED FOR MANDATE | BD | the funds exist but another mandate has blocked them |
+| 3.1 | `Z9` | INSUFFICIENT FUNDS IN CUSTOMER (REMITTER) ACCOUNT | BD | the account is short of funds right now |
+
+#### `INSTRUMENT_DEAD` (25)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `15` | ISSUER NOT LIVE ON UPI | BD | the customer's bank is not live on UPI |
+| 3.1 | `B1` | REGISTERED MOBILE NUMBER LINKED TO THE ACCOUNT HAS BEEN CHANGED/REMOVED | BD | the mobile number the UPI profile rests on changed; it must be re-registered |
+| 3.1 | `B3` | TRANSACTION NOT PERMITTED TO THE ACCOUNT (EXAMPLE: MINOR ACCOUNT, PROPRIETOR ACCOUNT, LEGAL CASE AGAINST THIS ACCOUNT ETC., NRE (AS PER BANK’S POLICY)) | BD | the bank does not permit this account to be debited this way |
+| 3.1 | `IC` | DEBIT AMOUNT IS NOT BLOCKED FOR THE CUSTOMER | BD | the block this debit draws on does not exist |
+| 3.1 | `QU` | PAYER ACCOUNT HAS CHANGED(PAYER) | BD | the account behind the payer's address changed |
+| 3.1 | `VA` | MANDATE HAS BEEN REVOKED | BD | the mandate was revoked |
+| 3.1 | `VF` | UMN DOES NOT EXIST (REMITTER) | BD | the bank holds no mandate with this UMN |
+| 3.1 | `VG` | PAYER VPA IS INCORRECT (REMITTER) | BD | the payer address on the mandate is wrong |
+| 3.1 | `VJ` | PAYER ACCOUNT HAS CHANGED (REMITTER) | BD | the account behind the mandate changed |
+| 3.1 | `VL` | MANDATE REGISTRATION NOT ALLOWED FOR CC PF PPF ACT (BANK'S POLICY) | BD | this account type cannot carry a mandate |
+| 3.1 | `VM` | NATURE OF DEBIT NOT ALLOWED IN ACCOUNT TYPE | BD | this account type does not allow this kind of debit |
+| 3.1 | `VU` | MANDATE HAS EXPIRED | BD | the mandate expired |
+| 3.1 | `XH` | ACCOUNT DOES NOT EXIST (REMITTER) | BD | the customer's account does not exist |
+| 3.1 | `XJ` | REQUESTED FUNCTION NOT SUPPORTED (REMITTER) | BD | the customer's bank does not support this function |
+| 3.1 | `XL` | EXPIRED CARD, DECLINE (REMITTER) | BD | the card on record expired, as card_expired |
+| 3.1 | `XN` | NO CARD RECORD (REMITTER) | BD | the bank holds no record of the card |
+| 3.1 | `XP` | TRANSACTION NOT PERMITTED TO CARDHOLDER (REMITTER) | BD | the card is not permitted this transaction, as card_disabled_for_online_payments |
+| 3.1 | `XR` | RESTRICTED CARD, DECLINE (REMITTER) | BD | the card is restricted |
+| 3.1 | `XX` | NO FINANCIAL ADDRESS RECORD FOUND | BD | no account is mapped to this payment address |
+| 3.1 | `YC` | DO NOT HONOUR (REMITTER) | BD | a generic 'do not honour': one probe, then dead, exactly as card_declined |
+| 3.1 | `YE` | REMITTING ACCOUNT BLOCKED/FROZEN | BD | the customer's account is blocked or frozen; the code does not say why |
+| 3.1 | `Z6` | NUMBER OF PIN TRIES EXCEEDED | BD | too many wrong PINs: the bank has locked UPI on this account |
+| 3.1 | `ZF` | TRANSACTION NOT PERMITTED TO DEVICE | BD | the bank does not permit payments from this device |
+| 3.1 | `ZX` | INACTIVE OR DORMANT ACCOUNT (REMITTER) | BD | the customer's account is inactive or dormant |
+| 3.1 | `MR` | Incorrect Account details due to Amalgamated/Merged Activity on Remitter Side (Remitter) | BD | the account details changed in a bank merger |
+
+#### `CUSTOMER_ACTION` (7)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `AM` | MPIN NOT SET BY CUSTOMER | BD | the customer has not set a UPI PIN yet |
+| 3.1 | `VT` | MANDATE IS PAUSED | BD | the customer paused the mandate; it works again once they resume it |
+| 3.1 | `ZM` | INVALID MPIN | BD | the customer entered a wrong PIN |
+| 3.1 | `ZR` | INVALID OTP | BD | the customer entered a wrong OTP |
+| 3.1 | `ZS` | OTP EXPIRED | BD | the OTP expired before the customer used it |
+| 3.1 | `ZV` | INCORRECT OTP (Reserved for future purpose) | BD | the customer entered a wrong OTP |
+| 4.4 | `U69` | COLLECT EXPIRED | BD | the customer did not approve the collect request before it expired |
+
+#### `RISK_BLOCK` (10)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `59` | SUSPECTED FRAUD, DECLINE/TRANSACTIONS DECLINED BASED ON RISKSCORE BY REMITTER | BD | a risk engine suspected fraud |
+| 3.1 | `CI` | COMPLIANCE ERROR CODE FOR ISSUER | BD | a compliance decline; if it is screening, an automated request is tipping-off |
+| 3.1 | `K1` | SUSPECTED FRAUD, DECLINE / TRANSACTIONS DECLINED BASED ON RISK SCORE BY REMITTER | BD | a risk engine suspected fraud |
+| 3.1 | `VH` | MANDATE SIGNATURE IS TAMPERED OR CORRUPT (REMITTER) | BD | the mandate's signature is tampered or corrupt |
+| 3.1 | `XV` | TRANSACTION CANNOT BE COMPLETED. COMPLIANCE VIOLATION (REMITTER) | BD | a compliance decline; if it is screening, an automated request is tipping-off |
+| 3.1 | `YA` | LOST OR STOLEN CARD (REMITTER) | BD | a card reported lost or stolen: its holder may not know, or may not be the one paying |
+| 3.1 | `ZI` | SUSPECTED FRAUD, DECLINE / TRANSACTIONS DECLINED BASED ON RISK SCORE BY BENEFICIARY | BD | a risk engine suspected fraud |
+| 4.4 | `M16` | AI MODEL DECLINE | BD | NPCI's AI model declined it |
+| 4.4 | `U16` | RISK THRESHOLD EXCEEDED | BD | UPI's risk threshold was exceeded |
+| 4.4 | `U66` | DEVICE FINGERPRINT MISMATCH | BD | the device is not the one the bank registered: the pattern of account takeover |
+
+#### Unmapped — `RECONCILE` (30)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `DF` | DUPLICATE RRN FOUND IN THE TRANSACTION. (BENEFICIARY) | BD | a duplicate: an earlier request decides, and it may have succeeded |
+| 3.1 | `DT` | DUPLICATE RRN FOUND IN THE TRANSACTION. (REMITTER) | BD | a duplicate: an earlier request decides, and it may have succeeded |
+| 3.1 | `UP` | PSP TIME-OUT | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 3.1 | `VE` | MANDATE IS ALREADY HONOURED | BD | this execution was already honoured: a retry would collect twice |
+| 3.1 | `VS` | DUPLICATE MANDATE REQUEST FOR SAME ITEM | BD | a duplicate: an earlier request decides, and it may have succeeded |
+| 3.1 | `ZL` | RECEIVED LATE RESPONSE (Reserved for future purpose) | — | a late response may have carried a success |
+| 3.1 | `ZQ` | UNABLE TO PROCESS REVERSAL (Reserved for future purpose) | BD | a reversal is pending, partial or failed: money has moved |
+| 4.1 | `32` | PARTIAL REVERSAL | TD | a reversal is pending, partial or failed: money has moved |
+| 4.1 | `BT` | ACQUIRER/BENEFICIARY UNAVAILABLE(TIMEOUT) | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 4.1 | `RB` | CREDIT REVERSAL TIMEOUT(REVERSAL) | TD | a reversal is pending, partial or failed: money has moved |
+| 4.1 | `RP` | PARTIAL DEBIT REVERSAL TIMEOUT | TD | a reversal is pending, partial or failed: money has moved |
+| 4.1 | `RR` | DEBIT REVERSAL TIMEOUT(REVERSAL) | TD | a reversal is pending, partial or failed: money has moved |
+| 4.1 | `UT` | REMITTER/ISSUER UNAVAILABLE (TIMEOUT) | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 4.4 | `U01` | THE REQUEST IS DUPLICATE | TD | a duplicate: an earlier request decides, and it may have succeeded |
+| 4.4 | `U26` | PSP REQUEST CREDIT PAY ACKNOWLEDGEMENT IS NOT RECEIVED | TD | the credit leg follows the debit, so the customer may already be charged |
+| 4.4 | `U32` | CREDIT REVERT HAS BEEN FAILED | TD | a reversal is pending, partial or failed: money has moved |
+| 4.4 | `U33` | DEBIT REVERT HAS BEEN FAILED | TD | a reversal is pending, partial or failed: money has moved |
+| 4.4 | `U35` | RESPONSE IS ALREADY BEEN RECEIVED | TD | a duplicate: an earlier request decides, and it may have succeeded |
+| 4.4 | `U36` | REQUEST IS ALREADY BEEN SENT | TD | a duplicate: an earlier request decides, and it may have succeeded |
+| 4.4 | `U37` | REVERSAL HAS BEEN SENT | TD | a reversal is pending, partial or failed: money has moved |
+| 4.4 | `U38` | RESPONSE IS ALREADY BEEN SENT | TD | a duplicate: an earlier request decides, and it may have succeeded |
+| 4.4 | `U42` | IMPS TRANSACTION IS ALREADY BEEN PROCESSED | TD | a duplicate: an earlier request decides, and it may have succeeded |
+| 4.4 | `U53` | PSP REQUEST PAY DEBIT ACKNOWLEDGEMENT NOT RECEIVED | TD | the debit leg went unacknowledged: it may have happened |
+| 4.4 | `U67` | DEBIT TIMEOUT | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 4.4 | `U68` | CREDIT TIMEOUT | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 4.4 | `U70` | RECEIVED LATE RESPONSE | TD | a late response may have carried a success |
+| 4.4 | `U82` | READ TIMEOUT IN REQPAY CREDIT | TD | the credit leg follows the debit, so the customer may already be charged |
+| 4.4 | `U87` | READ TIMEOUT IN REQPAY DEBIT | TD | a timeout: whether money moved is settled later, by status check or UDIR |
+| 4.4 | `U88` | CONNECTION TIMEOUT IN REQPAY CREDIT | TD | the credit leg follows the debit, so the customer may already be charged |
+| 4.4 | `S95` | BENEFICIARY_DISPATCH_FAILED | — | the credit leg follows the debit, so the customer may already be charged |
+
+#### Unmapped — `LEGAL_STOP` (5)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `VO` | PAYMENT STOPPED BY COURT ORDER | BD | a legal status stops the account; no automated request should go out |
+| 3.1 | `VP` | WITHDRAWAL STOPPED OWING TO DEATH OF ACCOUNT HOLDER | BD | a legal status stops the account; no automated request should go out |
+| 3.1 | `VQ` | WITHDRAWAL STOPPED OWING TO INSOLVENCY OF ACCOUNT | BD | a legal status stops the account; no automated request should go out |
+| 3.1 | `VR` | WITHDRAWAL STOPPED OWING TO LUNACY OF ACCOUNT HOLD | BD | a legal status stops the account; no automated request should go out |
+| 3.1 | `VZ` | PAYMENT STOPPED BY ATTACHMENT ORDER | BD | a legal status stops the account; no automated request should go out |
+
+#### Unmapped — `CAP` (10)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `ID` | DEBIT AMOUNT GREATER THAN BLOCKED AMOUNT | BD | the debit exceeds the amount blocked for it |
+| 3.1 | `VK` | NUMBER OF MANDATES ALLOWED ON THIS ACCOUNT HAS EXCEEDED ISSUER'S LIMIT (OPTIONAL: AS PER BANK'S POLICY) | BD | the account holds as many mandates as its bank allows |
+| 3.1 | `Z7` | TRANSACTION FREQUENCY LIMIT EXCEEDED AS SET BY REMITTING MEMBER | BD | a limit binds while the instrument works and the money exists |
+| 3.1 | `Z8` | PER TRANSACTION LIMIT EXCEEDED AS SET BY REMITTING MEMBER | BD | a limit binds while the instrument works and the money exists |
+| 3.1 | `ZT` | OTP TRANSACTION LIMIT EXCEEDED | BD | a limit binds while the instrument works and the money exists |
+| 3.1 | `ZU` | LIMIT EXCEEDED FOR REMITTING BANK/ISSUING BANK | BD | a limit binds while the instrument works and the money exists |
+| 3.1 | `FL` | FIRST TRANSACTION LIMIT EXCEEDED | BD | a first-time user's first transaction is capped |
+| 3.1 | `FP` | FREEZE PERIOD FOR FIRST TIME USER | BD | a first-time user is inside the 24-hour cool-down |
+| 4.4 | `U02` | AMOUNT CAP IS EXCEEDED | BD | a limit binds while the instrument works and the money exists |
+| 4.4 | `U03` | NET DEBIT CAP IS EXCEEDED | BD | the bank's net debit cap: a system limit that resets |
+
+#### Unmapped — `PAYEE_SIDE` (26)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `CA` | COMPLIANCE ERROR CODE FOR ACQUIRER | BD | a compliance decline at the merchant's acquirer |
+| 3.1 | `LC` | UNABLE TO PROCESS CREDIT FROM BANK’S POOL/BGL ACCOUNT | BD | the beneficiary bank could not credit from its pool account |
+| 3.1 | `PS` | MAXIMUM BALANCE EXCEEDED AS SET BY BENEFICIARY BANK | BD | the merchant's account is at its maximum balance |
+| 3.1 | `VY` | PAYEE VPA IS INCORRECT (REMITTER) | BD | the merchant's own address on the debit is wrong |
+| 3.1 | `X6` | INVALID MERCHANT (ACQURIER) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XI` | ACCOUNT DOES NOT EXIST (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XK` | REQUESTED FUNCTION NOT SUPPORTED (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XM` | EXPIRED CARD, DECLINE (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XO` | NO CARD RECORD (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XQ` | TRANSACTION NOT PERMITTED TO CARDHOLDER (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XS` | RESTRICTED CARD, DECLINE (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `XW` | TRANSACTION CANNOT BE COMPLETED. COMPLIANCE VIOLATION (BENEFICIARY) | BD | a compliance decline on the merchant's side |
+| 3.1 | `YB` | LOST OR STOLEN CARD (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `YD` | DO NOT HONOUR (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `YF` | BENEFICIARY ACCOUNT BLOCKED/FROZEN | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `YH` | MERCHANT ERROR(ACQUIRING BANK) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `Z5` | INVALID BENEFICIARY CREDENTIALS | BD | the beneficiary's credentials are invalid |
+| 3.1 | `ZN` | FUNCTIONALITY NOT YET AVAILABLE FOR MERCHANT THROUGH THE ACQUIRING BANK | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `ZO` | FUNCTIONALITY NOT YET AVAILABLE FOR CUSTOMER THROUGH THE PAYEE PSP | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `ZP` | BANKS AS BENEFICIARY NOT LIVE ON PARTICULAR TXN TYPE | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `ZY` | INACTIVE OR DORMANT ACCOUNT (BENEFICIARY) | BD | the merchant's own side failed; nothing the customer does helps |
+| 3.1 | `MB` | Incorrect Account details due to Amalgamated/Merged Activity on Beneficiary Side (Beneficiary) | BD | the merchant's own side failed; nothing the customer does helps |
+| 4.4 | `MQ7` | MCC Code Not Mapped with Purpose | BD | the merchant's MCC is not mapped to the purpose |
+| 4.4 | `U71` | MERCHANT CREDIT NOT SUPPORTED IN IMPS | TD | the merchant's account cannot take this credit |
+| 4.4 | `U77` | MERCHANT BLOCKED | TD | the merchant itself is blocked |
+| 4.4 | `U95` | PAYEE VPA AADHAAR OR IIN VPA IS DISABLED | BD | the merchant's payment address is disabled |
+
+#### Unmapped — `INTEGRATION` (50)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `B6` | MISMATCH IN PAYMENT DETAILS | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 3.1 | `UA` | PSP NOT SUPPORTED BY UPI | BD | the PSP is not supported by UPI |
+| 3.1 | `VB` | INCORRECT RECURRENCE PATTERN | BD | the debit breaks its mandate's registered rules: the merchant's schedule is wrong |
+| 3.1 | `VC` | INCORRECT RECURRENCE PATTERN RULE | BD | the debit breaks its mandate's registered rules: the merchant's schedule is wrong |
+| 3.1 | `VD` | INCORRECT AMOUNT RULE | BD | the debit breaks its mandate's registered rules: the merchant's schedule is wrong |
+| 3.1 | `VI` | EXECUTION DAY AND EXECUTION RULE MISMATCH (REMITTER) | BD | the debit breaks its mandate's registered rules: the merchant's schedule is wrong |
+| 3.1 | `XD` | INVALID AMOUNT (REMITTER) | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 3.1 | `XE` | INVALID AMOUNT (BENEFICIARY) | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 3.1 | `XF` | FORMAT ERROR (INVALID FORMAT) (REMITTER) | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 3.1 | `XG` | FORMAT ERROR (INVALID FORMAT) (BENEFICIARY) | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 3.1 | `ZD` | VALIDATION ERROR | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U04` | REQUEST IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U05` | FORMATION IS NOT PROPER | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `MB7` | Validity greater than 1 year not allowed | BD | a mandate longer than a year was requested |
+| 4.4 | `U06` | TRANSACTION ID IS MISMATCHED | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U07` | VALIDATION ERROR | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U10` | ILLEGAL OPERATION | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U11` | CREDENTIALS IS NOT PRESENT | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U12` | AMOUNT OR CURRENCY MISMATCH | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U14` | ENCRYPTION ERROR | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U15` | CHECKSUM FAILED | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U17` | PSP IS NOT REGISTERED | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U21` | REQUEST AUTHORISATION IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U25` | CM URL IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U46` | REQUEST CREDIT IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U47` | REQUEST DEBIT IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U48` | TRANSACTION ID IS NOT PRESENT | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U49` | REQUEST MESSAGE ID IS NOT PRESENT | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U50` | IFSC IS NOT PRESENT | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U51` | REQUEST REFUND IS NOT FOUND | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U52` | PSP ORGID NOT FOUND | BD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U54` | TRANSACTION ID OR AMOUNT IN CREDENTIAL BLOCK DOES NOT MATCH WITH THAT IN REQPAY | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U55` | MESSAGE INTEGRITY FAILED DUE TO ORGID MISMATCH | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U56` | NUMBER OF PAYEES DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U57` | PAYEE AMOUNT DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U58` | PAYER AMOUNT DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U59` | PAYEE ADDRESS DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U60` | PAYER ADDRESS DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U61` | PAYEE INFO DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U62` | PAYER INFO DIFFERS FROM ORIGINAL REQUEST | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U63` | DEVICE REGISTRATION FAILED IN UPI | TD | device registration, not a payment |
+| 4.4 | `U64` | DATA TAG SHOULD CONTAIN 4 PARTS DURING DEVICE REGISTRATION | TD | device registration, not a payment |
+| 4.4 | `U65` | CREDS BLOCK SHOULD CONTAIN CORRECT ELEMENTS DURING DEVICE REGISTRATION | TD | device registration, not a payment |
+| 4.4 | `U74` | PAYER ACCOUNT MISMATCH | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U75` | PAYEE ACCOUNT MISMATCH | TD | a malformed or mismatched message: an engineer's fault, not the customer's |
+| 4.4 | `U76` | MOBILE BANKING REGISTRATION FORMAT NOT SUPPORTED BY THE ISSUER BANK | TD | mobile-banking registration, not a payment |
+| 4.4 | `U96` | PAYER AND PAYEE IFSC/ACNUM CAN'T BE SAME | BD | payer and payee are the same account |
+| 4.4 | `U97` | PSP REQUEST META ACKNOWLEDGEMENT NOT RECEIVED | TD | a meta transaction, not a payment |
+| 4.4 | `U98` | NULL ACK RECEIVED BY UPI FOR META TRANSACTION | TD | a meta transaction, not a payment |
+| 4.4 | `U99` | NEGATIVE ACK RECEIVED BY UPI FOR META TRANSACTION | TD | a meta transaction, not a payment |
+
+#### Unmapped — `NO_CAUSE` (6)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 4.4 | `U19` | REQUEST AUTHORISATION IS DECLINED | BD | the PSP declined authorisation; the reason is in its own code, outside this vocabulary |
+| 4.4 | `U30` | DEBIT HAS BEEN FAILED | NA | an outcome without a cause; classify on the code that accompanies it |
+| 4.4 | `U31` | CREDIT HAS BEEN FAILED | NA | an outcome without a cause; classify on the code that accompanies it |
+| 4.4 | `U34` | REVERTED | NA | an outcome without a cause; classify on the code that accompanies it |
+| 4.4 | `U39` | TRANSACTION IS ALREADY BEEN FAILED | TD | an earlier failure decides; its own code carries the cause |
+| 4.4 | `U43` | IMPS IS DECLINED | NA | an outcome without a cause; classify on the code that accompanies it |
+
+#### Unmapped — `UNDESCRIBED` (4)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `XB` | INVALID TRANSACTION OR IF MEMBER IS NOT ABLE TO FIND ANY APPROPRIATE RESPONSE CODE (REMITTER) | BD | NPCI's own catch-all for a member with no better code |
+| 3.1 | `XC` | INVALID TRANSACTION OR IF MEMBER IS NOT ABLE TO FIND ANY APPROPRIATE RESPONSE CODE (BENEFICIARY) | BD | NPCI's own catch-all for a member with no better code |
+| 3.1 | `YI` | INVALID RESPONSE CODE | BD | the bank returned a response code UPI does not recognise |
+| 4.4 | `U29` | ADDRESS RESOLUTION IS FAILED | NA | does not say whose address failed to resolve, the customer's or the merchant's |
+
+#### Unmapped — `NOT_A_DECLINE` (2)
+
+| § | Code | NPCI's description | TD/BD | Why |
+|---|---|---|---|---|
+| 3.1 | `00` | APPROVED OR COMPLETED SUCCESSFULLY | - | success |
+| 3.1 | `NO` | NO ORIGINAL REQUEST FOUND DURING DEBIT/CREDIT | TD | NPCI reserves it for status checks: 'members should not decline' with it |
+
+<!-- npci-table:end -->

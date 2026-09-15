@@ -42,7 +42,7 @@ ifeq ($(strip $(LIVE)),1)
 DEMO_ARGS += --live
 endif
 
-.PHONY: demo golden eval sweeps sweep-one shadow redteam report replay all
+.PHONY: demo golden eval sweeps sweep-one split-check shadow redteam report replay all
 
 demo: ## one recovery episode, end to end, replay by default -- LIVE=1 make demo to opt in (see vasool/demo.py --help)
 	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
@@ -58,6 +58,9 @@ sweeps: ## eval + §7's sensitivity grid (83 configs + reference x 200 seeds -- 
 
 sweep-one: ## one parameter's 4 configs + reference -- TARGET=amount_sigma_log make sweep-one
 	$(PYTHON) tools/evaluate.py --skip-base --sweep-target $(TARGET) $(EVAL_ARGS)
+
+split-check: ## §10 2026-09-14's registered check: the headline under five other splits (~25 min, resumable) -- writes out/robustness/
+	$(PYTHON) tools/split_check.py
 
 shadow: ## §4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; REPEATS=N sets depth; PARTIAL=1 replays only recorded cells; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)

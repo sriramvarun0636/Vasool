@@ -152,6 +152,12 @@ No arm moved more than 0.19pp. Every conclusion replicates in sign, magnitude an
 
 Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, with the two limits on it stated — F6 is not evaluated on the holdout, and F7 reports `null` there because that run predates the amendment that wired it. **The holdout was not re-run to fix that**, because a second execution is exactly what §3c forbids.
 
+**Which agent it describes.** The holdout ran on the morning of 2026-08-29 against the code at commit `99d7b89` — not the tagged submission, which came 27 commits later. That was an inference from timestamps, so it was checked: 54 holdout rows recomputed at `99d7b89` are byte-identical to the frozen shards ([§10, 2026-09-14](docs/EVALUATION.md)).
+
+### Robust to the split
+
+§3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between −16.46 and −16.26 points, every 95% interval excluding zero, and the registered split fourth of six, in the middle. The one place it sits at an edge is stated rather than left to be found: Vasool's own recovery rate under the registered split is the highest of the six, by less than a hundredth of a point. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
+
 ### What the gap bought
 
 - **1,000 / 1,000 seeds** satisfy the [§2a safety predicate](docs/EVALUATION.md) — eight ledger-scanned claims covering contact windows, DLT templates, risk blocks, consent withdrawal, dead-instrument retries, contact caps, hash-chain integrity and receipt uniqueness.
@@ -188,7 +194,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 1,490 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 1,526 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -246,6 +252,7 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 | Vasool exhausts a budget 0 times | `per_arm.vasool.closure.exhausted` | `0` |
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
 | 19 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `19` |
+| The conclusion holds under five other splits | `out/robustness/split_check.json` → `robust` | `true` |
 
 The dashboard makes this checkable without leaving the page: **click _trace every number_ and every figure on it displays the exact manifest key it was read from** — the button reports how many, so the count is never a number this README can get wrong. A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
 
@@ -502,12 +509,12 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 
 - **Not** that Vasool would recover 49% of *your* failed payments. It measures a model, and the model is mine.
 - **Eight of the nine outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
-- **Nine of ten error reasons are `_SIMULATED`.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use. That finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md).
+- **Nine of ten Razorpay failure reasons are `_SIMULATED`, and the UPI vocabulary is cited, not observed.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use; that finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md). Every fact now carries one of three tiers: **1** Razorpay reason observed live, **9** hand-built from documentation, and **225** UPI codes transcribed from NPCI's public specification — of which **92** fit the five failure classes and **133** do not, each with its reason, the most consequential being thirty codes that mean money may already have moved ([`docs/taxonomy.md` §11](docs/taxonomy.md)). None of the 225 has been seen arriving through Razorpay, and nothing runs on them yet.
 - **Subscriptions were unavailable pre-activation**, so the failed-mandate loop is stub-only.
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — forty-two of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — forty-four of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -518,14 +525,15 @@ Every amendment to the protocol after registration — forty-two of them — is 
 | [`POSTMORTEM.md`](POSTMORTEM.md) | **Seven incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 33 places the code flags its own uncertainty |
-| [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, and the LLM shadow (which never touches a ledger) |
+| [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), and NPCI's 225 UPI codes mapped to it |
+| [`data/cited_payloads/`](data/cited_payloads/) | The third provenance tier: NPCI's UPI response codes, transcribed verbatim, each file pinned to the SHA-256 of the specification it cites |
 | [`vasool/policy/`](vasool/policy/) | Thirteen pure-function guards, the state machine, the transition log |
 | [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |
 | [`vasool/ledger/`](vasool/ledger/) | Hash-chained receipts and `verify_chain` |
 | [`windtunnel/`](windtunnel/) | The simulator, the outcome model, the evaluator, and the adversary |
 | [`docs/theatre/`](docs/theatre/) | **The episode theatre.** One episode replayed in the browser, exported from `vasool/demo.py`'s own traversal — the same one `data/golden/` pins byte-for-byte |
 | [`docs/EVALUATION.md`](docs/EVALUATION.md) | The pre-registered protocol. Append-only. |
-| [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, and §9's known limits |
+| [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, §9's known limits, and §11: what NPCI's vocabulary says the five classes miss |
 | [`docs/VERIFIED.md`](docs/VERIFIED.md) | Everything learned from the live account, including what did not work |
 
 ---

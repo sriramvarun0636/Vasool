@@ -1,0 +1,666 @@
+{
+  "_PROVENANCE": {
+    "tier": "CITED",
+    "publisher": "National Payments Corporation of India (NPCI)",
+    "document": "Unified Payments Interface — Error and Response Codes",
+    "version": "2.9",
+    "version_date": "2024-01-17",
+    "marking": "Public - UPI V 2.9",
+    "retrieved": "2026-09-15",
+    "retrieved_from": "https://dth95m2xtyv8v.cloudfront.net/tesseract/assets/upi-tpap-sdk/UPI_Error_and_Response_Codes_2_9-HHLrJ.pdf",
+    "sha256": "93584968a0089d37c8cc7d730e1f06820841ea958a8a5bc0ee98bb14c6a231a4",
+    "transcribed_by": "tools/cite_npci.py",
+    "clause": "§4.4 Errors from UPI Service Layer",
+    "pages": "59–64"
+  },
+  "codes": [
+    {
+      "code": "M16",
+      "description": "AI MODEL DECLINE",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U01",
+      "description": "THE REQUEST IS DUPLICATE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U02",
+      "description": "AMOUNT CAP IS EXCEEDED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U03",
+      "description": "NET DEBIT CAP IS EXCEEDED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U04",
+      "description": "REQUEST IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U05",
+      "description": "FORMATION IS NOT PROPER",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "MB7",
+      "description": "Validity greater than 1 year not allowed",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "MQ7",
+      "description": "MCC Code Not Mapped with Purpose",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U06",
+      "description": "TRANSACTION ID IS MISMATCHED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U07",
+      "description": "VALIDATION ERROR",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U08",
+      "description": "SYSTEM EXCEPTION",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U09",
+      "description": "REQAUTH TIME OUT FOR PAY",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U10",
+      "description": "ILLEGAL OPERATION",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U11",
+      "description": "CREDENTIALS IS NOT PRESENT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U12",
+      "description": "AMOUNT OR CURRENCY MISMATCH",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U13",
+      "description": "EXTERNAL ERROR",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U14",
+      "description": "ENCRYPTION ERROR",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U15",
+      "description": "CHECKSUM FAILED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U16",
+      "description": "RISK THRESHOLD EXCEEDED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U17",
+      "description": "PSP IS NOT REGISTERED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U18",
+      "description": "REQUEST AUTHORISATION ACKNOWLEDGEMENT IS NOT RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U19",
+      "description": "REQUEST AUTHORISATION IS DECLINED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U20",
+      "description": "REQUEST AUTHORISATION TIMEOUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U21",
+      "description": "REQUEST AUTHORISATION IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U22",
+      "description": "CM REQUEST IS DECLINED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U23",
+      "description": "CM REQUEST TIMEOUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U24",
+      "description": "CM REQUEST ACKNOWLEDGEMENT IS NOT RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U25",
+      "description": "CM URL IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U26",
+      "description": "PSP REQUEST CREDIT PAY ACKNOWLEDGEMENT IS NOT RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U27",
+      "description": "NO RESPONSE FROM PSP",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U28",
+      "description": "REMITTER BANK NOT AVAILABLE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U29",
+      "description": "ADDRESS RESOLUTION IS FAILED",
+      "remarks": null,
+      "td_bd": "NA"
+    },
+    {
+      "code": "U30",
+      "description": "DEBIT HAS BEEN FAILED",
+      "remarks": null,
+      "td_bd": "NA"
+    },
+    {
+      "code": "U31",
+      "description": "CREDIT HAS BEEN FAILED",
+      "remarks": null,
+      "td_bd": "NA"
+    },
+    {
+      "code": "U32",
+      "description": "CREDIT REVERT HAS BEEN FAILED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U33",
+      "description": "DEBIT REVERT HAS BEEN FAILED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U34",
+      "description": "REVERTED",
+      "remarks": null,
+      "td_bd": "NA"
+    },
+    {
+      "code": "U35",
+      "description": "RESPONSE IS ALREADY BEEN RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U36",
+      "description": "REQUEST IS ALREADY BEEN SENT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U37",
+      "description": "REVERSAL HAS BEEN SENT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U38",
+      "description": "RESPONSE IS ALREADY BEEN SENT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U39",
+      "description": "TRANSACTION IS ALREADY BEEN FAILED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U40",
+      "description": "IMPS PROCESSING FAILED IN UPI",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U41",
+      "description": "IMPS IS SIGNED OFF",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U42",
+      "description": "IMPS TRANSACTION IS ALREADY BEEN PROCESSED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U43",
+      "description": "IMPS IS DECLINED",
+      "remarks": null,
+      "td_bd": "NA"
+    },
+    {
+      "code": "U44",
+      "description": "FORM HAS BEEN SIGNED OFF",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U45",
+      "description": "FORM PROCESSING HAS BEEN FAILED IN UPI",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U46",
+      "description": "REQUEST CREDIT IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U47",
+      "description": "REQUEST DEBIT IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U48",
+      "description": "TRANSACTION ID IS NOT PRESENT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U49",
+      "description": "REQUEST MESSAGE ID IS NOT PRESENT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U50",
+      "description": "IFSC IS NOT PRESENT",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U51",
+      "description": "REQUEST REFUND IS NOT FOUND",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U52",
+      "description": "PSP ORGID NOT FOUND",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U53",
+      "description": "PSP REQUEST PAY DEBIT ACKNOWLEDGEMENT NOT RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U54",
+      "description": "TRANSACTION ID OR AMOUNT IN CREDENTIAL BLOCK DOES NOT MATCH WITH THAT IN REQPAY",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U55",
+      "description": "MESSAGE INTEGRITY FAILED DUE TO ORGID MISMATCH",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U56",
+      "description": "NUMBER OF PAYEES DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U57",
+      "description": "PAYEE AMOUNT DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U58",
+      "description": "PAYER AMOUNT DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U59",
+      "description": "PAYEE ADDRESS DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U60",
+      "description": "PAYER ADDRESS DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U61",
+      "description": "PAYEE INFO DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U62",
+      "description": "PAYER INFO DIFFERS FROM ORIGINAL REQUEST",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U63",
+      "description": "DEVICE REGISTRATION FAILED IN UPI",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U64",
+      "description": "DATA TAG SHOULD CONTAIN 4 PARTS DURING DEVICE REGISTRATION",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U65",
+      "description": "CREDS BLOCK SHOULD CONTAIN CORRECT ELEMENTS DURING DEVICE REGISTRATION",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U66",
+      "description": "DEVICE FINGERPRINT MISMATCH",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U67",
+      "description": "DEBIT TIMEOUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U68",
+      "description": "CREDIT TIMEOUT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U69",
+      "description": "COLLECT EXPIRED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U70",
+      "description": "RECEIVED LATE RESPONSE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U71",
+      "description": "MERCHANT CREDIT NOT SUPPORTED IN IMPS",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U72",
+      "description": "VAE FAILED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U74",
+      "description": "PAYER ACCOUNT MISMATCH",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U75",
+      "description": "PAYEE ACCOUNT MISMATCH",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U76",
+      "description": "MOBILE BANKING REGISTRATION FORMAT NOT SUPPORTED BY THE ISSUER BANK",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U77",
+      "description": "MERCHANT BLOCKED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U78",
+      "description": "BENEFICIARY BANK OFFLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U80",
+      "description": "PAYER PSP THROTTLE DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U81",
+      "description": "REMITTER BANK DEEMED CHECK DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U82",
+      "description": "READ TIMEOUT IN REQPAY CREDIT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U84",
+      "description": "BENEFICIARY BANK DEEMED CHECK DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U85",
+      "description": "CONNECTION TIMEOUT IN REQPAY DEBIT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U86",
+      "description": "REMITTER BANK THROTTLING DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U87",
+      "description": "READ TIMEOUT IN REQPAY DEBIT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U88",
+      "description": "CONNECTION TIMEOUT IN REQPAY CREDIT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U89",
+      "description": "BENEFICIARY BANK THROTTLING DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U90",
+      "description": "REMITTER BANK DEEMED HIGH RESPONSE TIME CHECK DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U91",
+      "description": "BENEFICIARY BANK DEEMED HIGH RESPONSE TIME CHECK DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U92",
+      "description": "PAYER PSP NOT AVAILABLE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U93",
+      "description": "PAYEE PSP NOT AVAILABLE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U94",
+      "description": "PAYEE PSP THROTTLE DECLINE",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U95",
+      "description": "PAYEE VPA AADHAAR OR IIN VPA IS DISABLED",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U96",
+      "description": "PAYER AND PAYEE IFSC/ACNUM CAN'T BE SAME",
+      "remarks": null,
+      "td_bd": "BD"
+    },
+    {
+      "code": "U97",
+      "description": "PSP REQUEST META ACKNOWLEDGEMENT NOT RECEIVED",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U98",
+      "description": "NULL ACK RECEIVED BY UPI FOR META TRANSACTION",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "U99",
+      "description": "NEGATIVE ACK RECEIVED BY UPI FOR META TRANSACTION",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "S93",
+      "description": "PAYEE_PSP_THROTTLE_DECLINE_OUTGOING_COUNT",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "S94",
+      "description": "PAYEE_PSP_THROTTLE_DECLINE_RESPONSE_TIME",
+      "remarks": null,
+      "td_bd": "TD"
+    },
+    {
+      "code": "S95",
+      "description": "BENEFICIARY_DISPATCH_FAILED",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "S96",
+      "description": "REMITTER_DISPATCH_FAILED",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "S97",
+      "description": "ADD_RESLN_DISPATCH_FAILED",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "S98",
+      "description": "ISSUER_DISPATCH_FAILED",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "HS1",
+      "description": "HSM_OFFINE",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "HS2",
+      "description": "HSM_TIMEOUT",
+      "remarks": null,
+      "td_bd": null
+    },
+    {
+      "code": "HS3",
+      "description": "HSM_COMMUNICATION_ERROR",
+      "remarks": null,
+      "td_bd": null
+    }
+  ]
+}
