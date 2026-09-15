@@ -77,6 +77,16 @@ class MandateRecord:
     """When a pause ends, where the customer set an end. Meaningful only while
     PAUSED."""
 
+    token_id: str | None = None
+    """Razorpay's token for the mandate — "The `token_id` generated when the
+    customer successfully completes the authorisation payment" — which both
+    the pre-debit notice's order and the debit carry. None where no Razorpay
+    token exists, which is every mandate the simulator builds."""
+
+    razorpay_customer_id: str | None = None
+    """Razorpay's customer the token belongs to, which a recurring payment
+    requires. Holds an id, never the email or contact behind it."""
+
     def state_at(self, at: datetime) -> MandateState:
         """What a debit presented at `at` would meet.
 

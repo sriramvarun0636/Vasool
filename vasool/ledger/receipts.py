@@ -124,6 +124,13 @@ class Outcome(StrEnum):
     BLOCKED: the compliance decision here was ALLOW, and something else went
     wrong, which is a different fact for the report card."""
 
+    OUTCOME_UNKNOWN = "outcome_unknown"
+    """The guards allowed a debit and its call failed in a way that does not
+    say whether money moved — a 5xx, a timeout, a lost or unreadable response.
+    Distinct from EXECUTION_FAILED, which says the rail refused: this one may
+    have been taken, and it is what sends the episode to a status check rather
+    than a retry (docs/EVALUATION.md §10, 2026-09-15)."""
+
     BLOCKED = "blocked"
 
     ESCALATED = "escalated"
@@ -422,7 +429,11 @@ def receipt_from_transition(
     request_id = call.razorpay_request_id if call is not None else None
     response = call.razorpay_response if call is not None else None
     if executed and call is not None and not call.ok:
-        outcome = Outcome.EXECUTION_FAILED
+        # Read structurally and defaulted: a CallRecord that predates the
+        # field, or a test's, is a call whose outcome was known.
+        outcome = (
+            Outcome.OUTCOME_UNKNOWN if getattr(call, "outcome_unknown", False) else Outcome.EXECUTION_FAILED
+        )
         executed = False
 
     receipt_id = _receipt_id(transition.entity_id, transition.proposal.proposal_id, transition.to_state)

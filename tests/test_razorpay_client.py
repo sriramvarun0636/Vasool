@@ -7,6 +7,7 @@ from __future__ import annotations
 from unittest.mock import Mock
 
 import pytest
+import requests
 from razorpay.errors import BadRequestError, GatewayError, ServerError
 
 from vasool.actions.razorpay_client import (
@@ -108,12 +109,12 @@ class TestIdempotency:
         assert args == ("plink_1", "sms")
         assert kwargs["headers"][IDEMPOTENCY_HEADER] == "k2"
 
-    def test_retry_payment_carries_the_idempotency_header(self):
+    def test_a_recurring_payment_carries_the_idempotency_header(self):
         sdk = Mock()
-        sdk.payment.createRecurring.return_value = {"id": "pay_1"}
+        sdk.payment.createRecurring.return_value = {"razorpay_payment_id": "pay_1"}
         client = make_client(sdk)
 
-        client.retry_payment(entity_id="pay_1", amount_paise=500, currency="INR", idempotency_key="k3")
+        _recurring(client, idempotency_key="k3")
 
         _, kwargs = sdk.payment.createRecurring.call_args
         assert kwargs["headers"][IDEMPOTENCY_HEADER] == "k3"
@@ -185,3 +186,67 @@ class TestAnInjectedClientNeedsNoCredentials:
         )
 
         assert client is not None
+
+
+def _recurring(client, *, idempotency_key="k_debit"):
+    return client.create_recurring_payment(
+        email="c@example.invalid", contact="+919812345678", amount_paise=500, currency="INR",
+        order_id="order_1", customer_id="cust_1", token_id="token_1", notes={}, idempotency_key=idempotency_key,
+    )
+
+
+class TestAMoneyMovingWriteIsNeverResent:
+    """A debit whose response is lost or failed server-side may have taken the
+    money; the only honest next step is a status check. Until 2026-09-15 this
+    client re-sent the debit up to four times on a gateway error, and a timeout
+    escaped it unwrapped (docs/EVALUATION.md §10, 2026-09-15)."""
+
+    @pytest.mark.parametrize("failure", [
+        GatewayError("upstream gateway error"),
+        ServerError("server error"),
+        requests.exceptions.ReadTimeout("read timed out"),
+        requests.exceptions.ConnectionError("connection reset"),
+    ])
+    def test_it_is_sent_once_and_reported_as_outcome_unknown(self, failure):
+        sdk = Mock()
+        sdk.payment.createRecurring.side_effect = [failure, {"razorpay_payment_id": "pay_2"}]
+        sleeps: list[float] = []
+        client = make_client(sdk, sleeps=sleeps)
+
+        with pytest.raises(RazorpayCallFailed) as excinfo:
+            _recurring(client)
+
+        assert sdk.payment.createRecurring.call_count == 1
+        assert excinfo.value.outcome_unknown is True
+        assert excinfo.value.retryable is False
+        assert sleeps == []
+
+    def test_a_bad_request_on_a_debit_is_a_known_refusal(self):
+        sdk = Mock()
+        sdk.payment.createRecurring.side_effect = [BadRequestError("amount mismatch")]
+        client = make_client(sdk)
+
+        with pytest.raises(RazorpayCallFailed) as excinfo:
+            _recurring(client)
+
+        assert excinfo.value.outcome_unknown is False
+
+    def test_a_timeout_on_a_read_is_retried_and_wrapped(self):
+        """Transport failures no longer escape raw: on a call that moves no
+        money they are retried like a 5xx, and wrapped when they run out."""
+        sdk = Mock()
+        sdk.order.fetch.side_effect = [requests.exceptions.ReadTimeout("slow"), {"id": "order_1"}]
+        client = make_client(sdk)
+
+        assert client.fetch_order("order_1") == {"id": "order_1"}
+        assert sdk.order.fetch.call_count == 2
+
+        sdk.order.fetch.side_effect = [requests.exceptions.ConnectionError("down")] * 10
+        with pytest.raises(RazorpayCallFailed) as excinfo:
+            client.fetch_order("order_1")
+        assert excinfo.value.outcome_unknown is False
+
+    def test_the_undocumented_retry_payment_is_gone(self):
+        """It sent a `payment_id` Razorpay's documentation does not name and
+        omitted six of the eight fields the documentation makes mandatory."""
+        assert not hasattr(RazorpayClient, "retry_payment")

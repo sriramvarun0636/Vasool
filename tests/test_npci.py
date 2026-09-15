@@ -226,13 +226,16 @@ class TestTheProseIsTheMapping:
 
 
 # ---------------------------------------------------------------------------
-# not on the run path, yet
+# on the run path — the mapping, never the files
 # ---------------------------------------------------------------------------
-class TestNotOnTheRunPathYet:
-    def test_nothing_the_simulator_imports_reaches_the_vocabulary(self):
-        """What makes §2.2 change no number, checked in a clean interpreter.
-        §2.5 wires the vocabulary in; this test changes in that commit, beside
-        the amendment and the re-run it needs."""
+class TestOnTheRunPath:
+    def test_the_classifier_reaches_the_vocabulary_and_never_reads_the_cited_files(self):
+        """§2.2 kept NPCI's vocabulary off the run path; §2.5 wires it in, and
+        this test changed in that commit, beside its amendment and re-run
+        (docs/EVALUATION.md §10, 2026-09-15). The mapping is code the classifier
+        reaches through vasool/diagnosis/upi.py; the transcribed files in
+        data/cited_payloads/ are read only by tests and tools/cite_npci.py —
+        which is what keeps them outside the fingerprint below."""
         probe = (
             "import sys; import windtunnel.runner, windtunnel.evaluate, windtunnel.shadow; "
             "print([m for m in ('vasool.diagnosis.npci', 'vasool.events.provenance') "
@@ -240,7 +243,7 @@ class TestNotOnTheRunPathYet:
         )
         result = subprocess.run([sys.executable, "-c", probe], cwd=REPO_ROOT,
                                 capture_output=True, text=True, check=True)
-        assert result.stdout.strip() == "[]"
+        assert result.stdout.strip() == "['vasool.diagnosis.npci']"
 
     def test_the_cited_tier_is_outside_the_fingerprint(self):
         """Because nothing on the run path reads it — the fingerprint's own rule

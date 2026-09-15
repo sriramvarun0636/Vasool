@@ -344,6 +344,38 @@ def notice_proposal_from(debit: Proposal, *, execute_at: datetime) -> Proposal:
     )
 
 
+def status_check_proposal_from(proposal: Proposal, *, execute_at: datetime, check: int) -> Proposal:
+    """The status check of the debit `proposal` describes — or the next check
+    of one already made.
+
+    Built here, like the pre-debit notice, so that every Proposal is
+    constructed by this module. No channel and no template: it asks the rail
+    a question and reaches no one. `check` is which of NPCI's three checks
+    this is (OC-215 ¶4); it enters the id so that each check is its own
+    decision in the ledger, and a receipt id is never claimed twice.
+    """
+    role_basis = ProposalRole.PRIMARY.value if check == 1 else f"{ProposalRole.PRIMARY.value}|check{check}"
+    return Proposal(
+        proposal_id=_derive_id(proposal.entity_id, InterventionType.STATUS_CHECK, proposal.attempt, role_basis),
+        role=ProposalRole.PRIMARY,
+        event_id=proposal.event_id,
+        entity_id=proposal.entity_id,
+        customer_id=proposal.customer_id,
+        merchant_id=proposal.merchant_id,
+        amount_paise=proposal.amount_paise,
+        failure_class=proposal.failure_class,
+        intervention=InterventionType.STATUS_CHECK,
+        attempt=proposal.attempt,
+        execute_at=execute_at,
+        rationale=(
+            "NPCI OC-215 ¶3–¶4 and Razorpay's 'Do not create another subsequent payment "
+            "until you get the status of the previous one': whether money moved is asked "
+            f"of the rail — check {check} of at most three — never answered with a second debit."
+        ),
+        supersedes=proposal.proposal_id,
+    )
+
+
 def template_ids() -> frozenset[str]:
     """Every DLT template this system can emit.
 

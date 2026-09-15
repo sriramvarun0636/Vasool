@@ -122,6 +122,26 @@ class TestEveryTransitionIsCited:
         }
         assert platform_only == {(S.PAUSED, S.ACTIVE)}
 
+    def test_platform_documentation_is_cited_by_the_pause_edge_and_the_rails_three_reports(self):
+        """Four kinds of platform evidence and no more: resuming a pause, and
+        the rail reporting a mandate revoked, paused or expired when a debit
+        fails (docs/EVALUATION.md §10, 2026-09-15). A fifth fails here."""
+        citing_platform = {
+            t.trigger for t in TRANSITIONS if Authority.PLATFORM in authorities(t.citation)
+        }
+        assert citing_platform == {
+            T.UNPAUSED_BY_PAYER, T.PAUSE_ENDED,
+            T.RAIL_REPORTED_REVOKED, T.RAIL_REPORTED_PAUSED, T.RAIL_REPORTED_EXPIRED,
+        }
+
+    def test_the_rails_reports_cite_the_rail_beside_the_platform(self):
+        """Razorpay's reason is what a merchant receives; NPCI's code is what
+        the state means. A report citing only the first would rest a state
+        change on a platform's description."""
+        for transition in TRANSITIONS:
+            if transition.trigger.value.startswith("rail_reported_"):
+                assert authorities(transition.citation) == {Authority.PLATFORM, Authority.RAIL}
+
     def test_every_other_transition_has_a_regulator_or_the_rail_behind_it(self):
         for transition in TRANSITIONS:
             if (transition.frm, transition.to) == (S.PAUSED, S.ACTIVE):
@@ -413,3 +433,50 @@ class TestTheDebitPath:
         with pytest.raises(IllegalTransition, match="NPCI-OC-125A"):
             arena.mandate_event(loan, Trigger.REVOKED_BY_PAYER)
 
+
+
+class TestTheRailMovesTheMandate:
+    """vasool/mandate/evidence.py: a failed debit's reason moves the record to
+    the state the rail reports, and a disagreement is kept, never resolved in
+    the record's favour."""
+
+    def _upi(self, **changes):
+        from tests.policy.strategies import upi_mandate
+
+        return upi_mandate(**changes)
+
+    def test_three_reasons_move_the_record_and_every_other_reason_does_not(self):
+        from vasool.mandate.evidence import RAIL_EVIDENCE, apply_rail_evidence
+        from windtunnel.payloads import upi_reasons
+
+        record = self._upi()
+        for reason in sorted(upi_reasons()):
+            moved, observation = apply_rail_evidence(record, reason, at=NOW)
+            if reason in RAIL_EVIDENCE:
+                assert moved.state is RAIL_EVIDENCE[reason][1], reason
+                assert observation.transition is not None
+            else:
+                assert moved is record and observation is None, reason
+
+    def test_a_terminal_record_does_not_move_and_the_contradiction_is_kept(self):
+        from vasool.mandate.evidence import apply_rail_evidence
+
+        expired = self._upi(state=S.EXPIRED)
+        moved, observation = apply_rail_evidence(expired, "mandate_paused", at=NOW)
+        assert moved is expired and observation.transition is None
+        assert "nothing leaves" in observation.disagreement
+
+    def test_a_cancellation_by_the_user_of_a_non_revocable_mandate_moves_it_and_says_so(self):
+        from vasool.mandate.evidence import apply_rail_evidence
+
+        loan = self._upi(revocable_by_payer=False)
+        moved, observation = apply_rail_evidence(loan, "mandate_cancelled", at=NOW)
+        assert moved.state is S.REVOKED
+        assert "non-revocable" in observation.disagreement
+
+    def test_a_reported_state_the_record_already_holds_is_not_a_transition(self):
+        from vasool.mandate.evidence import apply_rail_evidence
+
+        paused = self._upi(state=S.PAUSED)
+        moved, observation = apply_rail_evidence(paused, "mandate_paused", at=NOW)
+        assert moved is paused and observation.transition is None and observation.disagreement is None

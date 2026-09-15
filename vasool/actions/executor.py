@@ -14,23 +14,35 @@ not an action this module performs (see that module's comment on the same
 point). Receiving one here anyway is the programming error the session brief
 names, not a silent no-op — `_dispatch` raises rather than swallowing it.
 
-Also owns RetryIndex: a SILENT_RETRY/TIMED_RETRY has no merchant-notes field
-to tag the way `_link` tags a Payment Link, so `_retry` records the id
-Razorpay's own response carried instead. vasool/events/settlement.py reads it
-back to correlate a later `payment.captured` webhook to the episode it closes
-— see RetryIndex's own docstring for what that does and does not guarantee.
+Also owns RetryIndex: `_retry` records the id of the payment the debit
+created, from the rail's own answer. vasool/events/settlement.py reads it back
+to correlate a later `payment.captured` webhook to the episode it closes — see
+RetryIndex's own docstring for what that does and does not guarantee.
+
+**Three calls go through ports, and each port's default refuses.** The mandate
+debit (vasool/actions/debit.py), the pre-debit notice (vasool/actions/notice.py)
+and the status check (vasool/actions/status.py) have never been observed on
+this account. Razorpay documents all three, and the documented adapters are at
+the bottom of this module — here, because this is the one module the action
+plane's boundary lets call the client (tests/test_actions_boundary.py). They are
+wired only by `build_documented`, never by default (docs/EVALUATION.md §10,
+2026-09-15).
 """
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
 
+import requests
+
 from vasool.actions.comms import CommsRefused, CommsSender
-from vasool.actions.notice import NullPreDebitNotifier, PreDebitNotifier
+from vasool.actions.debit import DebitAttempt, MandateDebiter, MandateSource, NullMandateDebiter
+from vasool.actions.notice import NoticeOrders, NoticeRequest, NullPreDebitNotifier, PreDebitNotifier
 from vasool.actions.razorpay_client import RazorpayCallFailed, RazorpayClient, RazorpayConfig
+from vasool.actions.status import NullStatusCheck, StatusCheck, StatusReading
 from vasool.diagnosis.proposal import Channel, Proposal, ProposalRole
 from vasool.diagnosis.taxonomy import InterventionType
-from vasool.policy.machine import ExecutionResult
+from vasool.policy.machine import ExecutionResult, RailStatus
 
 log = logging.getLogger(__name__)
 
@@ -53,10 +65,10 @@ class RazorpayCallRecord:
     """What actually happened when this executor called Razorpay for one
     proposal.
 
-    Kept separate from ExecutionResult (vasool/policy/machine.py) rather than
-    adding fields to it — that dataclass belongs to the policy plane's
-    Executor protocol, and this session does not touch the policy plane.
-    vasool/ledger/receipts.py reads this journal structurally (it declares
+    Kept separate from ExecutionResult (vasool/policy/machine.py), which
+    carries only what the policy plane acts on — ok, whether a debit's outcome
+    is unknown, and what a status check found — and never Razorpay-shaped
+    data. vasool/ledger/receipts.py reads this journal structurally (it declares
     its own Protocol shape, not an import of this class) to attach
     razorpay_request_id / razorpay_response to a receipt without the policy
     plane ever needing to carry Razorpay-shaped data.
@@ -67,6 +79,12 @@ class RazorpayCallRecord:
     detail: str
     razorpay_request_id: str | None = None
     razorpay_response: dict | None = None
+    outcome_unknown: bool = False
+    """A debit that may have moved money though its call failed — the receipt
+    says OUTCOME_UNKNOWN rather than EXECUTION_FAILED."""
+
+    status: RailStatus | None = None
+    settled_amount_paise: int | None = None
 
 
 class ExecutionJournal:
@@ -88,8 +106,8 @@ class RetryIndex:
     belongs to. vasool/events/settlement.py reads this to correlate a later
     `payment.captured` webhook back to the episode a SILENT_RETRY/TIMED_RETRY
     was for — see that module's `entity_id_from_payment_captured` for why
-    this is a non-guessed join key: `retry_payment` returns Razorpay's own id
-    for the payment it just created, and this is that same id recorded
+    this is a non-guessed join key: the debit returns the rail's own id for
+    the payment it just created, and this is that same id recorded
     against the entity_id that asked for it. Nothing inferred, nothing
     matched by order_id/amount/customer.
 
@@ -149,10 +167,25 @@ class RazorpayExecutor:
     notice, and the merchant only asks the rail for it (vasool/actions/notice.py).
     The default refuses, because no such request is wired."""
 
+    debiter: MandateDebiter = field(default_factory=NullMandateDebiter)
+    """Where a SILENT_RETRY or TIMED_RETRY reaches the rail
+    (vasool/actions/debit.py). The default refuses, because no debit call has
+    been observed on this account."""
+
+    status: StatusCheck = field(default_factory=NullStatusCheck)
+    """Where a STATUS_CHECK asks the rail what happened
+    (vasool/actions/status.py). The default cannot tell, and a person decides."""
+
     def execute(self, proposal: Proposal) -> ExecutionResult:
         record = self._dispatch(proposal)
         self.journal.record(record)
-        return ExecutionResult(ok=record.ok, detail=record.detail)
+        return ExecutionResult(
+            ok=record.ok,
+            detail=record.detail,
+            outcome_unknown=record.outcome_unknown,
+            status=record.status,
+            settled_amount_paise=record.settled_amount_paise,
+        )
 
     def _dispatch(self, proposal: Proposal) -> RazorpayCallRecord:
         if proposal.intervention is InterventionType.HUMAN_QUEUE:
@@ -164,6 +197,8 @@ class RazorpayExecutor:
             return self._notify(proposal)
         if proposal.role is ProposalRole.NUDGE:
             return self._send(proposal)
+        if proposal.intervention is InterventionType.STATUS_CHECK:
+            return self._check(proposal)
         if proposal.intervention in (InterventionType.SILENT_RETRY, InterventionType.TIMED_RETRY):
             return self._retry(proposal)
         if proposal.intervention in (InterventionType.REATTEMPT_LINK, InterventionType.REAUTH_LINK):
@@ -173,17 +208,16 @@ class RazorpayExecutor:
         )
 
     def _retry(self, proposal: Proposal) -> RazorpayCallRecord:
-        try:
-            response = self.client.retry_payment(
-                entity_id=proposal.entity_id,
-                amount_paise=proposal.amount_paise,
-                currency="INR",
-                idempotency_key=proposal.idempotency_key,
+        attempt = self.debiter.debit(proposal)
+        if not attempt.ok:
+            log.warning("retry not taken for %s: %s", proposal.proposal_id, attempt.detail)
+            return RazorpayCallRecord(
+                proposal.proposal_id,
+                ok=False,
+                detail=attempt.detail,
+                outcome_unknown=attempt.outcome_unknown,
             )
-        except RazorpayCallFailed as exc:
-            log.warning("retry failed for %s: %s", proposal.proposal_id, exc)
-            return RazorpayCallRecord(proposal.proposal_id, ok=False, detail=str(exc))
-        razorpay_payment_id = response.get("id")
+        razorpay_payment_id = attempt.payment_id
         if razorpay_payment_id is not None:
             self.retry_index.record(razorpay_payment_id, proposal.entity_id)
         return RazorpayCallRecord(
@@ -191,7 +225,7 @@ class RazorpayExecutor:
             ok=True,
             detail="retry dispatched",
             razorpay_request_id=razorpay_payment_id,
-            razorpay_response=response,
+            razorpay_response=attempt.response,
         )
 
     def _link(self, proposal: Proposal) -> RazorpayCallRecord:
@@ -245,10 +279,53 @@ class RazorpayExecutor:
             log.warning("pre-debit notice not requested for %s: %s", proposal.proposal_id, request.detail)
         return RazorpayCallRecord(proposal.proposal_id, ok=request.ok, detail=request.detail)
 
+    def _check(self, proposal: Proposal) -> RazorpayCallRecord:
+        """Ask the rail whether the debit happened. A reading that could not be
+        had is not a failed action — it is recorded as not ok so the receipt
+        says the check told us nothing, and the state machine escalates."""
+        reading = self.status.check(proposal)
+        return RazorpayCallRecord(
+            proposal.proposal_id,
+            ok=reading.answer is not RailStatus.CANNOT_TELL,
+            detail=reading.detail,
+            razorpay_request_id=reading.reference,
+            status=reading.answer,
+            settled_amount_paise=reading.amount_paise,
+        )
+
     def _send(self, proposal: Proposal, *, link: dict | None = None) -> RazorpayCallRecord:
         params = {"link": link["short_url"], "payment_link_id": link["id"]} if link else {}
         self.comms.send(proposal=proposal, registered_templates=self.registered_templates, params=params)
         return RazorpayCallRecord(proposal.proposal_id, ok=True, detail="sent")
+
+    @classmethod
+    def build_documented(
+        cls,
+        *,
+        client: RazorpayClient,
+        registered_templates: frozenset[str],
+        mandates: MandateSource,
+    ) -> RazorpayExecutor:
+        """An executor whose debit, notice and status check are Razorpay's
+        documented calls rather than the refusing defaults.
+
+        **Not the default, and nothing in this repository wires it into a
+        run.** None of the three calls has been observed on this account —
+        subscriptions and UPI are unavailable before activation
+        (docs/VERIFIED.md) — and the registered rule is that production keeps
+        the refusing adapters until one live call has been seen
+        (docs/EVALUATION.md §10, 2026-09-15). This exists so the documented
+        contract is code that tests can hold to the documentation, instead of
+        prose.
+        """
+        executor = cls.build(client=client, registered_templates=registered_templates)
+        adapters = _adapters(client, mandates)
+        executor.notifier, executor.debiter, executor.status = (
+            adapters.notifier,
+            adapters.debiter,
+            adapters.status,
+        )
+        return executor
 
     @classmethod
     def from_env(cls, *, registered_templates: frozenset[str]) -> RazorpayExecutor:
@@ -293,3 +370,180 @@ class RazorpayExecutor:
             return {"delivered": False, "reason": "no transport wired for non-payment-link messages"}
 
         return cls(client=client, comms=CommsSender(deliver=deliver), registered_templates=registered_templates)
+
+
+# ---------------------------------------------------------------------------
+# Razorpay's documented calls, behind the three ports. Wired only by
+# `RazorpayExecutor.build_documented`. Every one is documentation, not
+# observation: Razorpay, *Create Subsequent Payments* (UPI, cards), read from
+# the markdown source on 2026-09-15 and pinned by SHA-256 in
+# docs/EVALUATION.md §10 of that date.
+# ---------------------------------------------------------------------------
+def _episode_notes(proposal: Proposal) -> dict:
+    """The same merchant metadata `_link` stamps on a payment link, so a
+    payment created from an order carries its episode back with it."""
+    return {"vasool_proposal_id": proposal.proposal_id, "vasool_entity_id": proposal.entity_id}
+
+
+@dataclass
+class RazorpayPreDebitNotifier:
+    """The pre-debit notice as Razorpay documents it: an order created with a
+    `notification` object carrying the mandate's `token_id`. Razorpay delivers
+    the notice; the order then reports `notification.delivered_at`, which is
+    the time `PreDebitNoticeGuard` should count from, read by whatever
+    production FactStore reads orders."""
+
+    client: RazorpayClient
+    mandates: MandateSource
+    orders: NoticeOrders
+
+    def request(self, proposal: Proposal) -> NoticeRequest:
+        mandate = self.mandates(proposal.entity_id)
+        if mandate is None or mandate.token_id is None:
+            return NoticeRequest(
+                ok=False,
+                detail="no mandate token on record for this payment; nothing to notify against",
+            )
+        try:
+            order = self.client.create_notice_order(
+                amount_paise=proposal.amount_paise,
+                currency="INR",
+                token_id=mandate.token_id,
+                notes=_episode_notes(proposal),
+                idempotency_key=proposal.idempotency_key,
+            )
+        except RazorpayCallFailed as exc:
+            return NoticeRequest(ok=False, detail=str(exc))
+        self.orders.record(proposal.entity_id, order["id"])
+        return NoticeRequest(
+            ok=True,
+            detail="order created with a notification object; Razorpay delivers the notice",
+            reference=order["id"],
+        )
+
+
+@dataclass
+class RazorpayMandateDebiter:
+    """A mandate debit as Razorpay documents it: `createRecurring` with its
+    eight mandatory fields, against the order the notice was requested on.
+
+    Refuses rather than guessing when anything a documented call needs is
+    missing: a payment on no mandate (a one-time payment has no token, and
+    nothing documented re-presents one), a mandate with no Razorpay token or
+    customer, or no notified order. The customer's email and contact are read
+    from Razorpay's customer entity for the call and never kept."""
+
+    client: RazorpayClient
+    mandates: MandateSource
+    orders: NoticeOrders
+
+    def debit(self, proposal: Proposal) -> DebitAttempt:
+        mandate = self.mandates(proposal.entity_id)
+        if mandate is None:
+            return DebitAttempt(
+                ok=False,
+                detail="a one-time payment has no token to present again; nothing documented re-presents it",
+            )
+        if mandate.token_id is None or mandate.razorpay_customer_id is None:
+            return DebitAttempt(ok=False, detail="the mandate carries no Razorpay token or customer id")
+        order_id = self.orders.order_for(proposal.entity_id)
+        if order_id is None:
+            return DebitAttempt(
+                ok=False,
+                detail="no order was notified for this debit; a debit is presented against its notice's order",
+            )
+        try:
+            customer = self.client.fetch_customer(mandate.razorpay_customer_id)
+            response = self.client.create_recurring_payment(
+                email=customer["email"],
+                contact=customer["contact"],
+                amount_paise=proposal.amount_paise,
+                currency="INR",
+                order_id=order_id,
+                customer_id=mandate.razorpay_customer_id,
+                token_id=mandate.token_id,
+                notes=_episode_notes(proposal),
+                idempotency_key=proposal.idempotency_key,
+            )
+        except RazorpayCallFailed as exc:
+            return DebitAttempt(ok=False, detail=str(exc), outcome_unknown=exc.outcome_unknown)
+        return DebitAttempt(
+            ok=True,
+            detail="debit requested",
+            payment_id=response.get("razorpay_payment_id"),
+            response=response,
+        )
+
+
+@dataclass
+class RazorpayOrderStatusCheck:
+    """A status check read off the documented order entity, whose `status` is
+    `created` ("till a payment is attempted on it"), `attempted` or `paid`
+    ("After the successful capture of the payment").
+
+    `paid` is DEBITED. `created` with no attempts is NOT_DEBITED. `attempted`
+    is PENDING: the order alone cannot tell a failed attempt from one still in
+    flight, so it is asked again rather than read as either. No order, or a
+    call that fails, cannot tell."""
+
+    client: RazorpayClient
+    orders: NoticeOrders
+
+    def check(self, proposal: Proposal) -> StatusReading:
+        order_id = self.orders.order_for(proposal.entity_id)
+        if order_id is None:
+            return StatusReading(RailStatus.CANNOT_TELL, "no order on record for this payment")
+        try:
+            order = self.client.fetch_order(order_id)
+        except RazorpayCallFailed as exc:
+            return StatusReading(RailStatus.CANNOT_TELL, str(exc), reference=order_id)
+        state = order.get("status")
+        if state == "paid":
+            return StatusReading(
+                RailStatus.DEBITED, "the order is paid", amount_paise=order.get("amount_paid"), reference=order_id
+            )
+        if state == "created" and not order.get("attempts"):
+            return StatusReading(RailStatus.NOT_DEBITED, "no payment was attempted on the order", reference=order_id)
+        if state == "attempted":
+            return StatusReading(RailStatus.PENDING, "a payment was attempted and none captured yet", reference=order_id)
+        return StatusReading(RailStatus.CANNOT_TELL, f"order status {state!r} says nothing either way", reference=order_id)
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentedAdapters:
+    notifier: RazorpayPreDebitNotifier
+    debiter: RazorpayMandateDebiter
+    status: RazorpayOrderStatusCheck
+
+
+def documented_adapters(*, sdk_client: object, mandates: MandateSource) -> DocumentedAdapters:
+    """The three documented adapters, over the real `RazorpayClient`, around
+    any object shaped like the Razorpay SDK.
+
+    For the adversary's arena, which plays Razorpay's documented surface as a
+    world it controls — taking debits, losing a response — so that an attack
+    exercises the real client, its transport rules and these adapters end to
+    end (windtunnel/adversary/arena.py). It lives here because only this
+    module may construct the client (tests/test_actions_boundary.py). No
+    backoff sleeps: the arena's clock is virtual."""
+    return _adapters(RazorpayClient(sdk_client=sdk_client, sleep=lambda _seconds: None), mandates)  # type: ignore[arg-type]
+
+
+def _adapters(client: RazorpayClient, mandates: MandateSource) -> DocumentedAdapters:
+    """One notice-order ledger shared by all three: the debit is presented
+    against the order its notice created, and the status check reads it."""
+    orders = NoticeOrders()
+    return DocumentedAdapters(
+        notifier=RazorpayPreDebitNotifier(client=client, mandates=mandates, orders=orders),
+        debiter=RazorpayMandateDebiter(client=client, mandates=mandates, orders=orders),
+        status=RazorpayOrderStatusCheck(client=client, orders=orders),
+    )
+
+
+def lost_response(detail: str) -> Exception:
+    """The exception the SDK surfaces when a response never arrives: a
+    `requests` read timeout, raised unwrapped (its own retry is off by
+    default). For a world that plays Razorpay's surface — windtunnel/ may not
+    import the network stack, and it should not need to in order to lose a
+    response the way the network does."""
+    return requests.exceptions.ReadTimeout(detail)

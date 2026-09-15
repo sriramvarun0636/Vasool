@@ -25,10 +25,12 @@ identical generic `payment_failed` regardless of which one you pick, so a
 live checkout could not select a scenario even if this script drove one. What
 `--live` changes is whether actions/executor.py's calls are real: it makes a
 REAUTH_LINK genuinely create a Payment Link on the merchant's test-mode
-account (VERIFIED.md: Payment Links work pre-activation), and a SILENT_RETRY
-genuinely call `payment.createRecurring` against a payment with no real
-recurring token behind it, which fails at Razorpay's boundary exactly the way
-actions/executor.py already expects a downstream call to fail. Only
+account (VERIFIED.md: Payment Links work pre-activation). A SILENT_RETRY does
+not reach Razorpay in either mode: the debit is a port whose production
+default refuses until one documented debit has been observed on an activated
+account (vasool/actions/debit.py; docs/EVALUATION.md §10, 2026-09-15), so live
+it is refused and recorded as refused — the same failure path
+actions/executor.py takes for any downstream refusal. Only
 `payment_failed` is a failure Razorpay itself has ever produced live
 (docs/VERIFIED.md); every other --scenario is played from a hand-built
 _SIMULATED payload regardless of --live, in both modes. Live mode therefore
@@ -44,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import dataclasses
 import json
 import logging
 import os
@@ -55,6 +58,7 @@ from typing import Protocol
 
 from dotenv import load_dotenv
 
+from vasool.actions.debit import DebitAttempt
 from vasool.actions.executor import RazorpayExecutor
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, template_ids
@@ -70,6 +74,8 @@ from vasool.events.settlement import (
 )
 from vasool.events.store import EventStore
 from vasool.ledger.receipts import Outcome, Receipt, build_from_transitions
+from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
+from vasool.mandate.states import MandateState
 from vasool.ledger.tracing import trace_id_for
 from vasool.policy.episode import State
 from vasool.policy.facts import (
@@ -111,17 +117,33 @@ INDENT = "    "
 # ---------------------------------------------------------------------------
 # loading a scenario off disk — never a typed-in error string (the project rules)
 # ---------------------------------------------------------------------------
-def _payload_paths() -> list[tuple[pathlib.Path, bool]]:
+UPI_STUB_PREFIX = "SIMULATED__upi_autopay__"
+"""The UPI Autopay stubs, one per reason Razorpay documents (tools/make_upi_stubs.py)."""
+
+
+def _payload_paths(rail: str = "card") -> list[tuple[pathlib.Path, bool]]:
+    if rail == "upi":
+        return [(p, True) for p in sorted(STUBBED_DIR.glob(f"{UPI_STUB_PREFIX}*.json"))]
     observed = [(p, False) for p in sorted(OBSERVED_DIR.glob("payment_failed__*.json"))]
     stubbed = [(p, True) for p in sorted(STUBBED_DIR.glob("SIMULATED__payment_failed__*.json"))]
     return observed + stubbed
 
 
-def load_scenario(scenario: str, *, pepper: str) -> tuple[dict, bool, FailureEvent]:
+def upi_scenarios() -> frozenset[str]:
+    """Every UPI Autopay reason with a stub on disk."""
+    return frozenset(
+        path.name.removeprefix(UPI_STUB_PREFIX).removesuffix(".json")
+        for path, _ in _payload_paths("upi")
+    )
+
+
+def load_scenario(scenario: str, *, pepper: str, rail: str = "card") -> tuple[dict, bool, FailureEvent]:
     """The fixture dict, whether it's a _SIMULATED stub, and the FailureEvent
     it decodes to — for the first payload on disk whose error_reason matches.
+    `rail` picks the envelopes: the card and netbanking ones §4 classifies, or
+    the UPI Autopay ones §12 does.
     """
-    for path, simulated in _payload_paths():
+    for path, simulated in _payload_paths(rail):
         fixture = json.loads(path.read_text())
         event = from_webhook(
             event_id=fixture["headers"]["x-razorpay-event-id"],
@@ -155,6 +177,24 @@ class _DemoFacts:
             dnd_listed=False,
             dnd_checked_at=now,
             registered_templates=template_ids(),
+        )
+
+
+class _UPIAutopayDemoFacts(_DemoFacts):
+    """The permissive world, with the debit on a live UPI Autopay mandate — so
+    the mandate guards and NPCI's peak hours are in jurisdiction, and a UPI
+    failure is read against Razorpay's UPI reasons (docs/taxonomy.md §12)."""
+
+    def snapshot(self, *, event: FailureEvent, proposal: Proposal, now: datetime) -> PolicyFacts:
+        return dataclasses.replace(
+            super().snapshot(event=event, proposal=proposal, now=now),
+            mandate=MandateRecord(
+                mandate_id="umn_demo0000001",
+                rail=MandateRail.UPI_AUTOPAY,
+                category=MandateCategory.GENERAL,
+                state=MandateState.ACTIVE,
+                valid_until=now.replace(year=now.year + 1),
+            ),
         )
 
 
@@ -225,8 +265,23 @@ class _FakeRazorpayClient:
     def notify_payment_link(self, **kwargs) -> dict:
         return {"success": True}
 
-    def retry_payment(self, **kwargs) -> dict:
-        return {"id": "pay_demo_retry001"}
+
+class _FakeDebiter:
+    """No network. The replay's mandate debit: taken, with the id the replay has
+    always shown — the debit became a port on 2026-09-15 (vasool/actions/debit.py)
+    and the transcript data/golden/ pins did not move with it."""
+
+    def debit(self, proposal: Proposal) -> DebitAttempt:
+        return DebitAttempt(
+            ok=True, detail="debit requested", payment_id="pay_demo_retry001",
+            response={"id": "pay_demo_retry001"},
+        )
+
+
+def _replay_executor() -> RazorpayExecutor:
+    executor = RazorpayExecutor.build(client=_FakeRazorpayClient(), registered_templates=template_ids())
+    executor.debiter = _FakeDebiter()
+    return executor
 
 
 def build_executor(*, live: bool) -> tuple[RazorpayExecutor, str]:
@@ -247,13 +302,13 @@ def build_executor(*, live: bool) -> tuple[RazorpayExecutor, str]:
             )
         except RuntimeError as exc:
             return (
-                RazorpayExecutor.build(client=_FakeRazorpayClient(), registered_templates=template_ids()),
+                _replay_executor(),
                 f"live requested, but {exc} -- falling back to a fake client "
                 "(pass --replay to make that the intended path)",
             )
 
     return (
-        RazorpayExecutor.build(client=_FakeRazorpayClient(), registered_templates=template_ids()),
+        _replay_executor(),
         "replay — deterministic, no network calls",
     )
 
@@ -653,7 +708,10 @@ def _stage_settlement_retry(
 
     Unlike the link path there is no merchant-controlled notes field to
     inject -- the correlation is executor.py's own RetryIndex, keyed on the
-    id retry_payment actually returned during this same run. Finds that real
+    id the debit actually returned during this same run. (Two lines it prints
+    still say "retry_payment", the name the debit had until 2026-09-15: the
+    golden transcripts pin them, and re-run #3 registered that they would not
+    move.) Finds that real
     record on the executor's own journal (never fabricated) and stamps the
     one real payment.captured envelope this account has ever captured live
     with it. Same item-3 treatment as the link path: says on screen that
@@ -744,8 +802,11 @@ def _run(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
 
+    if args.rail == "upi" and args.world != "permissive":
+        print("error: a UPI Autopay episode runs in the permissive world, on a live UPI mandate", file=sys.stderr)
+        return 1
     try:
-        fixture, simulated, event = load_scenario(args.scenario, pepper=pepper)
+        fixture, simulated, event = load_scenario(args.scenario, pepper=pepper, rail=args.rail)
     except LookupError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -773,7 +834,7 @@ def _run(args: argparse.Namespace) -> int:
         "hostile": _HostileDemoFacts,
         "hostile_dlt": _HostileDLTDemoFacts,
     }
-    facts = _WORLDS[args.world]()
+    facts = _UPIAutopayDemoFacts() if args.rail == "upi" else _WORLDS[args.world]()
     machine = PolicyMachine(clock=clock, facts=facts, executor=executor)
     machine.observe(event)
 
@@ -884,6 +945,10 @@ def _print_summary(stages: _Stages, machine: PolicyMachine, event: FailureEvent,
         clauses = sorted({v.statute for v in first_gate.chain.deciding() if v.statute})
         by_clause = f" by {clauses[0]}" if clauses else ""
         epilogue = _EPILOGUE_FOR_FINAL_STATE.get(final_state, "") if final_state else ""
+        if first_gate.proposal.intervention is InterventionType.STATUS_CHECK and final_state is State.ESCALATED:
+            # The executor was called — to ask the rail — so the handoff epilogue
+            # would be false. Nothing was presented to the instrument.
+            epilogue = "then asked the rail, which could not say; a person decides, and nothing was re-presented"
         if final_state is State.RECOVERED and receipts and receipts[-1].outcome is Outcome.RECOVERED:
             epilogue += f" -- {_rupees(receipts[-1].amount_recovered_paise)} recovered"
         summary = (
@@ -917,11 +982,11 @@ _HELP_LIVE_MODE_NOTE = (
     "Scenario test card returns it regardless of which one you pick. Every "
     "other --scenario, live or not, is played from a hand-built _SIMULATED "
     "payload on disk. What --live changes is whether the ACTIONS are real: "
-    "a REAUTH_LINK creates a genuine Razorpay Payment Link, and a "
-    "SILENT_RETRY calls createRecurring against a payment with no real "
-    "recurring token behind it, which fails at Razorpay's boundary. --live "
-    "therefore demonstrates the pipeline and the guard chain, not a "
-    "successful recovery."
+    "a REAUTH_LINK creates a genuine Razorpay Payment Link. A SILENT_RETRY "
+    "is refused in both modes: the mandate debit is a port whose default "
+    "refuses until a documented debit has been observed on an activated "
+    "account. --live therefore demonstrates the pipeline and the guard "
+    "chain, not a successful recovery."
 )
 
 
@@ -938,8 +1003,20 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--scenario",
         default="card_expired",
-        choices=sorted(known_reasons()),
+        choices=sorted(known_reasons() | upi_scenarios()),
         help="which failure to demo (default: card_expired)",
+    )
+    parser.add_argument(
+        "--rail",
+        choices=("card", "upi"),
+        default="card",
+        help=(
+            "card (default): a card or netbanking failure, classified by §4. "
+            "upi: a UPI Autopay debit on a live mandate failing with one of the "
+            "61 reasons Razorpay documents, classified by §12 -- e.g. "
+            "--rail upi --scenario payment_pending, where money may already "
+            "have moved and the rail is asked rather than debited again."
+        ),
     )
     parser.add_argument(
         "--live",

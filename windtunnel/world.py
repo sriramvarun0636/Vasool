@@ -32,6 +32,7 @@ from datetime import date, datetime, timedelta
 
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.events.schemas import FailureEvent
+from vasool.mandate.evidence import Observation, apply_rail_evidence
 from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
 from vasool.mandate.states import MandateState
 from vasool.policy.facts import MerchantPolicy, PolicyFacts
@@ -110,6 +111,10 @@ class WorldFactStore:
     _contacts: dict[str, list[datetime]] = field(default_factory=dict, init=False)
     _spent: dict[tuple[str, date], int] = field(default_factory=dict, init=False)
     _notices: dict[str, datetime] = field(default_factory=dict, init=False)
+    mandate_log: list[Observation] = field(default_factory=list, init=False)
+    """What each failed debit's rail evidence did to a mandate
+    (vasool/mandate/evidence.py). Empty in every registered universe, which
+    draws no UPI mandate; kept so the universe that does inherits the rule."""
 
     def __post_init__(self) -> None:
         self._by_customer_id = {c.customer_id: c for c in self.universe.customers}
@@ -150,6 +155,22 @@ class WorldFactStore:
         )
 
     # -- what the runner records ------------------------------------------
+    def observe_failure(self, event: FailureEvent, *, at: datetime) -> None:
+        """A UPI debit that failed because its mandate was revoked, paused or
+        expired moves the world's record before the agent reads the failure —
+        the world holds the record, exactly as the arena does. A card failure
+        never carries one of those reasons, so every registered universe
+        passes straight through."""
+        if event.method != "upi":
+            return
+        mandate = self._mandates.get(event.customer_id)
+        if mandate is None:
+            return
+        updated, observation = apply_rail_evidence(mandate, event.error_reason, at=at)
+        if observation is not None:
+            self.mandate_log.append(observation)
+        self._mandates[event.customer_id] = updated
+
     def record_execution(self, proposal: Proposal, *, at: datetime) -> None:
         """Fold one executed action back into the world.
 

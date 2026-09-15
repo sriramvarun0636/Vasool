@@ -197,9 +197,9 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 1,677 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,122 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
-| `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
+| `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
 | `make report` | rebuilds the dashboard from the manifest, rewriting `docs/index.html` |
 | `git status --short` | prints nothing: every artifact those commands rewrote came back byte for byte |
@@ -255,7 +255,7 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 | `naive_retry` exhausts a budget 189,476 times | `per_arm.naive_retry.closure.exhausted` | `189476` |
 | Vasool exhausts a budget 0 times | `per_arm.vasool.closure.exhausted` | `0` |
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
-| 20 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `20` |
+| 21 of 23 attacks survive | `out/adversary/redteam.json` → `survived` | `21` |
 | The conclusion holds under five other splits | `out/robustness/split_check.json` → `robust` | `true` |
 
 The dashboard makes this checkable without leaving the page: **click _trace every number_ and every figure on it displays the exact manifest key it was read from** — the button reports how many, so the count is never a number this README can get wrong. A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
@@ -395,11 +395,19 @@ flowchart TD
 
 ### The mandate, built from the documents that govern it
 
-`is_mandate` used to be a boolean with nothing behind it. [`vasool/mandate/`](vasool/mandate/) gives it a record and a lifecycle — six states, fourteen transitions — and **every transition cites the clause that permits it**, quoted verbatim from one of ten documents: RBI's *Digital Payments – E-mandate Framework, 2026*, which consolidated and repealed the eight e-mandate circulars before it; seven NPCI operating circulars; NPCI's response codes; and, for the one edge no rule document covers — resuming a paused mandate — Razorpay's API reference, flagged as that in the code and held at one edge by a test. Nine of the ten are pinned by the SHA-256 of the bytes read. A lifecycle built from documents can't be checked against a live account, so it is built to make a mistake findable instead: a wrong transition is a wrong citation.
+`is_mandate` used to be a boolean with nothing behind it. [`vasool/mandate/`](vasool/mandate/) gives it a record and a lifecycle — six states, nineteen transitions — and **every transition cites the clause that permits it**, quoted verbatim from one of eleven documents: RBI's *Digital Payments – E-mandate Framework, 2026*, which consolidated and repealed the eight e-mandate circulars before it; seven NPCI operating circulars; NPCI's response codes; and, for the one edge no rule document covers — resuming a paused mandate — Razorpay's API reference, flagged as that in the code and held at one edge by a test; and Razorpay's page on failed UPI Autopay debits, the evidence for the three transitions a failure reports. Ten of the eleven are pinned by the SHA-256 of the bytes read. A lifecycle built from documents can't be checked against a live account, so it is built to make a mistake findable instead: a wrong transition is a wrong citation.
 
 Two guards follow from the sources. **G14** `MandateStateGuard` refuses a debit against a mandate that is not live when the debit would execute — paused, revoked, expired or unregistered — so a retry built on Monday cannot run on Thursday against a mandate the customer revoked on Tuesday. **G15** `AutopayPeakHoursGuard` holds a UPI Autopay execution out of NPCI's peak hours, 10:00–13:00 and 17:00–21:30 ([OC-215A/2025-26](vasool/mandate/citations.py)). `AFAThresholdGuard` now takes its limit from the mandate's category — ₹15,000, or ₹1,00,000 for insurance premiums, mutual funds and credit-card bills — and a UPI mandate gets NPCI's one attempt and three retries.
 
 **Nothing measured moved, as registered before the code was written.** The universe draws no UPI mandate, and all 9,000 base rows recomputed from nothing under the lifecycle's agent were byte-identical to the previous run's. The sources did contradict the code in one place: RBI's §6(a) makes the 24-hour pre-debit notice the **issuer's**, requested through the rail, and Vasool had built it as a merchant SMS gated by DND and the contact window. Correcting that moved numbers, so it came separately, with its own [§10](docs/EVALUATION.md) row and its own re-run — the 1.35 points described [above](#and-now-the-uncomfortable-part).
+
+### When a UPI Autopay debit fails
+
+**A Razorpay merchant is never told NPCI's code.** The design asked for a UPI Autopay debit that "fails with a cited NPCI code"; Razorpay's own documentation of a failed subsequent UPI payment names none. It sends one of **61 documented reasons** instead, and those are what Vasool classifies ([`docs/taxonomy.md` §12](docs/taxonomy.md)): **29** fit the five classes and **32** do not, and **fifteen** of those say money may already have moved — "Any amount deducted will be refunded", a pending payment, a timeout, a response that never came. For fourteen of the fifteen, Razorpay's own next step is to try again. That is how a customer is charged twice while a refund is in transit, and the same page says as much a few lines earlier: "Do not create another subsequent payment until you get the status of the previous one."
+
+So Vasool asks the rail instead. A failure whose money may be in flight gets a **status check** — NPCI's OC-215: the first at 90 seconds, at most three within two hours — and never a retry. "Debited" closes the episode as recovered; anything else goes to a person. **No unmapped reason is ever retried**, a failure that reports a revoked, paused or expired mandate moves the mandate record, citing Razorpay's reason and NPCI's code, and NPCI's own vocabulary waits behind a port for a provider that passes it on. [Watch one in the theatre](https://sriramvarun0636.github.io/Vasool/theatre/), or `SCENARIO=payment_pending RAIL=upi make demo`.
+
+**And the client under all of it re-sent debits it could not confirm.** On a gateway error, four times; on a timeout, the exception escaped unrecorded. A new attack, **A26**, loses a debit's response and counts debits **at the rail** — and against the old client every one of the survival criterion's original clauses held while the rail took the customer's money twice. One proposal, one receipt, one dispatch: a double debit no record the agent keeps could show. A debit is now never re-sent, and A26 survives ([`POSTMORTEM.md` INC-010](POSTMORTEM.md)). Registered, with its expectations, before any of this was written ([§10, 2026-09-15](docs/EVALUATION.md)).
 
 ---
 
@@ -494,9 +502,9 @@ Every test I had written asked whether the agent did something *wrong*. Not one 
 
 ### The adversary
 
-I wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
+I wrote a survival criterion, registered it, and only then wrote 22 attacks against it; a twenty-third came with the UPI failure path. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
 
-**20 of 22 survive.** Two remain open, and they are the complete set:
+**21 of 23 survive.** Two remain open, and they are the complete set:
 
 | | Attack | Why it still wins |
 | :--- | :--- | :--- |
@@ -504,6 +512,8 @@ I wrote a survival criterion, registered it, and only then wrote 22 attacks agai
 | **A07** | One human, two customer IDs | Per-human contact caps key on a derived id; two ids for one person defeat the cap. Worst case seen: 4 contacts in 7 days against a cap of 3. |
 
 **A09 — a message to a DND-listed customer — closed on 2026-09-15, and it cost recovery.** `DNDGuard` judged only promotional messages, and every message was built as transactional — an assumption, since under TRAI's rules a message's category is how its template was registered on DLT, which only the merchant knows. Now a message carries `UNKNOWN` unless the merchant declares its template, an unknown category is judged, and a registry that cannot answer blocks. The universe has always put 8% of customers on the registry, so closing the attack moved the headline down **3.03 points**, and every other number with it; the cost was registered before the re-run measured it, along with the prediction that the three arms without guards would not move at all, which held on 3,000 of 3,000 rows ([§10, 2026-09-15](docs/EVALUATION.md)). Part of that cost was a modelling error found later, in the mandate work's sources — the pre-debit notice had been built as Vasool's own SMS, so the registry held debits waiting on it — and correcting it gave back 1.35 points.
+
+**A26 — a debit whose response is lost — is the first attack that counts at the rail.** Every clause of the criterion reads a record the agent keeps, and a debit the client re-sends after a lost response is in none of them. Registered `SURVIVES` before its code existed, it fails against the client as it was until 2026-09-15 — the rail takes two debits while the ledger shows one — and survives against the client that asks the rail instead ([`POSTMORTEM.md` INC-010](POSTMORTEM.md)).
 
 **A08 was on that list until 2026-08-30**, and closing it is the clearest demonstration in the repository that the apparatus works. The guard evaluated the RBI contact window in IST — the *merchant's* timezone — so a customer elsewhere was protected by that clock rather than their own, and the attack landed a message at 22:30 customer-local. The guard now reads the customer's zone and falls back to IST when it doesn't have one.
 
@@ -527,12 +537,12 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 
 - **Not** that Vasool would recover 49% of *your* failed payments. It measures a model, and the model is mine.
 - **Eight of the nine outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
-- **Nine of ten Razorpay failure reasons are `_SIMULATED`, and the UPI vocabulary is cited, not observed.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use; that finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md). Every fact now carries one of three tiers: **1** Razorpay reason observed live, **9** hand-built from documentation, and **225** UPI codes transcribed from NPCI's public specification — of which **92** fit the five failure classes and **133** do not, each with its reason, the most consequential being thirty codes that mean money may already have moved ([`docs/taxonomy.md` §11](docs/taxonomy.md)). None of the 225 has been seen arriving through Razorpay, and nothing runs on them yet.
+- **Nine of ten Razorpay failure reasons are `_SIMULATED`, and the UPI vocabulary is cited, not observed.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use; that finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md). Every fact now carries one of three tiers: **1** Razorpay reason observed live, **70** hand-built from documentation — nine card reasons and Razorpay's 61 UPI Autopay reasons — and **225** UPI codes transcribed from NPCI's public specification — of which **92** fit the five failure classes and **133** do not, each with its reason, the most consequential being thirty codes that mean money may already have moved ([`docs/taxonomy.md` §11](docs/taxonomy.md)). None of the 225 has been seen arriving through Razorpay, whose documentation names no field that could carry one; they classify a failure only through a port a Razorpay merchant never feeds.
 - **Subscriptions were unavailable pre-activation**, so the failed-mandate loop is stub-only.
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — fifty-one of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — fifty-two of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -540,19 +550,19 @@ Every amendment to the protocol after registration — fifty-one of them — is 
 
 | Path | What lives there |
 | :--- | :--- |
-| [`POSTMORTEM.md`](POSTMORTEM.md) | **Nine incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well. Start here. |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Ten incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well; the tenth is a double debit every record the agent keeps would have shown as one. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
-| [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 34 places the code flags its own uncertainty |
-| [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), and NPCI's 225 UPI codes mapped to it |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 36 places the code flags its own uncertainty |
+| [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), Razorpay's 61 UPI Autopay failure reasons, and NPCI's 225 UPI codes, each mapped to it |
 | [`data/cited_payloads/`](data/cited_payloads/) | The third provenance tier: NPCI's UPI response codes, transcribed verbatim, each file pinned to the SHA-256 of the specification it cites |
 | [`vasool/policy/`](vasool/policy/) | Fifteen pure-function guards, the state machine, the transition log |
-| [`vasool/mandate/`](vasool/mandate/) | The e-mandate lifecycle: six states, every transition citing the clause that permits it, quoted from ten documents, nine pinned by SHA-256 |
-| [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |
+| [`vasool/mandate/`](vasool/mandate/) | The e-mandate lifecycle: six states, every transition citing the clause that permits it, quoted from eleven documents, ten pinned by SHA-256, and moved by the rail when a debit reports a revoked, paused or expired mandate |
+| [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay — and the ports the debit, the pre-debit notice and the status check go through, each refusing until its call has been observed |
 | [`vasool/ledger/`](vasool/ledger/) | Hash-chained receipts and `verify_chain` |
 | [`windtunnel/`](windtunnel/) | The simulator, the outcome model, the evaluator, and the adversary |
 | [`docs/theatre/`](docs/theatre/) | **The episode theatre.** One episode replayed in the browser, exported from `vasool/demo.py`'s own traversal — the same one `data/golden/` pins byte-for-byte |
 | [`docs/EVALUATION.md`](docs/EVALUATION.md) | The pre-registered protocol. Append-only. |
-| [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, §9's known limits, and §11: what NPCI's vocabulary says the five classes miss |
+| [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, §9's known limits, §11: what NPCI's vocabulary says the five classes miss, and §12: the 61 reasons a Razorpay merchant is actually sent |
 | [`docs/VERIFIED.md`](docs/VERIFIED.md) | Everything learned from the live account, including what did not work |
 
 ---

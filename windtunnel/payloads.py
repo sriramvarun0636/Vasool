@@ -245,6 +245,57 @@ def failure_event(
     )
 
 
+UPI_PREFIX = "SIMULATED__upi_autopay__"
+"""UPI Autopay failure stubs, one per reason Razorpay documents
+(tools/make_upi_stubs.py). A separate prefix and a separate index: no card
+reader globs them, so the card index above — and every universe the registered
+mix draws — cannot see one (docs/EVALUATION.md §10, 2026-09-15)."""
+
+
+@functools.cache
+def _upi_by_reason() -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for path in sorted(STUBBED_DIR.glob(f"{UPI_PREFIX}*.json")):
+        fixture = json.loads(path.read_text())
+        index[fixture["body"]["payload"]["payment"]["entity"]["error_reason"]] = fixture
+    return index
+
+
+def upi_reasons() -> frozenset[str]:
+    """Every UPI Autopay reason with a stub on disk."""
+    return frozenset(_upi_by_reason())
+
+
+def upi_failure_body(
+    *,
+    reason: str,
+    entity_id: str,
+    contact: str,
+    email: str,
+    amount_paise: int,
+    occurred_at: datetime,
+) -> dict[str, Any]:
+    """The `payment.failed` body for a UPI Autopay debit, identity stamped on,
+    exactly as `failure_body` stamps a card one. The error fields — including
+    the null source and step no Razorpay page documents — are left as the
+    stub has them."""
+    fixture = _upi_by_reason().get(reason)
+    if fixture is None:
+        raise NoSuchPayload(
+            f"no UPI Autopay stub for {reason!r} — Razorpay documents 61 reasons, and "
+            "tools/make_upi_stubs.py writes one file each; a reason in none does not exist"
+        )
+    body = copy.deepcopy(fixture["body"])
+    entity = body["payload"]["payment"]["entity"]
+    entity["id"] = entity_id
+    entity["contact"] = contact
+    entity["email"] = email
+    entity["amount"] = amount_paise
+    entity["created_at"] = int(occurred_at.timestamp())
+    body["created_at"] = int(occurred_at.timestamp())
+    return body
+
+
 def link_paid_body(*, entity_id: str, amount_paise: int) -> dict[str, Any]:
     """The `payment_link.paid` webhook a link this agent sent would fire.
 
@@ -268,7 +319,7 @@ def link_paid_body(*, entity_id: str, amount_paise: int) -> dict[str, Any]:
 def capture_body(*, payment_id: str, amount_paise: int) -> dict[str, Any]:
     """The `payment.captured` webhook a retry would fire.
 
-    `payment_id` is whatever `retry_payment` returned for this proposal, read
+    `payment_id` is whatever the debit returned for this proposal, read
     back off the executor's own journal — never invented here, because the
     whole correlation depends on it being Razorpay's own id rather than a
     guessed join key (vasool/events/settlement.py).

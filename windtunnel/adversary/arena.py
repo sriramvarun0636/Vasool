@@ -36,6 +36,7 @@ ledger.
 """
 from __future__ import annotations
 
+import copy
 import dataclasses
 import hashlib
 import hmac
@@ -47,14 +48,17 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from vasool.actions.comms import CommsSender
-from vasool.actions.executor import RazorpayExecutor
+from vasool.actions.debit import DebitAttempt
+from vasool.actions.executor import DocumentedAdapters, RazorpayExecutor, documented_adapters, lost_response
 from vasool.actions.notice import NoticeRequest
+from vasool.actions.status import NullStatusCheck, StatusReading
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.rules import IST
 from vasool.events.receiver import create_app
 from vasool.events.schemas import derive_customer_id
 from vasool.events.store import EventStore
+from vasool.mandate.evidence import Observation, apply_rail_evidence
 from vasool.mandate.machine import MandateMachine, Trigger
 from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
 from vasool.mandate.states import MandateState
@@ -139,8 +143,11 @@ class Script:
     entity_id: str
     person: Person
     reason: str
-    source: str
+    source: str | None
     amount_paise: int
+    upi: bool = False
+    """A UPI Autopay debit, whose failure arrives in the UPI envelope Razorpay
+    documents (windtunnel/payloads.py) rather than a card one."""
 
 
 @dataclass
@@ -162,6 +169,19 @@ class ArenaFacts:
     contacts: dict[str, list[datetime]] = field(default_factory=dict)
     spent: dict[tuple[str, date], int] = field(default_factory=dict)
     registered_templates: frozenset[str] = field(default_factory=template_ids)
+    mandate_log: list[Observation] = field(default_factory=list)
+    """What each failed debit's rail evidence did to a mandate, disagreements
+    included (vasool/mandate/evidence.py). The world holds the record, so the
+    world keeps its log."""
+
+    def mandate_for(self, entity_id: str) -> MandateRecord | None:
+        """The mandate a payment is presented under, as the world holds it now —
+        read through the person, because a mandate event replaces the person."""
+        script = self.scripts.get(entity_id)
+        if script is None:
+            return None
+        person = self.people.get(script.person.customer_id)
+        return person.mandate if person is not None else None
 
     def snapshot(self, *, event, proposal: Proposal, now: datetime) -> PolicyFacts:
         person = self.people[event.customer_id]
@@ -276,8 +296,148 @@ class SimulatedRazorpay:
     def notify_payment_link(self, **kwargs) -> dict:
         return {"success": True}
 
-    def retry_payment(self, *, idempotency_key: str, **kwargs) -> dict:
-        return {"id": self._id("pay_", idempotency_key)}
+
+class SimulatedDebiter:
+    """The rail a debit goes to when the arena is not playing Razorpay's
+    documented surface: it takes the debit and answers with an id derived
+    from the idempotency key — the id, and the response shape, the arena
+    answered with before the debit became a port, so every attack's ledger
+    replays byte for byte across that change (windtunnel/runner.py has the
+    same class for the same reason)."""
+
+    def debit(self, proposal: Proposal) -> DebitAttempt:
+        payment_id = SimulatedRazorpay._id("pay_", proposal.idempotency_key)
+        return DebitAttempt(ok=True, detail="debit requested", payment_id=payment_id, response={"id": payment_id})
+
+
+class ArenaRail:
+    """Razorpay's documented surface, played by the world, for a mandate that
+    carries a Razorpay token.
+
+    Shaped like the SDK the real `RazorpayClient` wraps — `order.create`,
+    `order.fetch`, `customer.fetch`, `payment.createRecurring` — so that the
+    client, its transport rules and the documented adapters all run for real
+    (vasool/actions/executor.py, `documented_adapters`). The rail takes every
+    debit it is sent and marks the order paid; an attack that wants a
+    response lost says so, and the rail then takes the debit and loses the
+    answer, exactly as a network does. It counts every debit it takes, which
+    is what `RailDebitsAtMost` reads: a debit the client re-sent is in no
+    record the agent keeps, and only the rail can count it."""
+
+    def __init__(self, facts: ArenaFacts, clock: VirtualClock) -> None:
+        self._facts = facts
+        self._clock = clock
+        self._orders: dict[str, dict] = {}
+        self._lose: set[str] = set()
+        self.debits: list[tuple[str, str, datetime]] = []
+        self.order = _RailOrders(self)
+        self.customer = _RailCustomers(self)
+        self.payment = _RailPayments(self)
+
+    def lose_next_response(self, entity_id: str) -> None:
+        self._lose.add(entity_id)
+
+    def debits_for(self, entity_id: str) -> int:
+        return sum(1 for entity, _, _ in self.debits if entity == entity_id)
+
+    @staticmethod
+    def _key(headers: dict | None) -> str:
+        return (headers or {}).get("X-Razorpay-Idempotency-Key", "")
+
+
+class _RailOrders:
+    def __init__(self, rail: ArenaRail) -> None:
+        self._rail = rail
+
+    def create(self, data: dict, **kwargs) -> dict:
+        order_id = SimulatedRazorpay._id("order_", ArenaRail._key(kwargs.get("headers")))
+        delivered = int(self._rail._clock.now().timestamp())
+        self._rail._orders.setdefault(order_id, {
+            "id": order_id,
+            "entity": "order",
+            "amount": data["amount"],
+            "amount_paid": 0,
+            "amount_due": data["amount"],
+            "currency": data["currency"],
+            "status": "created",
+            "attempts": 0,
+            "notification": {
+                "token_id": data["notification"]["token_id"],
+                "id": SimulatedRazorpay._id("notification_", order_id),
+                "status": "delivered",
+                "delivered_at": delivered,
+            },
+            "notes": data.get("notes", {}),
+        })
+        return copy.deepcopy(self._rail._orders[order_id])
+
+    def fetch(self, order_id: str, **kwargs) -> dict:
+        return copy.deepcopy(self._rail._orders[order_id])
+
+
+class _RailCustomers:
+    def __init__(self, rail: ArenaRail) -> None:
+        self._rail = rail
+
+    def fetch(self, customer_id: str, **kwargs) -> dict:
+        for person in self._rail._facts.people.values():
+            if person.mandate is not None and person.mandate.razorpay_customer_id == customer_id:
+                return {"id": customer_id, "email": person.email, "contact": person.contact}
+        raise LookupError(f"no customer {customer_id} at the rail")
+
+
+class _RailPayments:
+    def __init__(self, rail: ArenaRail) -> None:
+        self._rail = rail
+
+    def createRecurring(self, data: dict, **kwargs) -> dict:  # noqa: N802 — the SDK's name
+        rail = self._rail
+        entity_id = data["notes"]["vasool_entity_id"]
+        order = rail._orders[data["order_id"]]
+        order["attempts"] += 1
+        order["status"], order["amount_paid"], order["amount_due"] = "paid", data["amount"], 0
+        rail.debits.append((entity_id, data["order_id"], rail._clock.now()))
+        payment_id = SimulatedRazorpay._id("pay_", ArenaRail._key(kwargs.get("headers")))
+        if entity_id in rail._lose:
+            rail._lose.discard(entity_id)
+            raise lost_response(f"the rail took {payment_id} and the response never arrived")
+        return {"razorpay_payment_id": payment_id}
+
+
+@dataclass
+class _ByMandate:
+    """Routes a proposal to Razorpay's documented adapters when its payment's
+    mandate carries a Razorpay token, and to the simulated ones otherwise — so
+    only a scene that gives someone a token plays the documented surface, and
+    every other attack's ledger is untouched by its existence."""
+
+    facts: ArenaFacts
+    documented: DocumentedAdapters
+
+    def _documented(self, proposal: Proposal) -> bool:
+        mandate = self.facts.mandate_for(proposal.entity_id)
+        return mandate is not None and mandate.token_id is not None
+
+
+class _Notifier(_ByMandate):
+    def request(self, proposal: Proposal) -> NoticeRequest:
+        if self._documented(proposal):
+            return self.documented.notifier.request(proposal)
+        return SimulatedRail().request(proposal)
+
+
+class _Debiter(_ByMandate):
+    def debit(self, proposal: Proposal) -> DebitAttempt:
+        if self._documented(proposal):
+            return self.documented.debiter.debit(proposal)
+        return SimulatedDebiter().debit(proposal)
+
+
+class _StatusCheck(_ByMandate):
+    def check(self, proposal: Proposal) -> StatusReading:
+        if self._documented(proposal):
+            return self.documented.status.check(proposal)
+        return NullStatusCheck().check(proposal)
 
 
 class Arena:
@@ -291,6 +451,8 @@ class Arena:
         self.clock = VirtualClock(self.EPOCH)
         self.facts = ArenaFacts(merchant=MerchantPolicy(merchant_id=MERCHANT_ID))
         self._razorpay = SimulatedRazorpay()
+        self.rail = ArenaRail(self.facts, self.clock)
+        documented = documented_adapters(sdk_client=self.rail, mandates=self.facts.mandate_for)
         self._inner = RazorpayExecutor(
             client=self._razorpay,
             # Delivery always succeeds. comms.py still enforces the DLT
@@ -298,7 +460,9 @@ class Arena:
             # no transport-failure rate is anything this package models.
             comms=CommsSender(deliver=lambda proposal, params: {"delivered": True}),
             registered_templates=template_ids(),
-            notifier=SimulatedRail(),
+            notifier=_Notifier(self.facts, documented),
+            debiter=_Debiter(self.facts, documented),
+            status=_StatusCheck(self.facts, documented),
         )
         self.executor = WatchedExecutor(inner=self._inner, facts=self.facts, clock=self.clock)
         self.machine = PolicyMachine(
@@ -463,8 +627,13 @@ class Arena:
         entity_id: str | None = None,
         occurred_at: datetime | None = None,
         event_id: str | None = None,
+        upi: bool = False,
     ) -> str:
         """A `payment.failed` webhook arrives. Returns the entity_id.
+
+        `upi` delivers it in the UPI Autopay envelope, carrying one of the 61
+        reasons Razorpay documents for a failed subsequent UPI payment
+        (docs/taxonomy.md §12); every other failure arrives as a card one.
 
         The envelope comes off disk with only identity stamped on it
         (`windtunnel/payloads.py`), so no attack can author an error string —
@@ -480,21 +649,35 @@ class Arena:
             entity_id=entity_id,
             person=person,
             reason=reason,
-            source=source or payloads.source_on_disk(reason),
+            source=None if upi else (source or payloads.source_on_disk(reason)),
             amount_paise=amount_paise,
+            upi=upi,
         )
         self.facts.scripts[entity_id] = script
-        body = payloads.failure_body(
+        body = self._failure_body(script, entity_id=entity_id, occurred_at=occurred_at or self.clock.now())
+        self.deliver(body, event_id=event_id or self._event_id_for(entity_id))
+        return entity_id
+
+    @staticmethod
+    def _failure_body(script: Script, *, entity_id: str, occurred_at: datetime) -> dict[str, Any]:
+        if script.upi:
+            return payloads.upi_failure_body(
+                reason=script.reason,
+                entity_id=entity_id,
+                contact=script.person.contact,
+                email=script.person.email,
+                amount_paise=script.amount_paise,
+                occurred_at=occurred_at,
+            )
+        return payloads.failure_body(
             reason=script.reason,
             source=script.source,
             entity_id=entity_id,
-            contact=person.contact,
-            email=person.email,
-            amount_paise=amount_paise,
-            occurred_at=occurred_at or self.clock.now(),
+            contact=script.person.contact,
+            email=script.person.email,
+            amount_paise=script.amount_paise,
+            occurred_at=occurred_at,
         )
-        self.deliver(body, event_id=event_id or self._event_id_for(entity_id))
-        return entity_id
 
     def fail_last_retry(self, entity_id: str) -> None:
         """The re-presentation the agent just made did not authorise.
@@ -514,15 +697,7 @@ class Arena:
         if record is None or record.razorpay_request_id is None:
             raise LookupError(f"no Razorpay id recorded for {retries[-1].proposal_id}")
         script = self.facts.scripts[entity_id]
-        body = payloads.failure_body(
-            reason=script.reason,
-            source=script.source,
-            entity_id=record.razorpay_request_id,
-            contact=script.person.contact,
-            email=script.person.email,
-            amount_paise=script.amount_paise,
-            occurred_at=self.clock.now(),
-        )
+        body = self._failure_body(script, entity_id=record.razorpay_request_id, occurred_at=self.clock.now())
         self.deliver(body, event_id=self._event_id_for(record.razorpay_request_id))
 
     def pay_link(self, entity_id: str, *, event_id: str | None = None) -> bool:
@@ -581,6 +756,16 @@ class Arena:
             event_id=self._event_id_for(f"{entity_id}|out_of_band"),
         )
         return self.state_of(entity_id) is State.RECOVERED
+
+    def lose_next_debit_response(self, entity_id: str) -> None:
+        """The rail will take this payment's next debit and lose the answer.
+
+        Only a payment whose mandate carries a Razorpay token reaches the
+        arena's rail (see `_ByMandate`); for any other, the debit never gets
+        there and there is nothing to lose. The money moves either way the
+        response goes — a lost response is not a failed debit, which is the
+        whole of attack A26."""
+        self.rail.lose_next_response(entity_id)
 
     # -- what the world can change about itself ---------------------------
     def withdraw_consent(self, person: Person) -> None:
@@ -673,8 +858,24 @@ class Arena:
             # observed, which is where webhook-level idempotency actually
             # bites.
             stored = self.store.get(event_id)
+            self._take_rail_evidence(stored["failure_event"])
             self.machine.observe(stored["failure_event"])
         return inserted
+
+    def _take_rail_evidence(self, event) -> None:
+        """A UPI debit that failed because the mandate was revoked, paused or
+        expired moves the world's record of it, before the agent reads the
+        failure — the world holds the record (vasool/mandate/evidence.py)."""
+        if event.method != "upi":
+            return
+        person = self.facts.people.get(event.customer_id)
+        if person is None or person.mandate is None:
+            return
+        updated, observation = apply_rail_evidence(person.mandate, event.error_reason, at=self.clock.now())
+        if observation is not None:
+            self.facts.mandate_log.append(observation)
+        if updated is not person.mandate:
+            self.facts.people[person.customer_id] = dataclasses.replace(person, mandate=updated)
 
     def _entity_id_for(self, person: Person, reason: str) -> str:
         ordinal = self._episodes_per_person.get(person.customer_id, 0)
@@ -721,6 +922,9 @@ class Arena:
 
     def subject_for(self, customer_id: str) -> Person | None:
         return self.facts.people.get(customer_id)
+
+    def rail_debits(self, entity_id: str) -> int:
+        return self.rail.debits_for(entity_id)
 
     def ledger_digest(self) -> str:
         """SHA-256 over the receipt chain. architectural invariant 5, per attack."""

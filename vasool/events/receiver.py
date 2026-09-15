@@ -43,6 +43,7 @@ import logging
 from fastapi import FastAPI, Header, HTTPException, Request
 
 from vasool.clock import Clock, RealClock
+from vasool.events.rail_codes import RailCodeSource
 from vasool.events.schemas import from_webhook
 from vasool.events.settlement import RetryIndex, SettlementTarget, settle_from_webhook
 from vasool.events.store import EventStore
@@ -72,7 +73,11 @@ def create_app(
     clock: Clock | None = None,
     machine: SettlementTarget | None = None,
     retry_index: RetryIndex | None = None,
+    rail_codes: RailCodeSource | None = None,
 ) -> FastAPI:
+    """`rail_codes` is the port a provider's own rail code arrives through
+    (vasool/events/rail_codes.py). Razorpay documents none, so it defaults to
+    nothing and every failure is classified from what Razorpay sends."""
     clock = clock or RealClock()
     app = FastAPI()
 
@@ -99,6 +104,7 @@ def create_app(
                 # vasool/events/schemas.py::from_webhook. The same index the
                 # settlement path below reads, used in the other direction.
                 retry_index=retry_index,
+                rail_codes=rail_codes,
             )
             if event_name == "payment.failed"
             else None

@@ -115,6 +115,21 @@ class TestGoldenOutput:
         assert "recovered    : ₹500.00 (50000 paise)" in out
         assert "event        : payment.captured" in out
 
+    def test_upi_payment_pending_matches_the_committed_fixture(self):
+        """§2.5's failure path, pinned: a UPI Autopay debit whose failure says
+        money may be in flight is checked with the rail and never presented
+        again; production's status check cannot tell yet, so a person decides
+        (docs/EVALUATION.md §10, 2026-09-15)."""
+        rc, out, err = run_demo(["--rail", "upi", "--scenario", "payment_pending", "--replay"])
+        golden = (GOLDEN_DIR / "demo_upi_payment_pending.txt").read_text()
+
+        assert rc == 0
+        assert err == ""
+        assert out == golden
+        assert "intervention : STATUS_CHECK (PRIMARY)" in out
+        assert "SILENT_RETRY" not in out and "TIMED_RETRY" not in out
+        assert "outcome      : escalated" in out
+
 
 # ---------------------------------------------------------------------------
 # a fresh clone: no .env, no pepper

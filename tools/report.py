@@ -1631,7 +1631,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             <p class="footer-links">
                 <a href="https://github.com/sriramvarun0636/Vasool">Repository</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/docs/EVALUATION.md">The pre-registered protocol</a> &nbsp;&middot;&nbsp;
-                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Nine incidents</a> &nbsp;&middot;&nbsp;
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Ten incidents</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/COMPLIANCE.md">The fifteen guards</a>
             </p>
         </footer>

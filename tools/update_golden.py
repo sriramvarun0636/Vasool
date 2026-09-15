@@ -58,6 +58,17 @@ FIXTURES: dict[str, list[str]] = {
         "--replay",
         "--settle",
     ],
+    # §2.5's failure path: a UPI Autopay debit whose failure says money may be
+    # in flight is checked, never re-presented (docs/EVALUATION.md §10,
+    # 2026-09-15). Production's default status check cannot tell, so a person
+    # decides — what this account would do today.
+    "demo_upi_payment_pending.txt": [
+        "--rail",
+        "upi",
+        "--scenario",
+        "payment_pending",
+        "--replay",
+    ],
 }
 
 

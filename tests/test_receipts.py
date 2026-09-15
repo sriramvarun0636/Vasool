@@ -17,8 +17,8 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from vasool.actions.comms import CommsSender
+from vasool.actions.debit import DebitAttempt
 from vasool.actions.executor import RazorpayExecutor
-from vasool.actions.razorpay_client import RazorpayCallFailed
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import ProposalRole, _derive_id, template_ids
 from vasool.diagnosis.rules import IST
@@ -60,10 +60,20 @@ class FakeRazorpayClient:
     def notify_payment_link(self, **kwargs):
         return {"success": True}
 
-    def retry_payment(self, **kwargs):
+
+
+class FakeDebiter:
+    """The mandate-debit port (vasool/actions/debit.py), taking every debit
+    with the id tests/test_retry_correlation.py correlates through, or
+    refusing one when told to."""
+
+    def __init__(self, *, fail_retry: bool = False):
+        self._fail_retry = fail_retry
+
+    def debit(self, proposal):
         if self._fail_retry:
-            raise RazorpayCallFailed("down", retryable=True, cause=Exception("x"))
-        return {"id": "pay_retry_1"}
+            return DebitAttempt(ok=False, detail="down")
+        return DebitAttempt(ok=True, detail="debit requested", payment_id="pay_retry_1", response={"id": "pay_retry_1"})
 
 
 def make_machine(*, now=NOON, fail_retry: bool = False, **fact_overrides):
@@ -72,6 +82,7 @@ def make_machine(*, now=NOON, fail_retry: bool = False, **fact_overrides):
         client=FakeRazorpayClient(fail_retry=fail_retry),
         comms=CommsSender(deliver=lambda p, params: {"ok": True}),
         registered_templates=template_ids(),
+        debiter=FakeDebiter(fail_retry=fail_retry),
     )
     machine = PolicyMachine(clock=clock, facts=StubFactStore(**fact_overrides), executor=executor)
     return machine, clock, executor

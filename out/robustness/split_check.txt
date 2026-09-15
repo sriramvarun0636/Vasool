@@ -1,4 +1,4 @@
-SPLIT CHECK   docs/EVALUATION.md §10, 2026-09-14   agent 5824199aceec…   seeds 0..999
+SPLIT CHECK   docs/EVALUATION.md §10, 2026-09-14   agent 2cc8715d344e…   seeds 0..999
 
   split                       Vasool   Vasool − incumbent   95% interval
   registered (published)      0.4739      -18.03pp   [-18.22, -17.84]pp

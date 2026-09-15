@@ -15,11 +15,19 @@ notification, and that is not this system (docs/EVALUATION.md §10, 2026-09-15).
 
 **The null adapter refuses, and says so.** No call that requests a pre-debit
 notification has ever been observed on this account — subscriptions are
-unavailable pre-activation (docs/VERIFIED.md) — and a Razorpay endpoint for one
-is not something this project will guess at. A notifier that cannot ask
+unavailable pre-activation (docs/VERIFIED.md). A notifier that cannot ask
 reports that it did not, and the debit stays held by `PreDebitNoticeGuard`:
 the safe direction, since a debit without its notice is the violation and a
 notice not requested is only a delay.
+
+**Razorpay documents the request, and it is built but not the default.** Its
+*Create Subsequent Payments* pages have the merchant create an order carrying a
+`notification` object with the mandate's `token_id`; Razorpay delivers the
+notice, and the order then reports `notification.status` and `delivered_at`.
+`RazorpayPreDebitNotifier` in vasool/actions/executor.py does that and records
+the order in `NoticeOrders`, because the debit is presented against that same
+order. It stays off until one live request has been observed after activation
+(docs/EVALUATION.md §10, 2026-09-15).
 """
 from __future__ import annotations
 
@@ -41,6 +49,27 @@ class NoticeRequest:
 
 class PreDebitNotifier(Protocol):
     def request(self, proposal: Proposal) -> NoticeRequest: ...
+
+
+class NoticeOrders:
+    """Which order a payment's pre-debit notice was requested on, by entity id.
+
+    The debit that notice enables is presented against that same order
+    (Razorpay's `createRecurring` requires its `order_id`), and the status
+    check reads it. Process-local, like RetryIndex beside the executor, and for
+    the same reason stated there: nothing yet stores the action plane's own
+    call history durably. A restart loses the mapping, and the debit it would
+    have found refuses rather than guessing an order.
+    """
+
+    def __init__(self) -> None:
+        self._by_entity: dict[str, str] = {}
+
+    def record(self, entity_id: str, order_id: str) -> None:
+        self._by_entity[entity_id] = order_id
+
+    def order_for(self, entity_id: str) -> str | None:
+        return self._by_entity.get(entity_id)
 
 
 class NullPreDebitNotifier:

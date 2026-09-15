@@ -1,7 +1,7 @@
 {
-  "agent_fingerprint": "5824199aceeca90895908173c4f11f7c5444f6101cd6171b9b75659bfcfb926e",
+  "agent_fingerprint": "2cc8715d344e4d286eb6690ee060f302785d2279f74d76a80103947f1cc56435",
   "as_registered": true,
-  "attacks": 22,
+  "attacks": 23,
   "failed": 2,
   "results": [
     {
@@ -866,7 +866,56 @@
       "survived": true,
       "targets": "event ordering: a terminal episode absorbs what comes late",
       "title": "the failure arrives after the capture"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "4 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "the rail took 1 debit(s), at most 1 allowed",
+          "held": true,
+          "name": "at_most_1_rail_debits_on_pay_a26"
+        },
+        {
+          "detail": "1 outcome_unknown receipts, expected 1",
+          "held": true,
+          "name": "1_outcome_unknown_receipts_for_pay_a26"
+        },
+        {
+          "detail": "1 status_check executed, expected 1",
+          "held": true,
+          "name": "1_status_check_on_pay_a26"
+        },
+        {
+          "detail": "1 recovered receipts, expected 1",
+          "held": true,
+          "name": "1_recovered_receipts_for_pay_a26"
+        }
+      ],
+      "dispatched": 3,
+      "expectation": "survives",
+      "id": "A26",
+      "ledger_sha256": "a6e21c6f194fd07d076afa027d77b96e38690f9e84d8010281bb68bfee041db3",
+      "receipts": 4,
+      "source": "docs/EVALUATION.md \u00a710, 2026-09-15; NPCI OC-215; the review of 2026-09-15",
+      "survived": true,
+      "targets": "a second debit after a lost response \u2014 invisible to every record but the rail's",
+      "title": "a debit whose response is lost"
     }
   ],
-  "survived": 20
+  "survived": 21
 }

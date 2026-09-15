@@ -11,8 +11,11 @@ any copy whose digest matches is the document cited.
 classify payloads — facts the simulator may draw. A clause is a rule, not a
 payload, and what a reader needs to know about it is who can make it: the
 regulator, the operator of the rail, or the platform documenting its own API.
-Only one transition rests on the last, and tests/test_mandate.py holds that at
-exactly one, so a second cannot arrive unnoticed.
+Only one transition rests on the last alone, and tests/test_mandate.py holds
+that at exactly one, so a second cannot arrive unnoticed. Three more cite it
+beside NPCI: when a UPI debit fails because the mandate was revoked, paused or
+has expired, Razorpay's reason is the evidence and NPCI's code says what the
+state means (docs/EVALUATION.md §10, 2026-09-15).
 
 **How each document was read.** The RBI Framework and NPCI's OC-149A carry a
 text layer. The other NPCI circulars are scans with none, so they were rendered
@@ -245,6 +248,23 @@ DOCUMENTS: dict[str, Document] = {
             ),
             sha256=None,
             read_by="the page's HTML",
+        ),
+        Document(
+            key="RAZORPAY-UPI-SUBSEQUENT",
+            authority=Authority.PLATFORM,
+            publisher="Razorpay",
+            reference="API Reference · Recurring Payments · UPI · Create Subsequent Payments",
+            title="Create Subsequent Payments",
+            dated=None,
+            retrieved=RETRIEVED,
+            retrieved_from=(
+                "https://razorpay.com/docs/api/payments/recurring-payments/upi/"
+                "create-subsequent-payments.md"
+            ),
+            # Unlike the TPAP page, this one is pinned: Razorpay serves the
+            # page's markdown source, whose bytes are the text alone.
+            sha256="6c26636bafa1b66801ecae4b44b8250a354d5269d3a3c2ee6baf0adb972d1bfe",
+            read_by="the page's markdown source",
         ),
     )
 }
@@ -577,6 +597,52 @@ CLAUSES: dict[str, Clause] = {
                 "Pause or resume a mandate using the Razorpay TPAP Pro API. "
                 '"action": "pause | unpause", '
                 '"pause": { "start_at": 1722317078, "end_at": 1722317078 }'
+            ),
+        ),
+        # -- Razorpay: what a merchant is told when a UPI Autopay debit fails ---
+        # The rail's evidence for three mandate transitions. Razorpay reports
+        # the state; NPCI's codes (VA, VT, VU) say what the state means.
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT mandate_cancelled",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.2, Error Response Parameters, mandate_cancelled",
+            text="UPI mandate created for payment has been cancelled by user.",
+        ),
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT mandate_paused",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.2, Error Response Parameters, mandate_paused",
+            text="UPI mandate is not active, it is paused by user.",
+        ),
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT mandate_expired",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.2, Error Response Parameters, mandate_expired",
+            text="UPI Mandate is expired.",
+        ),
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT status",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.2, UPI Payments",
+            text="Do not create another subsequent payment until you get the status of the previous one.",
+        ),
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT notification",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.1, Handy Tips",
+            text=(
+                "You can use the notification object in the request if you want to control "
+                "pre-debit notifications and recurring debits."
+            ),
+        ),
+        Clause(
+            key="RAZORPAY-UPI-SUBSEQUENT no retry",
+            document="RAZORPAY-UPI-SUBSEQUENT",
+            clause="§3.1, Request Parameters, notification (Watch Out!)",
+            text=(
+                "We will not attempt any retry if the debit fails for tokens with the "
+                "notification object in the created order. You should manually retry the "
+                "debit attempt."
             ),
         ),
     )

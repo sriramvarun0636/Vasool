@@ -330,8 +330,8 @@ WORLD_PARAMETERS: dict[str, Parameter] = {
             "in data/ is Rs 500 because they came from one test checkout, so "
             "an amount distribution had to be chosen; a constant would leave "
             "AFAThresholdGuard, HumanApprovalGuard and SpendCapGuard "
-            "permanently unexercised and the report card would show three of "
-            "the thirteen as passing when they had never run."
+            "permanently unexercised and the report card would show three "
+            "guards as passing when they had never run."
         ),
     ),
     "amount_sigma_log": Parameter(

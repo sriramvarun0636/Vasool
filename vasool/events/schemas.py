@@ -22,12 +22,13 @@ correlation can live without the two drifting apart. See `from_webhook` for
 why a failed retry needs one at all.
 
 # VERIFY: error_code/error_source/error_step/error_reason are typed as plain
-# str, not a restricted Literal, because only one value of each has been
+# strings, not a restricted Literal, because only one value of each has been
 # observed live (BAD_REQUEST_ERROR / gateway / payment_authorization /
-# payment_failed) plus the values in data/stubbed_payloads/. Restricting to
-# Razorpay's documented enum would mean trusting doc knowledge over observed
-# data, which the project rules forbids. Same reasoning for `method` (only "card"
-# observed).
+# payment_failed, and `bank` once) plus the values in data/stubbed_payloads/.
+# Restricting to Razorpay's documented enum would mean trusting doc knowledge
+# over observed data, which the project rules forbids. The first three may be
+# None, for a UPI failure whose documentation gives none. Same reasoning for
+# `method` (`card` and `netbanking` observed; `upi` documented only).
 """
 from __future__ import annotations
 
@@ -43,6 +44,7 @@ from pydantic import BaseModel
 # the same reason (vasool/events/settlement.py). settlement.py imports nothing
 # from this module, so there is no cycle, and one Protocol is better than two
 # that can quietly disagree.
+from vasool.events.rail_codes import RailCodeSource
 from vasool.events.settlement import RetryIndex
 
 
@@ -67,7 +69,7 @@ def derive_customer_id(contact: str | None, email: str | None, *, pepper: str) -
     with two different emails gets two different customer_ids, silently
     bypassing FrequencyCapGuard's per-customer contact cap. The attack that
     demonstrates it is **A07**, "one human, two customer ids" — four contacts
-    in seven days against a cap of three — and it is one of the three still
+    in seven days against a cap of three — and it is one of the two still
     open. **A11**, "four episodes, one identity", is its registered control and
     passes: if a fix ever makes A07 survive while A11 breaks, the failure moved
     rather than closed. Not fixed here — fixing it needs a real identity
@@ -89,10 +91,23 @@ class FailureEvent(BaseModel):
     method: str  # payment.entity.method
     occurred_at: datetime  # body.created_at: when Razorpay emitted the event
 
-    error_code: str
-    error_source: str
-    error_step: str
+    error_code: str | None
+    error_source: str | None
+    error_step: str | None
+    """None where the failure's documentation gives no value. Every card
+    failure on disk carries all three; Razorpay documents 61 UPI Autopay
+    reasons and pairs none of them with a source or a step, and only 19 with
+    a code, so a UPI stub carries None rather than a pairing nobody documented
+    (docs/EVALUATION.md §10, 2026-09-15). The UPI classifier keys on the
+    reason alone for exactly that reason (vasool/diagnosis/upi.py)."""
+
     error_reason: str
+
+    rail_code: tuple[str, str] | None = None
+    """NPCI's (section, code) for this failure, where a provider passes the
+    rail's own code on (vasool/events/rail_codes.py). Never set from a Razorpay
+    webhook, which documents no such field. When present it decides the
+    classification (vasool/diagnosis/rules.py)."""
 
     retried_payment_id: str | None = None
     """The payment Razorpay actually reported failing, when that payment was
@@ -117,11 +132,12 @@ def from_webhook(
     body: dict[str, Any],
     pepper: str,
     retry_index: RetryIndex | None = None,
+    rail_codes: RailCodeSource | None = None,
 ) -> FailureEvent:
     """Build a FailureEvent from an already-JSON-decoded payment.failed webhook body.
 
     **`retry_index` is what makes a failed retry advance its own episode.**
-    `RazorpayClient.retry_payment` wraps `createRecurring`, which creates a
+    A mandate debit (`createRecurring`, vasool/actions/debit.py) creates a
     NEW payment with its own id — the same fact that forces a *successful*
     retry's `payment.captured` to be correlated through RetryIndex
     (docs/VERIFIED.md). A *failed* retry has the identical problem: Razorpay
@@ -174,4 +190,5 @@ def from_webhook(
         error_source=payment["error_source"],
         error_step=payment["error_step"],
         error_reason=payment["error_reason"],
+        rail_code=rail_codes.code_for(body) if rail_codes is not None else None,
     )

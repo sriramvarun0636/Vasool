@@ -19,6 +19,7 @@ from datetime import timedelta
 import pytest
 
 from vasool.diagnosis.taxonomy import (
+    CONTACT_INTERVENTIONS,
     RETRY_INTERVENTIONS,
     RULES,
     SOURCE_ANY,
@@ -96,14 +97,19 @@ class TestClosedEnums:
             "RISK_BLOCK",
         }
 
-    def test_exactly_the_interventions_used_in_section_4(self):
+    def test_exactly_the_interventions_sections_4_and_12_use(self):
+        """§4's five, and §12's one: STATUS_CHECK, argued into
+        docs/taxonomy.md before it was a member (docs/EVALUATION.md §10,
+        2026-09-15). It is neither a retry nor a contact."""
         assert {i.value for i in InterventionType} == {
             "SILENT_RETRY",
             "TIMED_RETRY",
             "REATTEMPT_LINK",
             "REAUTH_LINK",
             "HUMAN_QUEUE",
+            "STATUS_CHECK",
         }
+        assert InterventionType.STATUS_CHECK not in RETRY_INTERVENTIONS | CONTACT_INTERVENTIONS
 
     def test_an_invented_intervention_is_rejected_at_the_boundary(self):
         with pytest.raises(ValueError):

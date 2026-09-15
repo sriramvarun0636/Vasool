@@ -7,10 +7,21 @@ seam). tests/test_actions_boundary.py enforces both boundaries by grepping
 vasool/, the way tests/test_no_wallclock.py enforces the clock invariant.
 
 Config comes from the environment via python-dotenv — never hardcoded
-(the project rules "Secrets"). Every write call takes an idempotency key; every call
-retries a 5xx with exponential backoff and never retries a 4xx, because a bad
-request will be bad again and retrying it only delays the failure a 4xx is
-trying to report.
+(the project rules "Secrets"). Every write call takes an idempotency key. A 4xx
+is never retried, because a bad request will be bad again and retrying it only
+delays the failure a 4xx is trying to report.
+
+**A write that moves money is never re-sent.** Every other call retries a 5xx,
+a timeout or a dropped connection with exponential backoff. A debit does not:
+a 5xx or a lost response on `createRecurring` means the rail may already have
+taken the money, and the only thing that can say whether it did is a status
+check — NPCI OC-215 ¶3–¶4, and Razorpay's own "Do not create another
+subsequent payment until you get the status of the previous one." So a failed
+debit raises at once, marked `outcome_unknown`, and the caller asks the rail
+instead of asking again. Until 2026-09-15 the debit was re-sent up to four
+times on a gateway error, resting on an idempotency header never seen honoured,
+and a timeout escaped this module as a raw `requests` exception, unrecorded
+(docs/EVALUATION.md §10, 2026-09-15).
 """
 from __future__ import annotations
 
@@ -21,6 +32,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import razorpay
+import requests
 from razorpay.errors import BadRequestError, GatewayError, ServerError
 
 log = logging.getLogger(__name__)
@@ -43,16 +55,31 @@ class RazorpayCallFailed(Exception):
     boundary rather than on razorpay.errors directly.
 
     `retryable` records what actually happened, not what was attempted — it
-    is True only when every retry was exhausted on a 5xx, False on a 4xx that
-    was never retried at all. A caller deciding whether to fall back to a
-    different intervention reads this rather than re-deriving it from the
-    wrapped exception's type.
+    is True only when every retry was exhausted on a 5xx or a transport
+    failure, False on a 4xx that was never retried at all, and False on a
+    money-moving write, which is never retried. A caller deciding whether to
+    fall back to a different intervention reads this rather than re-deriving
+    it from the wrapped exception's type.
+
+    `outcome_unknown` is True only for a write that moves money whose effect
+    cannot be known from the response: a 5xx, a timeout, a dropped connection
+    or an unreadable body. It is the one failure a caller must never answer
+    with the same call again.
     """
 
-    def __init__(self, message: str, *, retryable: bool, cause: Exception) -> None:
+    def __init__(
+        self, message: str, *, retryable: bool, cause: Exception, outcome_unknown: bool = False
+    ) -> None:
         super().__init__(message)
         self.retryable = retryable
         self.cause = cause
+        self.outcome_unknown = outcome_unknown
+
+
+_UNCERTAIN = (GatewayError, ServerError, requests.exceptions.RequestException)
+"""Failures after which the request may or may not have taken effect. The SDK
+raises `requests` exceptions unwrapped when a response is lost or unreadable
+(its own retry is off by default), so they are caught here with the 5xx."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,7 +143,9 @@ class RazorpayClient:
         self._base_delay_seconds = base_delay_seconds
         self._sleep = sleep
 
-    def _with_retry(self, description: str, call: Callable[[], dict]) -> dict:
+    def _with_retry(
+        self, description: str, call: Callable[[], dict], *, moves_money: bool = False
+    ) -> dict:
         attempt = 0
         while True:
             attempt += 1
@@ -128,7 +157,15 @@ class RazorpayClient:
                     retryable=False,
                     cause=exc,
                 ) from exc
-            except (GatewayError, ServerError) as exc:
+            except _UNCERTAIN as exc:
+                if moves_money:
+                    raise RazorpayCallFailed(
+                        f"{description}: {type(exc).__name__} — the rail may have taken "
+                        f"the money, so this is not re-sent; a status check decides: {exc}",
+                        retryable=False,
+                        cause=exc,
+                        outcome_unknown=True,
+                    ) from exc
                 if attempt >= self._max_attempts:
                     raise RazorpayCallFailed(
                         f"{description}: exhausted {self._max_attempts} attempts: {exc}",
@@ -192,32 +229,98 @@ class RazorpayClient:
             lambda: self._sdk.payment_link.notifyBy(payment_link_id, medium, headers=headers),
         )
 
-    def retry_payment(
-        self, *, entity_id: str, amount_paise: int, currency: str, idempotency_key: str
+    def create_notice_order(
+        self,
+        *,
+        amount_paise: int,
+        currency: str,
+        token_id: str,
+        notes: dict,
+        idempotency_key: str,
     ) -> dict:
-        """Re-present the instrument behind a failed payment, with no new
-        customer input. SILENT_RETRY and TIMED_RETRY's only Razorpay call.
+        """The order a mandate debit is presented against, carrying the
+        `notification` object that has Razorpay deliver the pre-debit notice.
 
-        # VERIFY: no live mechanism for this was exercised in
-        docs/VERIFIED.md. Session 0A never activated the merchant account, so
-        the Razorpay primitives that support a merchant-initiated recharge
-        without customer interaction — subscriptions and e-mandates — were
-        never reachable to test ("subscriptions unavailable pre-activation").
-        A one-time card payment has no saved token to recharge either:
-        neither FailureEvent nor Proposal carries one, because a failed
-        authorisation never produces one to save. This wraps
-        `payment.createRecurring`, the SDK's documented token-based recharge
-        call, as the best available mapping — unverified against live
-        behaviour, not a confirmed fact. Calling it against a payment with no
-        real token fails at Razorpay's boundary rather than silently doing
-        the wrong thing, and the caller (executor.py) treats that failure
-        exactly like any other RazorpayCallFailed.
+        Razorpay, *Create Subsequent Payments* (UPI and cards): "You can use
+        the notification object in the request if you want to control
+        pre-debit notifications and recurring debits", with `token_id`
+        mandatory. The object is always passed: without it "we will
+        automatically try to debit 25 hours after the pre-debit notification
+        is delivered", and Razorpay's own retries stacked on this agent's
+        would exceed NPCI's one attempt and three retries per sequence number.
+        `payment_after` is left to Razorpay's default.
+
+        # VERIFY: documented, never observed — subscriptions and UPI are
+        # unavailable on this account before activation (docs/VERIFIED.md).
+        # And the default `payment_after` is "25 hours after the pre-debit
+        # notification is delivered", an hour past RBI's 24: a debit this
+        # agent presents between the two may be refused.
         """
-        data = {"amount": amount_paise, "currency": currency, "payment_id": entity_id}
+        data: dict = {
+            "amount": amount_paise,
+            "currency": currency,
+            "payment_capture": True,
+            "notification": {"token_id": token_id},
+            "notes": notes,
+        }
+        headers = {IDEMPOTENCY_HEADER: idempotency_key}
+        return self._with_retry("create_notice_order", lambda: self._sdk.order.create(data, headers=headers))
+
+    def fetch_order(self, order_id: str) -> dict:
+        """Read-only: an order's `status` (created, attempted, paid), its
+        `attempts`, and its `notification` with `status` and `delivered_at`."""
+        return self._with_retry("fetch_order", lambda: self._sdk.order.fetch(order_id))
+
+    def fetch_customer(self, customer_id: str) -> dict:
+        """Read-only. The customer's email and contact, which a recurring
+        payment requires and this system deliberately never holds — read at
+        call time and never stored (vasool/events/schemas.py, derive_customer_id)."""
+        return self._with_retry("fetch_customer", lambda: self._sdk.customer.fetch(customer_id))
+
+    def create_recurring_payment(
+        self,
+        *,
+        email: str,
+        contact: str,
+        amount_paise: int,
+        currency: str,
+        order_id: str,
+        customer_id: str,
+        token_id: str,
+        notes: dict,
+        idempotency_key: str,
+    ) -> dict:
+        """Present a mandate debit: SILENT_RETRY and TIMED_RETRY's Razorpay call.
+
+        The eight fields Razorpay's *Create Subsequent Payments* marks
+        mandatory — `email`, `contact`, `currency`, `amount`, `order_id`,
+        `customer_id`, `token`, `recurring` — and the optional `notes`, which
+        carries this episode's id back on the payment. It replaces
+        `retry_payment`, which sent a `payment_id` the documentation does not
+        name and omitted six of those eight (docs/EVALUATION.md §10,
+        2026-09-15). The documented success response is `razorpay_payment_id`.
+
+        **Never re-sent.** See this module's docstring.
+
+        # VERIFY: documented, never observed. No recurring payment has been
+        # created on this account, which cannot hold a token before activation.
+        """
+        data = {
+            "email": email,
+            "contact": contact,
+            "amount": amount_paise,
+            "currency": currency,
+            "order_id": order_id,
+            "customer_id": customer_id,
+            "token": token_id,
+            "recurring": True,
+            "notes": notes,
+        }
         headers = {IDEMPOTENCY_HEADER: idempotency_key}
         return self._with_retry(
-            "retry_payment",
+            "create_recurring_payment",
             lambda: self._sdk.payment.createRecurring(data, headers=headers),
+            moves_money=True,
         )
 
     def fetch_payment(self, payment_id: str) -> dict:

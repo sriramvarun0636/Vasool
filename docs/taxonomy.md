@@ -787,9 +787,13 @@ docstring. The line between `CUSTOMER_ACTION` and `INSTRUMENT_DEAD` is the one
 TD/BD column: no code marked TD lands in a class that blames the customer or
 the instrument, and no code marked BD lands in `TRANSIENT` — both tested.
 
-**Nothing uses it yet.** No classifier reads it, and nothing the simulator runs
-imports it. Which of these codes reach a merchant, and through which field of a
-Razorpay webhook, has never been observed. Nothing here assumes it.
+**It reaches a merchant only through a port.** Razorpay's documentation of a
+failed UPI Autopay debit names no NPCI code (§12): a Razorpay merchant is told
+Razorpay's reason, and §12 maps those. This vocabulary classifies a failure only
+when a provider passes the rail's own code on, through `RailCodeSource`
+(`vasool/events/rail_codes.py`), whose default passes nothing. The classifier
+reaches the mapping since §2.5's failure path (`docs/EVALUATION.md` §10,
+2026-09-15); none of these codes has been seen arriving anywhere.
 
 ### What the vocabulary says about the taxonomy
 
@@ -1145,3 +1149,243 @@ flag wrapped past a page break, is recorded in `tools/cite_npci.py`.
 | 3.1 | `NO` | NO ORIGINAL REQUEST FOUND DURING DEBIT/CREDIT | TD | NPCI reserves it for status checks: 'members should not decline' with it |
 
 <!-- npci-table:end -->
+
+## 12. UPI Autopay on Razorpay: the reasons a merchant is actually sent
+
+§11 mapped NPCI's vocabulary. It does not reach a Razorpay merchant.
+Razorpay's documentation of subsequent UPI payments — *Create Subsequent
+Payments* (UPI), read from its markdown source on 2026-09-15, SHA-256
+`6c26636b…` — reports a failed debit in Razorpay's own error envelope (`code`,
+`description`, `source`, `step`, `reason`) and lists **61 values of `reason`**.
+No NPCI code appears anywhere on the page. So the failure path the programme's
+design asked for — a UPI Autopay debit that "fails with a cited NPCI code" — is
+built from what a Razorpay merchant is told instead, and NPCI's vocabulary sits
+behind a port for a provider that passes the rail's own code on
+(`vasool/events/rail_codes.py`, whose default passes nothing). Registered, with
+its expectations, before any of its code: `docs/EVALUATION.md` §10, 2026-09-15.
+
+**Provenance: `SIMULATED`, from documentation.** Each reason has one stub in
+`data/stubbed_payloads/` (`SIMULATED__upi_autopay__<reason>.json`, built by
+`tools/make_upi_stubs.py` from any copy of the page whose hash matches). The
+reason and its description are verbatim. **The code** is set for the 19
+reasons Razorpay's *List of Errors* files under "Bad Request Errors" or
+"Gateway Errors", and null for the other 42. **The source and step are null in
+every file**: Razorpay documents the values each can take on UPI and pairs
+neither with any reason, so any value would be a pairing nobody documented.
+None of the 61 has been seen on this account, which cannot take UPI before
+activation (`docs/VERIFIED.md`).
+
+**The mapping is this project's judgement**, in
+`vasool/diagnosis/razorpay_upi.py`, over §11's outcome vocabulary — the five
+classes, or one of NPCI's `Unmapped` reasons — because the two vocabularies
+describe the same rail. The table below is rendered from it and tested against
+it.
+
+**Classified on the rail, not the string.** Five of the 61 strings are card
+reasons in §4 too — `gateway_technical_error`, `insufficient_funds`,
+`payment_failed`, `payment_risk_check_failed`, `payment_timed_out` — and on UPI
+three of them can mean money moved. §3's lesson, that a reason alone is not
+enough, arrives one level up: a UPI failure (Razorpay's `method: upi`) is read
+against this table, a card failure against §4, and §4 does not change.
+
+### The rule that decides the most: money that may be in flight
+
+**29 of the 61 reasons fit the five classes. 32 do not**, and fifteen of those
+say money may already have moved: "Any amount deducted will be refunded", "If
+money got deducted", a pending payment, a timeout at a step the page does not
+name, a response that never came, a mandate "already honoured" this cycle.
+**For fourteen of the fifteen, Razorpay's own next step is to try again** —
+"Retry after some time", "Please try again after some time". That
+is the advice that charges a customer twice: a retry while a deduction is being
+refunded is a second deduction. The same page says the opposite a few lines
+earlier — "Do not create another subsequent payment until you get the status of
+the previous one" — and NPCI's OC-215 gives the protocol: the first status
+check "after 90 seconds", "maximum of 3 check transaction status APIs,
+preferably within 2 hours". So these fifteen are `RECONCILE`, and get a status
+check, never a retry.
+
+### `STATUS_CHECK`, the one intervention §4 does not have
+
+§4's five interventions each act on the customer or the instrument. A failure
+whose money may already have moved needs one that does neither: **ask the rail
+what happened.** It re-presents nothing and reaches nobody, so it is neither a
+retry nor a contact, and no guard about either has jurisdiction; a promise to pay
+does not hold it and the unattended-amount ceiling does not escalate it, because
+finding out whether a customer was charged twice is not chasing them. It is
+argued here because `InterventionType` is closed, and a member belongs in this
+document before it belongs in code.
+
+It is sent two ways: by a `RECONCILE` reason, 90 seconds after the failure, and
+by a debit whose own response was lost (§10 of the protocol, 2026-09-15: the
+client no longer re-sends a debit on a 5xx or a timeout). The rail's answer
+decides the episode (`vasool/policy/machine.py`): **debited** — recovered, like
+any settlement; **pending** — asked again, up to three checks inside two hours;
+**not debited**, **cannot tell**, or a third pending — a person decides. None of
+them leads to a debit. The LLM classifier is not offered it: it is the rail's
+question, not a reading of four error fields.
+
+**Production cannot tell yet.** No status call has been observed on this
+account. The status port's default answers "cannot tell", so every `RECONCILE`
+failure goes to a person today. The documented adapter reads Razorpay's order
+entity (`created`, `attempted`, `paid`) and is not the default.
+
+### The rest
+
+- **No other unmapped reason is retried either.** `INTEGRATION` (7),
+  `CAP` (5), `PAYEE_SIDE` (3), `LEGAL_STOP` (1) and `UNDESCRIBED` (1) go to a
+  person, with the outcome named first on the receipt. So does a UPI reason the
+  page does not document: §4's fail-safe is one silent retry, and on UPI an
+  unknown failure may have moved money (`vasool/diagnosis/upi.py`,
+  `UPI_FAILSAFE`).
+- **The classes keep §4's shapes.** A transient failure gets one retry and then
+  a link, and on a mandate that retry waits for its own pre-debit notice and for
+  NPCI's off-peak hours anyway; `LIQUIDITY` gets §4's salary ladder, whose three
+  rungs are exactly NPCI's three retries; a dead instrument gets a link to a new
+  mandate — for thirteen of the nineteen, Razorpay's own next step is "Create a
+  new mandate with the customer" — and a risk decline goes to a person.
+- **The rail moves the mandate.** `mandate_cancelled`, `mandate_paused` and
+  `mandate_expired` report a state, and the mandate record is moved to it by
+  three transitions citing the reason as evidence and NPCI's `VA`, `VT` and
+  `VU` for what the state means (`vasool/mandate/evidence.py`). Where the record
+  disagrees — expiry before its `valid_until`, cancellation "by user" of a
+  mandate created non-revocable — the rail wins, because it is the authority on
+  whether a debit can happen, and the disagreement is kept.
+
+### Known limits
+
+1. **An unmapped outcome has no class, and a Diagnosis must carry one.** Its
+   proposal says `TRANSIENT` as a placeholder, and its rationale names the
+   outcome first — "Unmapped (RECONCILE)" — so that a receipt is not read as
+   calling it transient. A closed five-member enum cannot say "none of these";
+   widening it is the move §11 refuses.
+2. **"Not debited" goes to a person, not to a retry.** It is exactly when a
+   retry would be safe. It is not taken automatically until a status call has
+   been observed live.
+3. **Source and step are unknown for every UPI reason.** A reason that needs
+   them to be read correctly — as §3 needed `error_source` for `payment_failed`
+   — will be misread until a UPI failure is captured.
+4. **The universe draws no UPI Autopay debit yet.** Everything here is
+   exercised in the adversary's arena and in tests; the registered universe is
+   unchanged, and moving UPI into its mix is §2.5's next row.
+
+### Every reason
+
+<!-- upi-table:start — generated by `python tools/make_upi_stubs.py table`; do not edit -->
+
+#### `TRANSIENT` (4)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `banks_hsm_is_down_remitter` | Remitter bank failed to process the transaction. Please try again after some time. | — | the customer's bank failed to process it and asks for another try; nothing says money moved |
+| `issuer_dispatch_failed` | Payment failed due to some issue at the issuer bank. Please try again after some time. | — | the customer's bank failed to process it and asks for another try; nothing says money moved |
+| `psp_bank_not_available` | Payer PSP / Bank not available. Please try again after some time. | — | the payer's PSP or bank was unavailable; nothing was processed |
+| `remitter_dispatch_failed` | Payment failed due to some issue at the customer's. Please try again after some time. | — | the customer's bank failed to process it and asks for another try; nothing says money moved |
+
+#### `LIQUIDITY` (2)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `adequate_funds_not_available_blocked` | Sufficient unblocked funds not available in customer's account. Please ask customer to add fund and try again. | — | funds exist but are blocked: 'add sufficient unblocked funds and try again' |
+| `insufficient_funds` | Transaction failed due to insufficient funds. | BAD_REQUEST_ERROR | the money is not there today: 'add balance to their account and retry' |
+
+#### `INSTRUMENT_DEAD` (19)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `bank_account_invalid` | Payment failed because Account linked to VPA is invalid. | BAD_REQUEST_ERROR | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `debit_declined` | Payment was unsuccessful as it was declined by remitter bank. | GATEWAY_ERROR | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `debit_instrument_blocked` | Payment was unsuccessful as the account linked to this UPI ID is blocked. Try using another account. | GATEWAY_ERROR | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `invalid_token` | Invalid Token. | — | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `invalid_vpa` | You have entered an incorrect UPI ID. Please retry with the correct UPI ID. | GATEWAY_ERROR | the payer address on the mandate is wrong: the customer must supply a valid one |
+| `mandate_cancelled` | UPI mandate created for payment has been cancelled by user. | — | 'cancelled by user': the mandate is revoked, and Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `mandate_expired` | UPI Mandate is expired. | — | the mandate expired, and Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `mandate_not_active` | UPI mandate is not active. | — | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `mobile_number_invalid` | Registered Mobile number linked to the account has been changed or removed. | BAD_REQUEST_ERROR | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `nature_of_debit_not_allowed` | Nature of debit not allowed in customer's account. Please ask the customer to use a different bank account. | — | the account does not allow this debit: 'use a different bank account' |
+| `no_financial_address_record_found` | No financial address record found for this vpa. Please ask customer to try with another bank account. | — | no account behind the payer address: 'try with another bank account' |
+| `number_of_pin_tries_exceeded` | Customer has exceeded PIN retry limit. Please ask customer to create a new mandate and enter the right PIN. | — | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `payer_account_has_changed` | Payer account linked to the customer's VPA has changed. Please request the customer to either change it to the bank account used during mandate registration or register a new mandate for them. | — | the account behind the payer's address changed since registration |
+| `remitter_account_dormant` | Bank Account is closed. | — | 'Bank Account is closed', and Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `transaction_not_allowed` | Payment was unsuccessful as it was declined by your bank. Reach out to your bank for more details. Try using another account. | — | Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `transaction_not_permitted_cardholder` | Transaction not permitted for customer's account. Please ask customer to try with another bank account. | — | the account does not permit this debit: 'try with another bank account' |
+| `transaction_not_permitted_to_vpa` | Transaction not permitted to payee VPA by the payer PSP. Please contact your bank to enable Autopay for this VPA. | — | autopay to this merchant is off at the customer's bank, as card_disabled_for_online_payments |
+| `umn_does_not_exist_payer` | Mandate does not exist. Please create a new mandate. | — | 'Mandate does not exist': Razorpay's next step is a new mandate: this one cannot be debited as it stands |
+| `vpa_resolution_failed` | You have entered an incorrect UPI ID. Please retry with the correct UPI ID. | GATEWAY_ERROR | the payer address does not resolve: the customer must supply a valid one |
+
+#### `CUSTOMER_ACTION` (2)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `mandate_paused` | UPI mandate is not active, it is paused by user. | — | 'paused by user': it works again once the customer resumes it |
+| `mpin_not_set_by_customer` | UPI MPIN not set by customer. Please ask customer to set MPIN and try again. | — | the customer has to set a UPI PIN: 'ask customer to set MPIN and try again' |
+
+#### `RISK_BLOCK` (2)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `payment_risk_check_failed` | Payment was unsuccessful as your account does not pass the risk checks done by your bank. Try using another account. | GATEWAY_ERROR | the customer's bank ran risk checks and declined |
+| `suspected_fraud_decline` | Suspected fraud, transaction declined by customer's bank. Please try again after some time. | — | 'Suspected fraud, transaction declined by customer's bank' |
+
+#### Unmapped — `RECONCILE` (15)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `bank_not_available` | Payment was unsuccessful as the bank linked to this UPI ID is temporarily unavailable. Any amount deducted will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `bank_technical_error` | Payment was unsuccessful as it was declined by your bank. Any amount deducted will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `credit_to_beneficiary_failed` | Payment was unsuccessful due to a temporary issue. Any amount deducted will be refunded within 5-7 working days. | — | the credit leg failed, after the debit: the page says an amount may have been deducted and will be refunded: money may have moved |
+| `gateway_technical_error` | Payment processing failed due to error at bank or wallet gateway. | GATEWAY_ERROR | 'If money got deducted, reach out to the seller': money may have moved |
+| `invalid_response_from_gateway` | Payment was unsuccessful due to a temporary issue. Any amount deducted will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `mandate_current_cycle_allowed_debit_exceeds` | Mandate is already honoured. | — | 'Mandate is already honoured': a debit already took this cycle's money |
+| `null_ack_processing_failure` | Processing failure at gateway. Please try again after some time. | — | an unacknowledged request: whether the debit leg ran, nothing says |
+| `payment_failed` | Payment was unsuccessful due to a temporary issue. If amount got deducted, it will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `payment_pending` | The status of your payment is pending. You can either wait or retry to pay successfully. | GATEWAY_ERROR | 'The status of your payment is pending': the debit may yet complete |
+| `payment_timed_out` | Payment was unsuccessful as the bank linked to this UPI ID is not reachable at this time. | GATEWAY_ERROR | a timeout, at a step the page does not name: on or after the debit, money may have moved |
+| `psp_not_available` | Payment was unsuccessful as the UPI app is not reachable at this time. Any amount deducted will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `psp_timeout` | Payer PSP timed out. Please try again. | — | a timeout, at a step the page does not name: on or after the debit, money may have moved |
+| `request_timed_out` | Payment was unsuccessful due to a temporary issue. Any amount deducted will be refunded within 5-7 working days. | GATEWAY_ERROR | the page says an amount may have been deducted and will be refunded: money may have moved |
+| `response_not_received_within_tat` | VPA resolution into bank account details failed. Please try again after some time. | — | a response that never arrived in time may have carried a debit |
+| `unable_to_process_beneficiary_bank` | Error processing request at beneficiary bank. Please try again after some time. | — | the merchant's bank failed on the credit leg, after the debit: money may have moved |
+
+#### Unmapped — `LEGAL_STOP` (1)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `payment_stopped_by_court_order` | Payment processing failure at remitter bank. Please ask customer to try with another bank account. | — | a court order stops the account; no automated request should go out |
+
+#### Unmapped — `CAP` (5)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `limit_exceeded_remitting_bank` | Limit exceeded for remitter bank. Please ask customer to try with another bank account. | — | a limit binds while the instrument works: the same debit succeeds under the limit |
+| `mandate_debit_beyond_psp_amount_cap` | Debit amount is beyond payer PSP specified amount cap. Please reduce the amount and try again. | — | a limit binds while the instrument works: the same debit succeeds under the limit |
+| `per_transaction_limit_exceeded` | Customer bank per transaction limit exceeded. Please try again with a lower amount. | — | a limit binds while the instrument works: the same debit succeeds under the limit |
+| `transaction_frequency_limit_exceeded` | Payment failed. Please try again with another bank account. | GATEWAY_ERROR | a frequency limit binds on the account |
+| `transaction_limit_exceeded` | Payment failed because Transaction amount limit has exceeded | BAD_REQUEST_ERROR | a limit binds while the instrument works: the same debit succeeds under the limit |
+
+#### Unmapped — `PAYEE_SIDE` (3)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `invalid_transaction_beneficiary` | Beneficiary address resolution failed. Please try again after some time. | — | the merchant's own side — its address, bank or account — failed; nothing the customer does helps |
+| `merchant_error_payee_psp` | VPA resolution into bank account details failed. Please try again after some time. | — | the merchant's own side — its address, bank or account — failed; nothing the customer does helps |
+| `transaction_not_permitted_cardholder_beneficiary` | Transaction not permitted in beneficiary account. Please try again with another bank account. | — | the merchant's account does not permit it |
+
+#### Unmapped — `INTEGRATION` (7)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `amount_does_not_match_mandate_amount` | The payment failed as the amount does not match the amount provided at the time of mandate creation. | — | the debit breaks the mandate's registered rules: the merchant's schedule or amount is wrong |
+| `bad_request_error` | Invalid Mandate Sequence Number. | — | 'Invalid Mandate Sequence Number': the merchant's request is wrong |
+| `execution_day_rule_mismatch` | Day of debit does not match the debit execution rule for the payer. Please ensure execution day matches the execution rule. | — | the debit breaks the mandate's registered rules: the merchant's schedule or amount is wrong |
+| `id_value_must_be_present` | Failed to debit customer's bank account. Mandate details are incorrect. | — | 'Mandate details are incorrect': the merchant's request is wrong |
+| `payer_seqnum_validation_failure` | Payer sequence number length validation failed. | — | a malformed or mismatched message: an engineer's fault, not the customer's |
+| `regid_details_must_be_present` | Gateway validation failure. Please try after sometime or create a new mandate. | — | 'Gateway validation failure': the request is malformed |
+| `seqnum_mismatch_payer_psp` | Sequence number mismatch between payer and payee PSP. Please try again after some time. | — | a malformed or mismatched message: an engineer's fault, not the customer's |
+
+#### Unmapped — `UNDESCRIBED` (1)
+
+| Reason | Razorpay's description | Code | Why |
+|---|---|---|---|
+| `no_original_request_found` | No mandate details were found in the record during debit. Please try after some time. | — | 'No mandate details were found in the record during debit': whose record, the page does not say |
+
+<!-- upi-table:end -->

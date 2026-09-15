@@ -11,10 +11,11 @@ typed to return None with its return value discarded by the harness. An attack
 that could decide its own verdict is an attack that would be quietly shaped
 until it passed.
 
-**A registered expectation is part of the attack.** Nine of the twenty-two are
-registered as expected failures — three of those are already recorded as open
-failures in the project's own documentation, and the rest came out of reading
-the policy plane. The suite asserts actual == registered, not actual ==
+**A registered expectation is part of the attack.** Nine of the first
+twenty-two were registered as expected failures — three already recorded as open
+failures in the project's own documentation, the rest found by reading the
+policy plane — and seven have since been closed and re-registered; two of the
+twenty-three remain, A01 and A07. The suite asserts actual == registered, not actual ==
 survived, so a known failure keeps the suite green while it stands, and going
 red is exactly what should happen the day someone fixes one without saying so.
 """
@@ -39,7 +40,10 @@ def results():
 
 class TestTheRegistry:
     def test_the_count_is_what_was_registered(self):
-        assert len(ATTACKS) == 22
+        """Twenty-two, then A26 on 2026-09-15 (docs/EVALUATION.md §10). The
+        gaps — A17, A21, A25 — were registered and cut, and are not reused."""
+        assert len(ATTACKS) == 23
+        assert not {"A17", "A21", "A25"} & {a.id for a in ATTACKS}
 
     def test_every_id_is_unique(self):
         ids = [a.id for a in ATTACKS]

@@ -82,6 +82,18 @@ class InterventionType(StrEnum):
     HUMAN_QUEUE = "HUMAN_QUEUE"
     """Hand to an operator. Not an automated action."""
 
+    STATUS_CHECK = "STATUS_CHECK"
+    """Ask the rail whether a debit happened. Neither a retry nor a contact:
+    it re-presents nothing and reaches nobody.
+
+    The one intervention not in §4, argued into docs/taxonomy.md §12 first.
+    It answers the failures where money may already have moved — §11's and
+    §12's `RECONCILE` — and a debit whose response was lost, where every other
+    intervention is wrong: a retry can be a second debit, and a message asks a
+    customer for money they may have paid (docs/EVALUATION.md §10,
+    2026-09-15). The LLM classifier is not offered it; it is the rail's
+    question, not a reading of four error fields (vasool/diagnosis/llm.py)."""
+
 
 RETRY_INTERVENTIONS: frozenset[InterventionType] = frozenset(
     {InterventionType.SILENT_RETRY, InterventionType.TIMED_RETRY}

@@ -46,6 +46,14 @@ class Trigger(StrEnum):
     REVOKED_BY_PAYER = "revoked_by_payer"
     REVOKED_BY_PAYEE = "revoked_by_payee"
     VALIDITY_ENDED = "validity_ended"
+    RAIL_REPORTED_REVOKED = "rail_reported_revoked"
+    RAIL_REPORTED_PAUSED = "rail_reported_paused"
+    RAIL_REPORTED_EXPIRED = "rail_reported_expired"
+    """A debit failed and the rail's reason says what state the mandate is in.
+    These name no actor, because the reason names none reliably, and carry no
+    precondition, because the rail is the authority on whether a debit can
+    happen: where the record disagrees, the record moves and the disagreement
+    is kept (vasool/mandate/evidence.py)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +130,13 @@ _UNPAUSED = cite("RAZORPAY-TPAP-PAUSE request")
 """The one citation resting on platform documentation: no rule document found
 says how a paused mandate resumes (docs/EVALUATION.md §10, 2026-09-15)."""
 
+_RAIL_REVOKED = cite("RAZORPAY-UPI-SUBSEQUENT mandate_cancelled", "NPCI-UPI-CODES-2.9 §3.1 VA")
+_RAIL_PAUSED = cite("RAZORPAY-UPI-SUBSEQUENT mandate_paused", "NPCI-UPI-CODES-2.9 §3.1 VT")
+_RAIL_EXPIRED = cite("RAZORPAY-UPI-SUBSEQUENT mandate_expired", "NPCI-UPI-CODES-2.9 §3.1 VU")
+"""Razorpay's reason is the evidence a merchant receives; NPCI's code is what
+the state means on the rail. Neither alone: the first is a platform's
+description, the second never reaches a Razorpay merchant."""
+
 _S, _T = MandateState, Trigger
 
 TRANSITIONS: tuple[Transition, ...] = (
@@ -165,6 +180,12 @@ TRANSITIONS: tuple[Transition, ...] = (
     Transition(_S.PAUSED, _S.REVOKED, _T.REVOKED_BY_PAYEE, _REVOKED_BY_PAYEE),
     Transition(_S.ACTIVE, _S.EXPIRED, _T.VALIDITY_ENDED, _EXPIRED, conditions=(_VALIDITY_OVER,)),
     Transition(_S.PAUSED, _S.EXPIRED, _T.VALIDITY_ENDED, _EXPIRED, conditions=(_VALIDITY_OVER,)),
+    # -- the rail's evidence, from a failed debit. No conditions: see Trigger.
+    Transition(_S.ACTIVE, _S.REVOKED, _T.RAIL_REPORTED_REVOKED, _RAIL_REVOKED),
+    Transition(_S.PAUSED, _S.REVOKED, _T.RAIL_REPORTED_REVOKED, _RAIL_REVOKED),
+    Transition(_S.ACTIVE, _S.PAUSED, _T.RAIL_REPORTED_PAUSED, _RAIL_PAUSED),
+    Transition(_S.ACTIVE, _S.EXPIRED, _T.RAIL_REPORTED_EXPIRED, _RAIL_EXPIRED),
+    Transition(_S.PAUSED, _S.EXPIRED, _T.RAIL_REPORTED_EXPIRED, _RAIL_EXPIRED),
 )
 
 _CHANGES: dict[Trigger, frozenset[str]] = {

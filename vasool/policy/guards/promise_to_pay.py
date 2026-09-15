@@ -49,13 +49,18 @@ class PromiseToPayGuard(Guard):
     # not because we have established that it binds a merchant's agent.
 
     def applies_to(self, ctx: GuardContext) -> bool:
-        """A human handoff is not automated chasing.
+        """A human handoff is not automated chasing, and neither is a status check.
 
         A risk decline must reach an operator immediately.  Holding
         HUMAN_QUEUE until a customer's promise expires delays the very review
-        that makes the risk path safe (A19).
+        that makes the risk path safe (A19). A status check asks the rail
+        whether a debit already happened and reaches no one; holding it for a
+        promise would leave a possible double debit unexamined for days.
         """
-        return ctx.proposal.intervention is not InterventionType.HUMAN_QUEUE
+        return ctx.proposal.intervention not in (
+            InterventionType.HUMAN_QUEUE,
+            InterventionType.STATUS_CHECK,
+        )
 
     def check(self, ctx: GuardContext) -> Verdict:
         promise = ctx.facts.promise_to_pay

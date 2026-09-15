@@ -1,0 +1,349 @@
+{
+  "name": "upi_payment_pending",
+  "argv": [
+    "--rail",
+    "upi",
+    "--scenario",
+    "payment_pending",
+    "--replay"
+  ],
+  "banner": {
+    "fields": [
+      {
+        "label": "scenario",
+        "value": "payment_pending"
+      },
+      {
+        "label": "world",
+        "value": "permissive"
+      },
+      {
+        "label": "clock",
+        "value": "2026-08-22 12:00 IST  [--time 12:00 (default)] (rolled +1d -- see --help time)"
+      },
+      {
+        "label": "provenance",
+        "value": "SIMULATED stub payload"
+      },
+      {
+        "label": "mode",
+        "value": "replay \u2014 deterministic, no network calls"
+      }
+    ],
+    "notes": [
+      "VASOOL -- recovery episode demo"
+    ]
+  },
+  "steps": [
+    {
+      "n": 1,
+      "title": "webhook received",
+      "at": null,
+      "cycle": null,
+      "fields": [
+        {
+          "label": "event",
+          "value": "payment.failed"
+        },
+        {
+          "label": "event_id",
+          "value": "TSONnzuJtXefql"
+        },
+        {
+          "label": "entity_id",
+          "value": "pay_TSONjWU8dEdJ8T"
+        },
+        {
+          "label": "reason",
+          "value": "payment_pending / source: None"
+        },
+        {
+          "label": "amount",
+          "value": "\u20b9500.00 (50000 paise)"
+        }
+      ],
+      "notes": [],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 2,
+      "title": "signature",
+      "at": null,
+      "cycle": null,
+      "fields": [],
+      "notes": [
+        "skipped -- _SIMULATED payload; its signature was copied from the real",
+        "envelope it was derived from and does not cover this body (see",
+        "docs/VERIFIED.md). Nothing here was ever sent by Razorpay, so there is",
+        "nothing to authenticate. The HMAC scheme itself is verified against nine",
+        "signatures Razorpay actually computed and sent -- tests/test_receiver.py,",
+        "from data/observed_payloads/."
+      ],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 3,
+      "title": "deduped",
+      "at": null,
+      "cycle": null,
+      "fields": [
+        {
+          "label": "1st delivery",
+          "value": "stored"
+        },
+        {
+          "label": "2nd delivery",
+          "value": "duplicate, ignored"
+        }
+      ],
+      "notes": [
+        "Razorpay delivers every webhook at least twice (docs/VERIFIED.md);",
+        "dedupe on x-razorpay-event-id is required, not defensive."
+      ],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 4,
+      "title": "classified",
+      "at": null,
+      "cycle": null,
+      "fields": [
+        {
+          "label": "failure_class",
+          "value": "TRANSIENT"
+        },
+        {
+          "label": "rationale",
+          "value": "Unmapped (RECONCILE). 'The status of your payment is pending': the debit may yet complete. Money may already have moved. A retry could be a second debit, and a message could ask for money already paid; the rail is asked what happened instead (NPCI OC-215)."
+        }
+      ],
+      "notes": [],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 5,
+      "title": "proposal",
+      "at": null,
+      "cycle": null,
+      "fields": [
+        {
+          "label": "intervention",
+          "value": "STATUS_CHECK (PRIMARY)"
+        },
+        {
+          "label": "execute_at",
+          "value": "2026-08-22 12:01 IST"
+        }
+      ],
+      "notes": [
+        "-- clock fast-forwarded to 2026-08-22 12:01 IST --"
+      ],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 6,
+      "title": "guard chain -- cycle 1 (2026-08-22 12:01 IST)",
+      "at": "2026-08-22T12:01",
+      "cycle": 1,
+      "fields": [
+        {
+          "label": "proposal",
+          "value": "STATUS_CHECK (PRIMARY)"
+        }
+      ],
+      "notes": [],
+      "verdicts": [
+        {
+          "guard": "IdempotencyGuard",
+          "decision": "ALLOW",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "RiskBlockGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "ConsentGuard",
+          "decision": "ALLOW",
+          "reason": null,
+          "statute": "DPDP Act 2023 s.6 + DPDP Rules 2025",
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "MandateStateGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "RetryCapGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "PromiseToPayGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "DNDGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "FrequencyCapGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "ContactWindowGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "AutopayPeakHoursGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "PreDebitNoticeGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "AFAThresholdGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "DLTTemplateGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "SpendCapGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "HumanApprovalGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        }
+      ],
+      "receipts": []
+    },
+    {
+      "n": 7,
+      "title": "decision -- cycle 1",
+      "at": null,
+      "cycle": 1,
+      "fields": [
+        {
+          "label": "resolved",
+          "value": "ALLOW"
+        },
+        {
+          "label": "clause",
+          "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+        }
+      ],
+      "notes": [
+        "executing STATUS_CHECK..."
+      ],
+      "verdicts": [],
+      "receipts": []
+    },
+    {
+      "n": 8,
+      "title": "receipts",
+      "at": null,
+      "cycle": null,
+      "fields": [],
+      "notes": [],
+      "verdicts": [],
+      "receipts": [
+        {
+          "receipt_id": "rcpt_6a0bed1dafd1d9a6",
+          "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "hash": "9270cac806ea78f1e22c1ab2616a083f809daea9d10873a81695043628f9759a",
+          "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:31:30+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSONjWU8dEdJ8T\",\"event_id\":\"TSONnzuJtXefql\",\"executed\":false,\"outcome\":\"execution_failed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSONjWU8dEdJ8T\",\"event_id\":\"TSONnzuJtXefql\",\"execute_at\":\"2026-08-22T06:31:30Z\",\"explain\":false,\"failure_class\":\"TRANSIENT\",\"intervention\":\"STATUS_CHECK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_ca9d47d5205f9701\",\"proposed_by\":\"rules\",\"rationale\":\"Unmapped (RECONCILE). 'The status of your payment is pending': the debit may yet complete. Money may already have moved. A retry could be a second debit, and a message could ask for money already paid; the rail is asked what happened instead (NPCI OC-215).\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_6a0bed1dafd1d9a6\",\"trace_id\":\"23eb48137cf5bce323eeb71853f82ebd\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+          "entity_id": "pay_TSONjWU8dEdJ8T",
+          "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
+          "event_id": "TSONnzuJtXefql",
+          "executed": false,
+          "outcome": "execution_failed",
+          "amount_recovered_paise": 0,
+          "at": "2026-08-22T06:31:30+00:00",
+          "trace_id": "23eb48137cf5bce323eeb71853f82ebd"
+        },
+        {
+          "receipt_id": "rcpt_3c4fb495dc4e3f29",
+          "prev_hash": "9270cac806ea78f1e22c1ab2616a083f809daea9d10873a81695043628f9759a",
+          "hash": "ab3b3220e81e186d3a40a46179c83b4076041a2fc53c5be610541b75af61c1f8",
+          "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:31:30+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSONjWU8dEdJ8T\",\"event_id\":\"TSONnzuJtXefql\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"9270cac806ea78f1e22c1ab2616a083f809daea9d10873a81695043628f9759a\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSONjWU8dEdJ8T\",\"event_id\":\"TSONnzuJtXefql\",\"execute_at\":\"2026-08-22T06:31:30Z\",\"explain\":false,\"failure_class\":\"TRANSIENT\",\"intervention\":\"STATUS_CHECK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_ca9d47d5205f9701\",\"proposed_by\":\"rules\",\"rationale\":\"Unmapped (RECONCILE). 'The status of your payment is pending': the debit may yet complete. Money may already have moved. A retry could be a second debit, and a message could ask for money already paid; the rail is asked what happened instead (NPCI OC-215).\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_3c4fb495dc4e3f29\",\"trace_id\":\"23eb48137cf5bce323eeb71853f82ebd\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+          "entity_id": "pay_TSONjWU8dEdJ8T",
+          "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
+          "event_id": "TSONnzuJtXefql",
+          "executed": false,
+          "outcome": "escalated",
+          "amount_recovered_paise": 0,
+          "at": "2026-08-22T06:31:30+00:00",
+          "trace_id": "23eb48137cf5bce323eeb71853f82ebd"
+        }
+      ]
+    }
+  ],
+  "conclusion": {
+    "text": "SUMMARY: STATUS_CHECK for pay_TSONjWU8dEdJ8T -- ALLOWED by DPDP Act 2023 s.6 + DPDP Rules 2025, then asked the rail, which could not say; a person decides, and nothing was re-presented.",
+    "receipt_hash": "ab3b3220e81e186d3a40a46179c83b4076041a2fc53c5be610541b75af61c1f8"
+  }
+}

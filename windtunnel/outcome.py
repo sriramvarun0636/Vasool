@@ -215,10 +215,12 @@ class OutcomeModel:
             # inventing one would be a ninth parameter.
             return self._value(name), name, (name,), SettlementChannel.LINK_PAID
 
-        # HUMAN_QUEUE. It never reaches an executor at all
-        # (vasool/policy/machine.py escalates first), so this is unreachable
-        # from the runner and exists so that a future intervention type fails
-        # visibly here rather than silently settling nothing.
+        # HUMAN_QUEUE never reaches an executor at all (vasool/policy/machine.py
+        # escalates first). STATUS_CHECK does, and asks the rail a question:
+        # it moves no money, and whatever settlement it may reveal arrives as a
+        # settlement, never as the check's own recovery. No registered universe
+        # draws the UPI failures that produce one (docs/EVALUATION.md §10,
+        # 2026-09-15).
         return 0.0, *_NO_MONEY, None
 
     def _retry_rate(self, attempt: Attempt) -> tuple[float, str, tuple[str, ...]]:

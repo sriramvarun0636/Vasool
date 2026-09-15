@@ -1,4 +1,4 @@
-"""Twenty-two attacks.
+"""Twenty-three attacks.
 
 **Where they come from.** The first nine are the repository's own recorded
 weaknesses — docs/taxonomy.md §9's limits, docs/VERIFIED.md's findings, and
@@ -20,6 +20,12 @@ tests/test_shadow_boundary.py already proves it by import graph), a DLT
 template check, and a forged-signature check. The gaps are left rather than
 closed up so that this list and the list that was reviewed are the same list.
 
+**A26 is the first attack registered since, and the first to count at the rail.**
+A debit whose response is lost may have taken the money; re-sending it is a
+second debit that no record the agent keeps would show — one proposal, one
+receipt, one dispatch. It was registered, with its expectation, in
+docs/EVALUATION.md §10 on 2026-09-15 before any of the code it tests existed.
+
 **No attack scores itself.** There is no `assert` in this file and nothing
 here names the scoring function. Each attack declares `evidence` — a tuple of
 requirements the criterion evaluates *in addition to* its three universal
@@ -36,6 +42,8 @@ from __future__ import annotations
 from datetime import timedelta, timezone
 
 from vasool.ledger.receipts import Outcome
+from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
+from vasool.mandate.states import MandateState
 from vasool.policy.guards.pre_debit_notice import PRE_DEBIT_NOTICE_LEAD
 from windtunnel.adversary.arena import Arena
 from windtunnel.adversary.criterion import (
@@ -44,6 +52,7 @@ from windtunnel.adversary.criterion import (
     ExecutedAtMost,
     ExecutedCount,
     Expectation,
+    RailDebitsAtMost,
     NoContactOutsideCustomerWindow,
     NoContactToDndListed,
     NoDebitBeforeNoticeMatures,
@@ -533,6 +542,49 @@ def a24_late_failure_after_settlement(arena: Arena) -> None:
     arena.advance_by(timedelta(hours=2))
 
 
+def a26_lost_debit_response(arena: Arena) -> None:
+    """A UPI Autopay debit whose response is lost to a timeout.
+
+    The rail takes the money and the answer never arrives. Everything the
+    agent can see says the call failed; nothing it can see says the money
+    did not move. A client that answers a lost response by sending the debit
+    again — the way `RazorpayClient` answered a gateway error until
+    2026-09-15, four times over — charges the customer twice, and every
+    record the agent keeps still shows one proposal, one receipt and one
+    dispatch. So the evidence is counted at the rail.
+
+    The mandate carries a Razorpay token, so the arena plays Razorpay's
+    documented surface and the debit runs through the real client and the
+    documented adapters: an order with a notification object for the notice,
+    `createRecurring` against it for the debit, the order read back for the
+    status check. The failure that starts it is one Razorpay documents for a
+    UPI subsequent payment and this project calls transient
+    (docs/taxonomy.md §12), so a retry is the right first move — and the one
+    that must not be repeated.
+
+    Registered SURVIVES before the code it tests existed (docs/EVALUATION.md
+    §10, 2026-09-15). On the code before that row, the same lost response
+    escaped the state machine unrecorded and a gateway error was re-sent
+    until the rail had taken four debits.
+    """
+    token_holder = arena.person(
+        "tanvi",
+        mandate=MandateRecord(
+            mandate_id="upi_a26",
+            rail=MandateRail.UPI_AUTOPAY,
+            category=MandateCategory.GENERAL,
+            state=MandateState.ACTIVE,
+            valid_until=arena.EPOCH + timedelta(days=365),
+            token_id="token_a26",
+            razorpay_customer_id="cust_a26",
+        ),
+    )
+    arena.jump_to(arena.ist(day=2, hour=7))
+    arena.fail(token_holder, "issuer_dispatch_failed", entity_id="pay_a26", upi=True)
+    arena.lose_next_debit_response("pay_a26")
+    arena.advance_by(timedelta(days=3))
+
+
 # ---------------------------------------------------------------------------
 # the registry
 # ---------------------------------------------------------------------------
@@ -792,5 +844,19 @@ ATTACKS: tuple[Attack, ...] = (
             NoExecutionOnEntityAfter("pay_a24", mark="settled"),
         ),
         run=a24_late_failure_after_settlement,
+    ),
+    Attack(
+        id="A26",
+        title="a debit whose response is lost",
+        targets="a second debit after a lost response — invisible to every record but the rail's",
+        source="docs/EVALUATION.md §10, 2026-09-15; NPCI OC-215; the review of 2026-09-15",
+        expectation=SURVIVES,
+        evidence=(
+            RailDebitsAtMost("pay_a26", 1),
+            ReceiptCount("pay_a26", Outcome.OUTCOME_UNKNOWN, 1),
+            ExecutedCount("pay_a26", 1, intervention="STATUS_CHECK"),
+            ReceiptCount("pay_a26", Outcome.RECOVERED, 1),
+        ),
+        run=a26_lost_debit_response,
     ),
 )

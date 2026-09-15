@@ -38,7 +38,7 @@ Four properties, and each exists because the obvious alternative is wrong:
 | G02 | `RiskBlockGuard` | **Card network norms** on retrying declined authorisations | A risk-declined payment gets nothing automated, ever. Straight to a human queue. |
 | G03 | `ConsentGuard` | **DPDP Act 2023 s.6** + DPDP Rules 2025 | No processing without consent; on withdrawal, blocks *and* purges work already queued for that customer. |
 | G04 | `RetryCapGuard` | **Platform constraint** — Razorpay halts a subscription after 4 consecutive failures; for UPI Autopay, **NPCI OC-215A/2025-26** row 5 — 1 attempt and 3 retries per sequence number | Caps attempts below the halt, and at three retries on a UPI Autopay mandate. |
-| G05 | `PromiseToPayGuard` | **RBI Fair Practices Code** (fair dealing) | A customer who promised a date is not chased before it. Has no jurisdiction over `HUMAN_QUEUE`. |
+| G05 | `PromiseToPayGuard` | **RBI Fair Practices Code** (fair dealing) | A customer who promised a date is not chased before it. Has no jurisdiction over `HUMAN_QUEUE` or a status check — asking the rail whether a customer was charged is not chasing them. |
 | G06 | `DNDGuard` | **TRAI TCCCPR 2018**, as amended Feb 2025 | No message to a DND-registered number unless the merchant has declared its template transactional or service. An undeclared category is judged like promotional, and a registry that cannot answer blocks. |
 | G07 | `FrequencyCapGuard` | **RBI FPC** (anti-harassment) | ≤2 contacts per episode; ≤3 per customer per rolling 7 days. |
 | G08 | `ContactWindowGuard` | **RBI FPC ¶55** | No contact outside 08:00–19:00 in the customer's zone, IST when unknown. Defers rather than blocks, with a per-customer jitter. |
@@ -46,7 +46,7 @@ Four properties, and each exists because the obvious alternative is wrong:
 | G10 | `AFAThresholdGuard` | **RBI E-mandate Framework, 2026 §8(a)–(b)**; NPCI OC-151A/2023-24 | A recurring debit over its category's limit — ₹15,000, or ₹1,00,000 for insurance premiums, mutual-fund subscriptions and credit-card bills — needs additional factor authentication, so it goes to a human. |
 | G11 | `DLTTemplateGuard` | **TRAI TCCCPR** — DLT template registration (Feb 2025 amendment) | Every message carries a template the merchant actually registered. |
 | G12 | `SpendCapGuard` | **Merchant policy** — ours, not anyone's regulation | A per-merchant daily ceiling on money moved, plus a re-check of retry quiet hours at final gating. |
-| G13 | `HumanApprovalGuard` | **Operational policy** — ours | The execution handoff. Nothing automated proceeds where a human is required. |
+| G13 | `HumanApprovalGuard` | **Operational policy** — ours | The execution handoff. Nothing automated proceeds where a human is required. A status check is exempt: it reads the rail and moves nothing. |
 | G14 | `MandateStateGuard` | **RBI E-mandate Framework, 2026 §4** — registration only after AFA; withdrawal "at any point of time"; NPCI codes VA, VT, VU | No debit against a mandate that is not live when it would execute — paused, revoked, expired or not yet authenticated. Blocks, a pause included: waiting one out would collect the debit it was for. |
 | G15 | `AutopayPeakHoursGuard` | **NPCI OC-215A/2025-26** — row 5(b), and ¶3's peak hours | No UPI Autopay execution inside 10:00–13:00 or 17:00–21:30 IST. Defers to a minute past the window, spread by a per-payment jitter because row 5(a) asks for moderated TPS. Card mandates are not NPCI's and are untouched. |
 
@@ -68,8 +68,9 @@ than it is.
 
 The working agreement for this project is that an unverified regulatory
 threshold gets a `# VERIFY:` comment in the code rather than a confident
-assertion. **There are 34 of them** — two closed on 2026-09-15 by RBI's E-mandate
-Framework, 2026 and three opened by the mandate work. The ones that bear on
+assertion. **There are 36 of them** — two closed on 2026-09-15 by RBI's E-mandate
+Framework, 2026, three opened by the mandate work, and on the UPI failure path
+three opened and one closed with the call it described. The ones that bear on
 compliance directly:
 
 - **`ContactWindowGuard` — "¶55" is unconfirmed.** The paragraph number comes
@@ -119,6 +120,19 @@ compliance directly:
 - **`RiskBlockGuard` — the card networks' retry rules are referenced
   second-hand**, through Razorpay's and the networks' public documentation, not
   from the network rulebooks.
+- **The UPI Autopay failure path rests on Razorpay's documentation, not
+  observation.** A Razorpay merchant is sent one of 61 documented reasons, not
+  NPCI's code, and none has been seen on this account (`docs/taxonomy.md` §12,
+  `docs/VERIFIED.md`). Fifteen say money may have moved; they get a status check
+  (NPCI OC-215) and never a retry, and because no status call is wired yet,
+  every one of them goes to a person. The documented debit, notice and status
+  calls are built behind ports whose defaults refuse, and stay off until one
+  live call has been observed.
+- **A debit is never re-sent.** Until 2026-09-15 the client re-sent a mandate
+  debit up to four times on a gateway error, resting on an idempotency header
+  never seen honoured, and a timeout escaped unrecorded (`POSTMORTEM.md`
+  INC-010). No guard could see it; it was below the guards. A lost response now
+  goes to a status check.
 - **`RetryCapGuard` — the 4-retry halt is documented and was never observed** on
   this account. Subscriptions are unavailable pre-activation, so it could not
   be exercised even once. The UPI Autopay cap of three is NPCI's, cited.
@@ -178,5 +192,6 @@ classify cannot satisfy them vacuously.
   RBI's 2026 Framework covers cards, PPI and UPI (§2); nothing here models
   NACH, and a simulated netbanking debit on a mandate is held to the card rules.
 - **Any live compliance validation whatsoever.** Every figure in this repository
-  comes from a simulator. Nine of the ten error reasons the taxonomy classifies
-  have never been observed on a real payment.
+  comes from a simulator. Of the 71 failure reasons the taxonomy classifies —
+  ten card reasons and 61 UPI Autopay ones — one has been observed on a real
+  payment.

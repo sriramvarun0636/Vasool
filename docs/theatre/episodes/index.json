@@ -28,5 +28,11 @@
     "file": "insufficient_fund_1930_settled.json",
     "steps": 14,
     "receipts": 3
+  },
+  {
+    "name": "upi_payment_pending",
+    "file": "upi_payment_pending.json",
+    "steps": 8,
+    "receipts": 2
   }
 ]

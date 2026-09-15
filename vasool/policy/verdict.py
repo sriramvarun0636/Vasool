@@ -86,10 +86,12 @@ class ObligationKind(StrEnum):
     action at the call site."""
 
     SEND_PRE_DEBIT_NOTICE = "SEND_PRE_DEBIT_NOTICE"
-    """RBI e-mandate: the customer must be notified 24h before a mandate debit.
-    The notice is itself a customer contact, so the machine turns this into a
-    Proposal that goes through the guard chain in its own right — a notice
-    generated at 03:00 does not get to skip the contact window."""
+    """RBI e-mandate: the customer must be notified 24h before a mandate debit
+    (E-mandate Framework, 2026, §6(a)). The issuer sends the notice; the
+    merchant asks the rail for it. The machine turns this into a Proposal that
+    goes through the guard chain in its own right, like every action — though
+    not as a contact, since it is not one, so the rules about a merchant's
+    messages have no jurisdiction over it (docs/EVALUATION.md §10, 2026-09-15)."""
 
 
 class Obligation(BaseModel):

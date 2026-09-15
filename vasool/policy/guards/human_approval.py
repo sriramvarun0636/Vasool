@@ -2,10 +2,13 @@
 
 Self-imposed, and the last line of defence rather than a compliance rule: for a
 large enough amount, the right answer is that an automated system does not act
-unattended however clean the other twelve verdicts are.
+unattended however clean the other fourteen verdicts are.
 
 Skips anything already bound for a human. Escalating an escalation would queue
-the same item twice and make the queue depth a lie.
+the same item twice and make the queue depth a lie. Skips a status check too:
+it reads the rail and moves nothing, and on a large debit whose outcome is in
+doubt, finding out whether the money moved is the most useful thing to do
+unattended.
 """
 from __future__ import annotations
 
@@ -20,7 +23,10 @@ class HumanApprovalGuard(Guard):
     statute = None
 
     def applies_to(self, ctx: GuardContext) -> bool:
-        return ctx.proposal.intervention is not InterventionType.HUMAN_QUEUE
+        return ctx.proposal.intervention not in (
+            InterventionType.HUMAN_QUEUE,
+            InterventionType.STATUS_CHECK,
+        )
 
     def check(self, ctx: GuardContext) -> Verdict:
         threshold = ctx.facts.merchant.human_approval_threshold_paise

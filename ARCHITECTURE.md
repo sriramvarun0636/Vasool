@@ -87,6 +87,24 @@ This is also why the guard chain evaluates all fifteen and then resolves by
 severity rather than short-circuiting on the first refusal: a short-circuit
 receipt cites one clause, and the receipt is meant to be evidence.
 
+## When the agent does not know what happened
+
+Some failures say money may already have moved: a timeout on the debit, a
+pending payment, a deduction being refunded — and a debit whose own response
+was lost. Every other intervention is wrong there: a retry can be a second
+debit, and a message asks for money that may be paid. So the one thing done is
+to ask the rail: a `STATUS_CHECK`, at NPCI's 90 seconds, at most three within
+two hours, whose answer decides the episode — debited, recovered; anything
+else, a person. The client never re-sends a money-moving write; a 5xx or a
+timeout on one comes back marked outcome-unknown, and its receipt says
+`OUTCOME_UNKNOWN` (`POSTMORTEM.md` INC-010).
+
+The debit, the pre-debit notice and the status check are ports
+(`vasool/actions/debit.py`, `notice.py`, `status.py`). Razorpay documents all
+three and the documented adapters are built, but each port's default refuses
+until its call has been observed on a live account — the same stance a
+fact-loading gap takes in the guard base: unknown is not permission.
+
 ## The windtunnel
 
 `windtunnel/` is a separate system from the agent, and the separation is
@@ -111,7 +129,10 @@ Three things it buys:
   written, and `judge()` is the only thing that can produce one. It scans the
   ledger the way §2a scans — never "a guard returned BLOCKED". An attack may
   declare extra evidence requirements; it cannot lower the bar. `attacks.py`
-  contains no `assert` and names no scoring function, enforced by AST.
+  contains no `assert` and names no scoring function, enforced by AST. One
+  requirement reads below the ledger: A26 counts debits at the world's rail,
+  because a debit re-sent after a lost response is in no record the agent keeps
+  (`POSTMORTEM.md` INC-010).
 
 ## Where the numbers come from
 
@@ -166,15 +187,15 @@ tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
 
 | Path | Contents |
 |---|---|
-| `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation, and the three provenance tiers |
-| `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, and NPCI's UPI codes mapped to the taxonomy (not yet on any run path) |
+| `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation, the three provenance tiers, and the port a rail's own failure code would arrive through |
+| `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, Razorpay's 61 UPI Autopay failure reasons and NPCI's UPI codes, each mapped to the taxonomy, and the rules a UPI failure gets |
 | `vasool/policy/` | Fifteen guards, the state machine, the transition log |
-| `vasool/mandate/` | The e-mandate lifecycle — six states, and transitions that each cite the clause permitting them, quoted from ten documents, nine of them pinned by SHA-256. `PolicyFacts.is_mandate` reads its record |
-| `vasool/actions/` | The executor — the only code permitted to call Razorpay — and the port a pre-debit notice is requested through, whose default adapter refuses |
+| `vasool/mandate/` | The e-mandate lifecycle — six states, and transitions that each cite the clause permitting them, quoted from eleven documents, ten of them pinned by SHA-256, and the rule by which a failed debit's reason moves the record. `PolicyFacts.is_mandate` reads its record |
+| `vasool/actions/` | The executor — the only code permitted to call Razorpay — the client that never re-sends a debit, and the ports the debit, the pre-debit notice and the status check go through, each of whose defaults refuses |
 | `vasool/ledger/` | Hash-chained receipts and `verify_chain` |
 | `windtunnel/` | Simulator, universe, outcome model, evaluator, sweeps, adversary |
-| `tools/` | CLI entry points: demo, eval, redteam, shadow, report, the split check, and the NPCI transcription |
+| `tools/` | CLI entry points: demo, eval, redteam, shadow, report, the split check, the NPCI transcription, and the UPI stubs |
 | `data/` | Payloads in three tiers — observed, cited, simulated — plus cassettes and golden fixtures |
 | `docs/EVALUATION.md` | The pre-registered protocol. Append-only. |
-| `docs/taxonomy.md` | Why each failure class gets its intervention, §9's known limits, and §11's UPI vocabulary |
+| `docs/taxonomy.md` | Why each failure class gets its intervention, §9's known limits, §11's UPI vocabulary, and §12's 61 Razorpay UPI reasons |
 | `docs/VERIFIED.md` | What was learned from the live account, including what did not work |

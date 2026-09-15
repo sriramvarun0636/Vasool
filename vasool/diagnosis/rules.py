@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
 from vasool.clock import Clock
+from vasool.diagnosis import upi
 from vasool.diagnosis.taxonomy import (
     RETRY_INTERVENTIONS,
     RULES,
@@ -169,9 +170,10 @@ class Diagnosis:
     reason: str
     """Normalised error_reason, or taxonomy.UNKNOWN_REASON."""
 
-    source: str
+    source: str | None
     """error_source exactly as received, kept for the receipt even where the
-    row ignores it (§3: source is noisy, and an unfamiliar one is signal)."""
+    row ignores it (§3: source is noisy, and an unfamiliar one is signal).
+    None where the failure's documentation gives none (FailureEvent)."""
 
     soft_nudge: bool
     """Accompany this action with one low-pressure message (LIQUIDITY only)."""
@@ -330,6 +332,29 @@ def _retry_at(rule: Rule, now: datetime, attempt: int) -> datetime:
     return now + rule.retry_delays[attempt - 1]
 
 
+UPI_METHOD = "upi"
+"""Razorpay's `method` for a UPI payment. The field is observed live (`card` and
+`netbanking` were captured); the value `upi` is the one Razorpay documents."""
+
+
+def _rule_for(event: FailureEvent, rules: dict[tuple[str, str], Rule]) -> tuple[str, Rule]:
+    """Which table a failure is classified against: its rail decides.
+
+    A rail code, where a provider passed NPCI's own on, is the most specific
+    evidence there is and decides first. A UPI payment is classified against
+    Razorpay's documented UPI reasons, never §4: five strings appear in both,
+    and on UPI three of them can mean money moved (docs/taxonomy.md §12).
+    Everything else — every card and netbanking failure there has ever been —
+    goes through §4 exactly as before, `rules` and all, so the wind tunnel's
+    arms are untouched by the existence of a second rail.
+    """
+    if event.rail_code is not None:
+        return upi.rule_for_rail_code(*event.rail_code)
+    if event.method == UPI_METHOD:
+        return upi.rule_for_reason(event.error_reason)
+    return lookup(event.error_reason, event.error_source, rules=rules)
+
+
 def classify(
     event: FailureEvent,
     *,
@@ -360,7 +385,7 @@ def classify(
         raise ValueError(f"attempt must be >= 1, got {attempt}")
 
     now = clock.now()
-    reason, rule = lookup(event.error_reason, event.error_source, rules=rules)
+    reason, rule = _rule_for(event, rules)
 
     if attempt <= rule.retry_budget:
         intervention = rule.retry_intervention

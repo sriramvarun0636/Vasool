@@ -261,3 +261,67 @@ behaviour, and it's the same shape `tests/test_executor.py`'s fake client
 already assumes, but it remains a documented assumption, not an observed
 fact, until a real `createRecurring` response is captured and matched
 against a subsequent `payment.captured`.
+
+---
+
+## DOCUMENTED, NOT OBSERVED: Razorpay's UPI Autopay subsequent payments (2026-09-15)
+
+Nothing in this section was observed. UPI and subscriptions are unavailable on
+this account before activation (above), so no recurring payment has ever been
+created here. It records what Razorpay's documentation says, read from the
+markdown sources Razorpay serves, each pinned by the SHA-256 of the bytes read,
+because §2.5's failure path (`docs/EVALUATION.md` §10, 2026-09-15) is built on
+it and a reader should be able to check every field against the page.
+
+| Page | SHA-256 |
+|---|---|
+| *Create Subsequent Payments* (UPI) — `docs/api/payments/recurring-payments/upi/create-subsequent-payments.md` | `6c26636bafa1b66801ecae4b44b8250a354d5269d3a3c2ee6baf0adb972d1bfe` |
+| *Create Subsequent Payments* (cards) — `docs/api/payments/recurring-payments/cards/create-subsequent-payments.md` | `35a65cbe5c3ab0c83a46755700f2aea04fbce88f3c59c011aeb68149d636cc44` |
+| *List of Errors* — `docs/build/llm-docs/errors/payments/list.md` | `5e6fb5795996400ddd55938c60b217dbe403995af45669b12ac02a5b51c4281d` |
+| *Payment Method Error Parameters* — `docs/build/llm-docs/errors/payments/payment-methods-error-parameters.md` | `526b34fe6bbf0d75cfa6067daceb752fc99ee92ecaf2a24b936d52302267d490` |
+
+**No NPCI code reaches the merchant.** A failed subsequent UPI payment is
+reported in Razorpay's error envelope — `code`, `description`, `source`, `step`,
+`reason` — and the UPI page lists 61 values of `reason`. None of the four pages
+names an NPCI response code or a field that would carry one. So NPCI's
+vocabulary (`docs/taxonomy.md` §11) classifies nothing a Razorpay webhook
+sends; §12 maps Razorpay's 61 reasons instead, and NPCI's codes wait behind a
+port for a provider that passes them on.
+
+**No reason is paired with a source or a step.** *Payment Method Error
+Parameters* lists the values UPI's `source` and `step` can take; no page says
+which go with which reason. *List of Errors* files 19 of the 61 under "Bad
+Request Errors" or "Gateway Errors", the only `code` any of them is given. The
+UPI stubs carry exactly that and null otherwise.
+
+**The debit call `retry_payment` made was not the documented one.** A
+recurring payment is `createRecurring` with eight mandatory fields — `email`,
+`contact`, `currency`, `amount`, `order_id`, `customer_id`, `token`,
+`recurring` — and an optional `notes`. `RazorpayClient.retry_payment` sent
+`amount`, `currency` and a `payment_id` the documentation does not name. It was
+replaced (`create_recurring_payment`); a live call with the old body would have
+been refused with a 4xx.
+
+**The pre-debit notice is an order.** "You can use the notification object in
+the request if you want to control pre-debit notifications and recurring
+debits": an order created with `notification: {token_id, payment_after}`, after
+which Razorpay delivers the notice and the order reports `notification.status`
+and `delivered_at`. Without the object, "we will automatically try to debit 25
+hours after the pre-debit notification is delivered", and Razorpay retries on
+its own; with it, "We will not attempt any retry if the debit fails … You should
+manually retry the debit attempt." Vasool always passes it, so it is the only
+thing retrying and NPCI's one attempt and three retries are not exceeded.
+`payment_after` defaults to 25 hours after delivery, an hour past RBI's 24 —
+unobserved whether a debit presented between the two is refused.
+
+**Check before you debit again.** "Do not create another subsequent payment
+until you get the status of the previous one." It agrees with NPCI OC-215, and
+it is why a debit whose response is lost now goes to a status check instead of
+being re-sent.
+
+**`createRecurring` takes `notes`.** The earlier entries here say it has
+"nothing resembling `notes`", which was true only of what Session 0A observed.
+Documented, it does; the documented debiter stamps `vasool_entity_id` on it,
+which could give a retry the same restart-proof join key a payment link has —
+not relied on until a `payment.captured` for a recurring payment has been seen
+carrying it.

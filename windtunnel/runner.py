@@ -45,6 +45,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 from vasool.actions.comms import CommsSender
+from vasool.actions.debit import DebitAttempt
 from vasool.actions.executor import RazorpayExecutor
 from vasool.actions.notice import NoticeRequest
 from vasool.clock import VirtualClock
@@ -286,8 +287,22 @@ class SimulatedRazorpay:
     def notify_payment_link(self, **kwargs) -> dict:
         return {"success": True}
 
-    def retry_payment(self, *, idempotency_key: str, **kwargs) -> dict:
-        return {"id": self._id("pay_", idempotency_key)}
+
+class SimulatedDebiter:
+    """The rail a mandate debit goes to, taking every one.
+
+    The executor's debit is a port (vasool/actions/debit.py) whose production
+    default refuses; the world's takes the debit and answers with an id
+    derived from the idempotency key — the same id, and the same response
+    shape, `SimulatedRazorpay.retry_payment` answered with before the debit
+    became a port, so every ledger replays byte for byte across that change.
+    Whether the money then arrives is the outcome model's question, not this
+    class's. No lost-response rate is registered in §4, so none is modelled.
+    """
+
+    def debit(self, proposal: Proposal) -> DebitAttempt:
+        payment_id = SimulatedRazorpay._id("pay_", proposal.idempotency_key)
+        return DebitAttempt(ok=True, detail="debit requested", payment_id=payment_id, response={"id": payment_id})
 
 
 class SimulatedRail:
@@ -442,6 +457,7 @@ class Runner:
             comms=CommsSender(deliver=lambda proposal, params: {"delivered": True}),
             registered_templates=template_ids(),
             notifier=SimulatedRail(),
+            debiter=SimulatedDebiter(),
         )
         self.executor = ObservingExecutor(
             inner=self._inner,
@@ -539,6 +555,7 @@ class Runner:
     def _apply(self, event: WorldEvent) -> None:
         if event.kind is WorldEventKind.FAILURE_ARRIVES:
             assert event.episode is not None
+            self.world.observe_failure(event.episode.event, at=self.clock.now())
             self.machine.observe(event.episode.event)
         elif event.kind is WorldEventKind.CONSENT_WITHDRAWN:
             # DPDP, and adversary attack A12. Purges queued work and closes
@@ -636,8 +653,8 @@ class Runner:
         AWAITING after a single try.
 
         **The follow-up carries the retry's own new payment id**, which is
-        what Razorpay actually sends: `retry_payment` wraps `createRecurring`,
-        which creates a new payment, so its failure webhook names that payment
+        what Razorpay actually sends: a mandate debit (`createRecurring`)
+        creates a new payment, so its failure webhook names that payment
         and not the one the episode opened on. Read back off the executor's
         journal, never recomputed here — the same discipline
         `_drain_settlements` holds to, and for the same reason: the whole
@@ -680,20 +697,20 @@ class Runner:
                 # is the second half of the gap the VERIFY note above names.
                 continue
             plan = self.world.episode_for(proposal.entity_id)
-            self.machine.observe(
-                payloads.failure_event(
-                    reason=plan.reason,
-                    source=plan.source,
-                    entity_id=record.razorpay_request_id,
-                    contact=plan.customer.contact,
-                    email=plan.customer.email,
-                    amount_paise=plan.amount_paise,
-                    occurred_at=self.clock.now(),
-                    pepper=self._pepper,
-                    sequence=proposal.attempt,
-                    retry_index=self._inner.retry_index,
-                )
+            failure = payloads.failure_event(
+                reason=plan.reason,
+                source=plan.source,
+                entity_id=record.razorpay_request_id,
+                contact=plan.customer.contact,
+                email=plan.customer.email,
+                amount_paise=plan.amount_paise,
+                occurred_at=self.clock.now(),
+                pepper=self._pepper,
+                sequence=proposal.attempt,
+                retry_index=self._inner.retry_index,
             )
+            self.world.observe_failure(failure, at=self.clock.now())
+            self.machine.observe(failure)
 
     def _result(self) -> RunResult:
         transitions = tuple(self.machine.transitions)

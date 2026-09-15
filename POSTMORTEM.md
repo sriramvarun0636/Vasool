@@ -1,14 +1,15 @@
 # POSTMORTEM — what broke, and how I got out
 
-Nine incidents. Each one is recorded somewhere else in this repository as well —
+Ten incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
 
 Four of these were found by the system catching itself rather than by me
 noticing. Those are the four worth reading — and INC-007, for the opposite
-reason: nothing caught it until after v1.0 was tagged; and INC-009, which
-nothing in the apparatus could have caught, because the rule itself was wrong.
+reason: nothing caught it until after v1.0 was tagged; INC-009, which
+nothing in the apparatus could have caught, because the rule itself was wrong;
+and INC-010, a double debit every record the agent keeps would have shown as one.
 
 ---
 
@@ -452,7 +453,62 @@ has to check. The next guard written starts from its clause.
 
 ---
 
-## The pattern across all nine
+### INC-010 — The client re-sent a debit it could not confirm, and every record showed one
+
+**Symptom.** None in any artifact. Found by reading `vasool/actions/razorpay_client.py`
+during the review of 2026-09-15. Every write the client made went through one
+retry loop: a 4xx was never retried, and a gateway or server error was re-sent
+up to four times with backoff. That loop was right for creating a payment link,
+where a duplicate is at worst a second link. It was also the loop the mandate
+debit went through.
+
+**Investigation.** Demonstrated on the code at `47bf76f`, through the real state
+machine and a fake rail that takes each debit it is sent. On a gateway error
+the rail received **four debits**, and the episode moved on to `AWAITING` as if
+one had failed. On a read timeout the `requests` exception was never caught: it
+escaped the client, the executor and `PolicyMachine.tick`, left the episode in
+`EXECUTING`, and the journal recorded nothing — a debit that may have gone
+through, with no receipt that says so. The idempotency header the client sent
+on every write has never been seen honoured by Razorpay; the re-sends rested on
+it.
+
+Then the attack that should catch it was written (A26), and run against the old
+rule. **All three of the survival criterion's universal clauses held**: no
+money moved without a full chain of ALLOW, no contact outside policy, a ledger
+chained from genesis. One proposal, one receipt, one dispatch — and the rail had
+taken the customer's money twice. The criterion reads the agent's own records,
+and a re-send below the executor is in none of them.
+
+**Root cause.** The client did not distinguish a write that moves money from
+one that does not, and so did not distinguish "the request failed" from "we do
+not know what the request did". The taxonomy says the second is the dangerous
+one — `payment_timed_out`'s own rationale: "repeatedly retrying a transaction
+whose outcome is unknown is how double-charges happen" — and applied it one
+layer up, to classification, while the transport underneath did the opposite.
+And the same call carried a request body Razorpay's documentation does not
+describe: a `payment_id` it never names, and six of the eight fields it makes
+mandatory missing (`docs/VERIFIED.md`, 2026-09-15). Never having run against a
+live account, the path had never been checked against the page either.
+
+**Fix.** `docs/EVALUATION.md` §10, 2026-09-15, registered and pushed before the
+code. A money-moving write is never re-sent: a 5xx, a timeout, a dropped
+connection or an unreadable body on one raises at once, marked
+`outcome_unknown`; the receipt says `OUTCOME_UNKNOWN` rather than
+`EXECUTION_FAILED`; and the state machine sends the episode to a status check —
+NPCI OC-215's 90 seconds, at most three within two hours — never to a second
+debit. The debit itself became a port whose default refuses, with Razorpay's
+documented call built behind it and off until one live debit has been observed.
+A26 now counts debits **at the rail**, with a predicate added to the criterion
+for it, and survives; against the old rule it fails on exactly that clause.
+
+**What I'd do differently.** Count at the boundary that matters. Every safety
+check in this repository asks the agent's own records what happened — which is
+right for what the agent decided and blind to what happened below it. The rail
+is the only place a double debit exists, so it is the only place to count one.
+
+---
+
+## The pattern across all ten
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -478,8 +534,13 @@ faithfully: every scan passed, because every scan checked the code against the
 rule as written. It was found by reading the regulation instead of a summary of
 it, which is why the mandate work quotes every clause it rests on.
 
+INC-010 is the third, and it widens the lesson. The apparatus scanned the right
+records correctly; the defect lived below every record it scans. A double debit
+existed only at the rail, so an attack now counts there — the survival
+criterion's first check that does not ask the agent what it did.
+
 That is the argument this project is actually making. Not that the agent is
-correct — I have nine incidents here that say otherwise, and two known
+correct — I have ten incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

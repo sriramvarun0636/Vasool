@@ -36,22 +36,26 @@ it on create/fetch responses, so the assumption is reasonable, but it
 remains documentation until a link created with `vasool_entity_id` in its
 notes is observed coming back with it on a real webhook.
 
-**Why `payment.captured` for a SILENT_RETRY/TIMED_RETRY.** `createRecurring`
-has nothing resembling `notes` to tag — it takes `amount`, `currency`,
-`payment_id` (RazorpayClient.retry_payment), and no merchant-metadata field
-Session 0A ever observed. But it does return its own new payment's id in the
-response, and vasool/actions/executor.py::RazorpayExecutor._retry already
-records that id against the entity_id that asked for it, in its own
-RetryIndex — Razorpay's own answer to "what did you just create", not
-anything guessed. `entity_id_from_payment_captured` below reads a captured
-payment's id and looks it up there.
+**Why `payment.captured` for a SILENT_RETRY/TIMED_RETRY.** A debit returns
+its own new payment's id in the response, and
+vasool/actions/executor.py::RazorpayExecutor._retry records that id against
+the entity_id that asked for it, in its own RetryIndex — the rail's own answer
+to "what did you just create", not anything guessed.
+`entity_id_from_payment_captured` below reads a captured payment's id and
+looks it up there.
+
+Razorpay's documented `createRecurring` also takes a merchant `notes` field
+(*Create Subsequent Payments*, read 2026-09-15), and the documented debiter
+stamps `vasool_entity_id` on it exactly as `_link` stamps a payment link — the
+way to a join key that survives a restart, which RetryIndex does not. It is
+not read here yet: no `payment.captured` for a recurring payment has been
+seen, so whether the payment entity carries its `notes` back is unobserved
+(docs/EVALUATION.md §10, 2026-09-15).
 
 # VERIFY: whether `createRecurring`'s synchronous response id is the same id
 that later appears on `payload.payment.entity.id` of a `payment.captured`
-webhook has never been observed live — RazorpayClient.retry_payment's own
-VERIFY note already flags that this call was never exercised at all (Session
-0A never activated the merchant account, so the token-based recharge path it
-wraps was never reachable to test). A payment entity's id being stable across
+webhook has never been observed live — no recurring payment has been created
+on this account, which cannot hold a token before activation. A payment entity's id being stable across
 its own lifecycle is standard Razorpay behaviour and the same shape
 tests/test_executor.py's fake client already assumes, but it remains a
 documented assumption, not an observed fact, until a real createRecurring

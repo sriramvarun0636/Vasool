@@ -57,6 +57,19 @@ throwing away a verdict whose class was correct would report a model error
 that did not happen.
 """
 
+OFFERED_INTERVENTIONS: tuple[InterventionType, ...] = (
+    InterventionType.SILENT_RETRY,
+    InterventionType.TIMED_RETRY,
+    InterventionType.REATTEMPT_LINK,
+    InterventionType.REAUTH_LINK,
+    InterventionType.HUMAN_QUEUE,
+)
+"""The five interventions the prompt names, and the only ones a verdict may
+carry. Named here rather than read off the enum since STATUS_CHECK joined it
+(docs/taxonomy.md §12): asking the rail what happened is not something a
+classifier reading four error fields is being measured on, and adding it would
+change the prompt every recorded cassette is addressed by."""
+
 VERDICT_KEYS: frozenset[str] = frozenset({"failure_class", "intervention", "rationale"})
 """Exactly the keys a response may carry. Not a minimum — an unrequested field
 is a response of the wrong shape, and a parser that shrugs at extra keys is
@@ -150,7 +163,7 @@ RESPONSE_SCHEMA: dict = {
         },
         "intervention": {
             "type": "string",
-            "enum": [member.value for member in InterventionType],
+            "enum": [member.value for member in OFFERED_INTERVENTIONS],
         },
         "rationale": {"type": "string"},
     },
@@ -253,8 +266,14 @@ def parse_verdict(text: str) -> LLMVerdict:
     if not isinstance(rationale, str) or not rationale.strip():
         raise VerdictRejected("rationale is empty — a verdict has to say why")
 
+    failure_class = _member(FailureClass, document["failure_class"], "failure_class")
+    intervention = _member(InterventionType, document["intervention"], "intervention")
+    if intervention not in OFFERED_INTERVENTIONS:
+        raise VerdictRejected(
+            f"intervention={intervention.value!r} is not one of the five the prompt offers"
+        )
     return LLMVerdict(
-        failure_class=_member(FailureClass, document["failure_class"], "failure_class"),
-        intervention=_member(InterventionType, document["intervention"], "intervention"),
+        failure_class=failure_class,
+        intervention=intervention,
         rationale=rationale.strip()[:MAX_RATIONALE_CHARS],
     )

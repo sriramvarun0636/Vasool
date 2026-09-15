@@ -12,6 +12,7 @@ PYTHON  := $(shell test -x $(VENV_PY) && echo $(VENV_PY) || echo python3)
 
 SCENARIO ?= card_expired
 TARGET   ?=
+RAIL     ?=
 EVAL_ARGS ?=
 TIME     ?=
 LIVE     ?=
@@ -35,6 +36,9 @@ SHADOW_ARGS += --partial
 endif
 
 DEMO_ARGS := --scenario $(SCENARIO)
+ifneq ($(strip $(RAIL)),)
+DEMO_ARGS += --rail $(RAIL)
+endif
 ifneq ($(strip $(TIME)),)
 DEMO_ARGS += --time $(TIME)
 endif
@@ -44,7 +48,7 @@ endif
 
 .PHONY: demo golden eval sweeps sweep-one split-check shadow redteam report replay all
 
-demo: ## one recovery episode, end to end, replay by default -- LIVE=1 make demo to opt in (see vasool/demo.py --help)
+demo: ## one recovery episode, end to end, replay by default -- LIVE=1 to opt in; RAIL=upi SCENARIO=payment_pending for a UPI Autopay one (see vasool/demo.py --help)
 	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
 
 golden: ## regenerate data/golden/*.txt from a real demo run -- see tools/update_golden.py
@@ -65,7 +69,7 @@ split-check: ## §10 2026-09-14's registered check: the headline under five othe
 shadow: ## §4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; REPEATS=N sets depth; PARTIAL=1 replays only recorded cells; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
-redteam: ## 22 attacks, scored against the registered survival criterion -- writes out/adversary/
+redteam: ## 23 attacks, scored against the registered survival criterion -- writes out/adversary/
 	$(PYTHON) tools/redteam.py
 
 report: ## builds out/report.html, publishes it to docs/, and rebuilds README's forest plot

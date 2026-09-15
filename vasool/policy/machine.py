@@ -37,10 +37,16 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections.abc import Callable, Sequence
+from enum import StrEnum
 from typing import Protocol
 
 from vasool.clock import Clock
-from vasool.diagnosis.proposal import Proposal, notice_proposal_from, proposals_from
+from vasool.diagnosis.proposal import (
+    Proposal,
+    notice_proposal_from,
+    proposals_from,
+    status_check_proposal_from,
+)
 from vasool.diagnosis.rules import classify
 from vasool.diagnosis.taxonomy import RULES, InterventionType, Rule
 from vasool.events.schemas import FailureEvent
@@ -95,10 +101,60 @@ mean acting on something that has not happened.
 """
 
 
+STATUS_CHECK_FIRST_AFTER = timedelta(seconds=90)
+"""NPCI OC-215 ¶3: "the first check transaction status API after 90 seconds
+from the initiation/authentication of the original transaction"."""
+
+STATUS_CHECKS_MAX = 3
+"""NPCI OC-215 ¶4: "maximum of 3 check transaction status APIs"."""
+
+STATUS_CHECK_SPACING: tuple[timedelta, ...] = (
+    timedelta(0),
+    timedelta(minutes=30),
+    timedelta(minutes=90),
+)
+"""When each check runs, measured from the first. All three inside ¶4's "preferably
+within 2 hours from the initiation".
+
+# VERIFY: the thirty and ninety minutes are ours. OC-215 bounds the count and the
+# window and names no spacing inside it."""
+
+
+class RailStatus(StrEnum):
+    """What the rail says happened to a debit whose outcome was in doubt. Closed.
+
+    The policy plane's vocabulary, because it is the policy plane that acts on
+    it; vasool/actions/status.py is the port that answers in it."""
+
+    DEBITED = "DEBITED"
+    """The money moved. The episode is recovered."""
+
+    NOT_DEBITED = "NOT_DEBITED"
+    """Nothing moved. A retry would now be safe — and is still not taken here:
+    the case a human decides first, until a status call has been observed live
+    (docs/EVALUATION.md §10, 2026-09-15)."""
+
+    PENDING = "PENDING"
+    """The rail does not know yet. Checked again, up to NPCI's three."""
+
+    CANNOT_TELL = "CANNOT_TELL"
+    """No answer could be had — no status call wired, or the call failed. A
+    human decides; nothing is retried."""
+
+
 @dataclass(frozen=True, slots=True)
 class ExecutionResult:
     ok: bool
     detail: str = ""
+    outcome_unknown: bool = False
+    """A debit whose response was lost or failed server-side: the rail may
+    have taken the money. Sends the episode to a status check, never a retry."""
+
+    status: RailStatus | None = None
+    """What a STATUS_CHECK found. None for every other intervention."""
+
+    settled_amount_paise: int | None = None
+    """What the rail reports as debited, with RailStatus.DEBITED."""
 
 
 class Executor(Protocol):
@@ -139,6 +195,10 @@ class ScheduledItem:
     first_deferred_at: datetime | None = None
     causes: tuple[Verdict, ...] = ()
     """Every clause cited on the way here, in order."""
+
+    check: int = 1
+    """Which of NPCI's three status checks this is. Read only for a
+    STATUS_CHECK; every other item carries the default and ignores it."""
 
 
 class PolicyMachine:
@@ -391,15 +451,30 @@ class PolicyMachine:
             proposal=proposal,
             chain=result,
         )
-        self.executor.execute(proposal)
+        outcome = self.executor.execute(proposal)
+        is_check = proposal.intervention is InterventionType.STATUS_CHECK
         episode = self.episodes.advance(
             episode,
             State.AWAITING,
             attempts_used=episode.attempts_used + (1 if proposal.is_retry else 0),
             contacts_sent=episode.contacts_sent + (1 if proposal.is_contact else 0),
-            executed_keys=episode.executed_keys | {proposal.idempotency_key},
+            # A status check is a read. Asking twice is harmless and asking
+            # again is the protocol (OC-215 ¶4), so it is not a key IdempotencyGuard
+            # should refuse a second time; each check carries its own proposal id,
+            # so the ledger still holds one receipt per check.
+            executed_keys=episode.executed_keys if is_check else episode.executed_keys | {proposal.idempotency_key},
         )
         self._log(episode, State.EXECUTING, State.AWAITING, "awaiting outcome", proposal=proposal)
+
+        if is_check:
+            self._read_status(episode, item, outcome, result)
+        elif outcome.outcome_unknown and proposal.is_retry:
+            # The debit's response was lost or failed server-side, so the rail
+            # may have taken the money. The one thing never done now is to
+            # present it again (vasool/actions/razorpay_client.py).
+            self._check_status(
+                item, proposal, check=1, at=self._clock.now() + STATUS_CHECK_FIRST_AFTER
+            )
 
         # No obligations are honoured here, and none can arrive here. A guard
         # attaches an obligation through `Guard.defer` and through no other
@@ -412,6 +487,67 @@ class PolicyMachine:
         # for a notice that the deferral itself was supposed to create. They are
         # honoured in `_defer` now. If `allow()` is ever given an `obligations`
         # parameter, this is where the other call belongs.
+
+    def _check_status(
+        self, item: ScheduledItem, subject: Proposal, *, check: int, at: datetime
+    ) -> None:
+        """Queue status check `check` of the debit `subject` describes.
+
+        The first is built from the debit and becomes its own origin, so the
+        later checks are timed from it (STATUS_CHECK_SPACING) and their
+        deferral horizon is measured from it too."""
+        proposal = status_check_proposal_from(subject, execute_at=at, check=check)
+        self._schedule(
+            dataclasses.replace(
+                item,
+                proposal=proposal,
+                origin=proposal if check == 1 else item.origin,
+                deferrals=0,
+                first_deferred_at=None,
+                causes=(),
+                check=check,
+            )
+        )
+
+    def _read_status(
+        self, episode: Episode, item: ScheduledItem, outcome: ExecutionResult, chain: ChainResult
+    ) -> None:
+        """Act on what a status check found.
+
+        DEBITED closes the episode as recovered, through `settled` like any
+        other settlement. PENDING asks again, up to NPCI's three. Everything
+        else — NOT_DEBITED, CANNOT_TELL, or a third PENDING — goes to a human
+        with the answer on the receipt. None of the four ever leads to a debit.
+        """
+        proposal = item.proposal
+        status = outcome.status or RailStatus.CANNOT_TELL
+        if status is RailStatus.DEBITED:
+            self.settled(
+                proposal.entity_id,
+                reason=f"status check {item.check}: the rail reports the debit made",
+                amount_paise=outcome.settled_amount_paise or proposal.amount_paise,
+            )
+            return
+        if status is RailStatus.PENDING and item.check < STATUS_CHECKS_MAX:
+            self._check_status(
+                item,
+                proposal,
+                check=item.check + 1,
+                at=item.origin.execute_at + STATUS_CHECK_SPACING[item.check],
+            )
+            return
+        why = {
+            RailStatus.NOT_DEBITED: "the rail reports nothing debited; whether to present it again is a person's call",
+            RailStatus.PENDING: f"still pending after {STATUS_CHECKS_MAX} status checks (NPCI OC-215 ¶4)",
+            RailStatus.CANNOT_TELL: "whether the rail took this debit cannot be read",
+        }[status]
+        self._to(
+            episode,
+            State.ESCALATED,
+            f"status check {item.check}: {why} — {outcome.detail}",
+            proposal=proposal,
+            chain=chain,
+        )
 
     def _defer(
         self, episode: Episode, item: ScheduledItem, result: ChainResult, now: datetime

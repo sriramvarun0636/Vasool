@@ -21,6 +21,7 @@ import pytest
 from vasool.diagnosis.llm import (
     INSTRUCTIONS,
     MAX_RATIONALE_CHARS,
+    OFFERED_INTERVENTIONS,
     RESPONSE_SCHEMA,
     VERDICT_KEYS,
     LLMVerdict,
@@ -120,8 +121,16 @@ class TestInstructionsDoNotLeakTheAnswer:
             assert member.value in INSTRUCTIONS
 
     def test_the_five_interventions_are_named(self):
-        for member in InterventionType:
+        for member in OFFERED_INTERVENTIONS:
             assert member.value in INSTRUCTIONS
+
+    def test_the_status_check_is_not_offered(self):
+        """Asking the rail what happened is not a reading of four error fields,
+        and naming it would change the prompt every cassette is addressed by
+        (docs/taxonomy.md §12)."""
+        assert InterventionType.STATUS_CHECK not in OFFERED_INTERVENTIONS
+        assert "STATUS_CHECK" not in INSTRUCTIONS
+        assert set(OFFERED_INTERVENTIONS) == set(InterventionType) - {InterventionType.STATUS_CHECK}
 
 
 class TestParserAcceptsAWellFormedVerdict:
@@ -240,7 +249,7 @@ class TestResponseSchemaMatchesTheParser:
             m.value for m in FailureClass
         }
         assert set(RESPONSE_SCHEMA["properties"]["intervention"]["enum"]) == {
-            m.value for m in InterventionType
+            m.value for m in OFFERED_INTERVENTIONS
         }
 
     def test_a_response_matching_the_schema_parses(self):
@@ -276,3 +285,11 @@ class TestNoPathToAProposal:
         verdict = parse_verdict(verdict_json())
         for attribute in ("execute", "to_proposal", "proposals", "apply"):
             assert not hasattr(verdict, attribute)
+
+
+class TestAStatusCheckIsNotAVerdict:
+    def test_a_model_that_answers_status_check_is_rejected(self):
+        """A closed-enum member the prompt never offered is still outside the
+        vocabulary the model was given, and is rejected at the boundary."""
+        with pytest.raises(VerdictRejected):
+            parse_verdict(verdict_json("transient", "status_check"))
