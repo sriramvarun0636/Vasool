@@ -72,7 +72,7 @@ which <b>ships in this repo</b>. Open it and check any number here without runni
 
 Payment failures don't fail in one clean way, and treating them as one problem is what loses the money. **An expired card and a gateway blip arrive as the same webhook and need opposite responses.** Retrying the expired card has exactly zero chance of working, and it burns one of the four attempts Razorpay allows before it halts the subscription — the attempt a re-auth link needed.
 
-So the agent classifies before it acts: five failure classes, each with a registered intervention and a registered attempt budget. Then thirteen guards decide whether the chosen action may actually happen, and the ledger records the answer either way.
+So the agent classifies before it acts: five failure classes, each with a registered intervention and a registered attempt budget. Then fifteen guards decide whether the chosen action may actually happen, and the ledger records the answer either way.
 
 ---
 
@@ -178,7 +178,7 @@ is registered in [`windtunnel/pepper.py`](windtunnel/pepper.py), so a seed deals
 the same world on your machine as on the one that wrote the manifest
 ([§10, 2026-09-14](docs/EVALUATION.md) records why that was not true before). And
 if you would rather watch it than run it, **[the episode theatre](https://sriramvarun0636.github.io/Vasool/theatre/)**
-replays a real episode in the browser: thirteen guards ruling one at a time, the
+replays a real episode in the browser: fifteen guards ruling one at a time, the
 most severe verdict deciding, and a receipt whose hash you can recompute yourself.
 Edit one character of the sealed bytes and the chain breaks in front of you. No
 clone, no Python, no network.
@@ -197,7 +197,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 1,538 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 1,670 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -291,7 +291,7 @@ it fail. A verifier that can only ever succeed is not evidence of much.
 
 ## What the agent actually does
 
-Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.txt`](data/golden/demo_card_expired_1930.txt) — which [`tests/test_demo.py`](tests/test_demo.py) pins byte-for-byte, so this block cannot drift from what the command prints. Five guards are elided where marked; nothing else is reformatted. An expired card fails at 19:30 IST — inside the RBI Fair Practices Code's prohibited contact window:
+Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.txt`](data/golden/demo_card_expired_1930.txt) — which [`tests/test_demo.py`](tests/test_demo.py) pins byte-for-byte, so this block cannot drift from what the command prints. Six guards are elided where marked; nothing else is reformatted. An expired card fails at 19:30 IST — inside the RBI Fair Practices Code's prohibited contact window:
 
 ```text
 [4] classified
@@ -305,23 +305,26 @@ Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.t
 [6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
     proposal     : REAUTH_LINK (PRIMARY)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        ALLOW
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-    RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
-    DNDGuard            ALLOW
-                                       TRAI TCCCPR 2018 (as amended Feb 2025)
-    FrequencyCapGuard   ALLOW
-                                       RBI Fair Practices Code (anti-
-                                       harassment)
-    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
-                                       RBI Fair Practices Code ¶55
-                                       19:30 IST is outside the 08:00-19:00
-                                       contact window
-    ... five more guards, all NOT_APPLICABLE or ALLOW ...
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         NOT_APPLICABLE
+    ConsentGuard           ALLOW
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          NOT_APPLICABLE
+    PromiseToPayGuard      ALLOW
+                                          RBI Fair Practices Code (fair
+                                          dealing)
+    DNDGuard               ALLOW
+                                          TRAI TCCCPR 2018 (as amended Feb
+                                          2025)
+    FrequencyCapGuard      ALLOW
+                                          RBI Fair Practices Code (anti-
+                                          harassment)
+    ContactWindowGuard     DEFER          -> 2026-08-22 08:09 IST
+                                          RBI Fair Practices Code ¶55
+                                          19:30 IST is outside the 08:00-19:00
+                                          contact window
+    ... six more guards, all NOT_APPLICABLE or ALLOW ...
 
 [7] decision -- cycle 1
     resolved     : DEFER -> 2026-08-22 08:09 IST
@@ -333,7 +336,7 @@ Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.t
 
 Three things are load-bearing here and none of them are the LLM:
 
-1. **All thirteen guards run, then resolve by severity.** Not short-circuit. A cheapest-first chain would have stopped at the first refusal and the receipt would cite one clause instead of every violated one.
+1. **All fifteen guards run, then resolve by severity.** Not short-circuit. A cheapest-first chain would have stopped at the first refusal and the receipt would cite one clause instead of every violated one.
 2. **Gating happens at execute time, not propose time.** The proposal was built at 19:30 and gated again when it woke at 08:09 — because consent can be withdrawn, and the payment can settle, in between.
 3. **08:09, not 08:00.** The deferral target carries a per-customer offset derived from `sha256(customer_id)` — deterministic, so the ledger still replays byte-identically, but enough to stop a merchant's whole overnight backlog firing at 08:00:00.000. A burst of simultaneous messages reads to a recipient exactly like the automated dunning ¶55 exists to prevent.
 
@@ -358,7 +361,7 @@ flowchart TD
 
     S["<b>OFFLINE COMPARISON</b><br/>rules vs LLM, replayed from cassettes<br/>writes no ledger, moves no money"]:::quarantine
 
-    C["<b>3. THE POLICY MACHINE (13 guards)</b><br/>[G03] DPDP Act s.6 · [G07] anti-harassment cap<br/>[G08] RBI FPC ¶55 contact window<br/>[G09] RBI e-mandate pre-debit notice<br/>all evaluated, resolved by severity"]:::policy
+    C["<b>3. THE POLICY MACHINE (15 guards)</b><br/>[G03] DPDP Act s.6 · [G07] anti-harassment cap<br/>[G08] RBI FPC ¶55 contact window<br/>[G09] RBI pre-debit notice · [G14] a live mandate<br/>all evaluated, resolved by severity"]:::policy
 
     D["<b>4. EXECUTION PLANE</b><br/>The only code that may call Razorpay"]:::plane
     E["<b>5. DEFERRED QUEUE</b><br/>Re-gated on wake, never replayed blind"]:::plane
@@ -380,14 +383,23 @@ flowchart TD
 
 **Restraint is recorded as loudly as action.** A `BLOCKED` receipt is a first-class entry in the same chain as an `EXECUTED` one, carrying every clause that refused it. An agent that quietly does nothing and an agent that correctly declines are indistinguishable unless the ledger says which happened.
 
-### Four of the thirteen guards
+### Five of the fifteen guards
 
 | Guard | Citation | Trigger | Response |
 | :--- | :--- | :--- | :--- |
 | **G03** `ConsentGuard` | DPDP Act 2023 s.6 | consent absent or withdrawn | `BLOCK`, and purge queued work for that customer |
 | **G07** `FrequencyCapGuard` | RBI FPC (anti-harassment) | >2 contacts/episode, or >3 per customer per rolling 7d | `BLOCK` |
 | **G08** `ContactWindowGuard` | RBI FPC ¶55 | dispatch time outside 08:00–19:00 in the customer's zone (IST when unknown) | `DEFER` to the next open window |
-| **G09** `PreDebitNoticeGuard` | RBI e-mandate framework | mandate debit with no notice served | `DEFER`, and emit the obligation to send one |
+| **G09** `PreDebitNoticeGuard` | RBI E-mandate Framework 2026 §6(a) | mandate debit with no notice served 24h ahead | `DEFER`, and emit the obligation to send one |
+| **G14** `MandateStateGuard` | RBI E-mandate Framework 2026 §4 | a debit against a mandate that is not live when it would execute — paused, revoked, expired, unregistered | `BLOCK`; a pause is refused, not waited out |
+
+### The mandate, built from the documents that govern it
+
+`is_mandate` used to be a boolean with nothing behind it. [`vasool/mandate/`](vasool/mandate/) gives it a record and a lifecycle — six states, fourteen transitions — and **every transition cites the clause that permits it**, quoted verbatim from one of ten documents: RBI's *Digital Payments – E-mandate Framework, 2026*, which consolidated and repealed the eight e-mandate circulars before it; seven NPCI operating circulars; NPCI's response codes; and, for the one edge no rule document covers — resuming a paused mandate — Razorpay's API reference, flagged as that in the code and held at one edge by a test. Nine of the ten are pinned by the SHA-256 of the bytes read. A lifecycle built from documents can't be checked against a live account, so it is built to make a mistake findable instead: a wrong transition is a wrong citation.
+
+Two guards follow from the sources. **G14** `MandateStateGuard` refuses a debit against a mandate that is not live when the debit would execute — paused, revoked, expired or unregistered — so a retry built on Monday cannot run on Thursday against a mandate the customer revoked on Tuesday. **G15** `AutopayPeakHoursGuard` holds a UPI Autopay execution out of NPCI's peak hours, 10:00–13:00 and 17:00–21:30 ([OC-215A/2025-26](vasool/mandate/citations.py)). `AFAThresholdGuard` now takes its limit from the mandate's category — ₹15,000, or ₹1,00,000 for insurance premiums, mutual funds and credit-card bills — and a UPI mandate gets NPCI's one attempt and three retries.
+
+**Nothing measured moved, as registered before the code was written.** The universe draws no UPI mandate, and all 9,000 base rows recomputed from nothing under the new agent are byte-identical to the previous run's. The sources did contradict the code in one place, and that is not fixed here, because fixing it moves numbers: RBI's §6(a) makes the 24-hour pre-debit notice the **issuer's**, requested through the rail — not a merchant SMS gated by DND and the contact window, which is how Vasool builds it. It is recorded in [§10](docs/EVALUATION.md) for a row of its own.
 
 ---
 
@@ -520,7 +532,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — forty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — forty-eight of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -530,10 +542,11 @@ Every amendment to the protocol after registration — forty-six of them — is 
 | :--- | :--- |
 | [`POSTMORTEM.md`](POSTMORTEM.md) | **Eight incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
-| [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 33 places the code flags its own uncertainty |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 34 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), and NPCI's 225 UPI codes mapped to it |
 | [`data/cited_payloads/`](data/cited_payloads/) | The third provenance tier: NPCI's UPI response codes, transcribed verbatim, each file pinned to the SHA-256 of the specification it cites |
-| [`vasool/policy/`](vasool/policy/) | Thirteen pure-function guards, the state machine, the transition log |
+| [`vasool/policy/`](vasool/policy/) | Fifteen pure-function guards, the state machine, the transition log |
+| [`vasool/mandate/`](vasool/mandate/) | The e-mandate lifecycle: six states, every transition citing the clause that permits it, quoted from ten documents, nine pinned by SHA-256 |
 | [`vasool/actions/`](vasool/actions/) | The only code permitted to call Razorpay |
 | [`vasool/ledger/`](vasool/ledger/) | Hash-chained receipts and `verify_chain` |
 | [`windtunnel/`](windtunnel/) | The simulator, the outcome model, the evaluator, and the adversary |

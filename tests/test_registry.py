@@ -27,8 +27,12 @@ D = Decision
 
 
 class TestTheChain:
-    def test_there_are_thirteen(self):
-        assert len(GUARD_CHAIN) == 13
+    def test_there_are_fifteen(self):
+        """Thirteen until 2026-09-15, when MandateStateGuard and
+        AutopayPeakHoursGuard joined (docs/EVALUATION.md §10). A sixteenth is a
+        protocol change and gets its own row; this number moving without one
+        is the thing to catch."""
+        assert len(GUARD_CHAIN) == 15
 
     def test_every_guard_is_named_once(self):
         names = [g.name for g in GUARD_CHAIN]
@@ -50,7 +54,7 @@ class TestOrderIndependence:
     @settings(max_examples=200, suppress_health_check=[HealthCheck.too_slow])
     @given(ctx=guard_contexts(), seed=st.integers(min_value=0, max_value=10_000))
     def test_a_shuffled_chain_rules_identically(self, ctx, seed):
-        """What running all thirteen buys: the decision is a property of the
+        """What running every guard buys: the decision is a property of the
         rules, not of the order they happen to be listed in."""
         shuffled = list(GUARD_CHAIN)
         random.Random(seed).shuffle(shuffled)

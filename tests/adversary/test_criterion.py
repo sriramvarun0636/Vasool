@@ -145,7 +145,7 @@ def dispatch_of(proposal: Proposal, *, at: datetime = NOON, ok: bool = True) -> 
 
 
 def clean_scene() -> FakeScene:
-    """One silent retry, permitted by all thirteen guards, at midday."""
+    """One silent retry, permitted by all fifteen guards, at midday."""
     retry = proposal_for("gateway_technical_error", entity_id="pay_clean")
     return FakeScene(log=(executing(retry),), calls=(dispatch_of(retry),))
 
@@ -209,7 +209,7 @@ class TestMoneyClause:
     def test_an_executed_action_with_no_recorded_chain_fails(self):
         """The clause that catches an attack which never reaches a guard.
 
-        A receipt whose verdicts do not name all thirteen guards is money that
+        A receipt whose verdicts do not name every guard is money that
         moved without the compliance decision the ledger is supposed to be
         evidence of — whatever a guard would have said had it run.
         """

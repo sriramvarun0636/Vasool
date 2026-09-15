@@ -25,7 +25,7 @@ from vasool.policy.machine import (
 from vasool.policy.registry import GUARD_CHAIN
 from vasool.policy.verdict import Verdict
 from tests.payloads import event_for
-from tests.policy.strategies import permissive_facts
+from tests.policy.strategies import card_mandate, permissive_facts
 
 NOON = datetime(2026, 8, 25, 12, 0, tzinfo=IST).astimezone(timezone.utc)
 """Midday IST: inside the contact window, outside the quiet hours, so nothing
@@ -47,7 +47,7 @@ class StubFactStore:
 class DefersBy(Guard):
     """A guard that always defers by a fixed amount. Exists to drive the
     machine's deferral bounds, which no real guard can reach — every one of the
-    thirteen defers to a condition that actually expires."""
+    fifteen defers to a condition that actually expires."""
 
     name = "DefersBy"
     statute = None
@@ -201,7 +201,7 @@ class TestDeferral:
 
 class TestDeferralBounds:
     """MAX_DEFERRALS and DEFER_HORIZON, tested rather than merely asserted in a
-    comment. Neither is reachable by any of the thirteen — every real guard
+    comment. Neither is reachable by any of the fifteen — every real guard
     defers to a condition that expires — so both are driven by a stub."""
 
     def run_to_exhaustion(self, delta: timedelta, ticks: int = 40):
@@ -497,7 +497,7 @@ class TestKillSwitch:
             m.tick()
         assert len(m.transitions) == settled
 
-    def test_it_is_not_one_of_the_thirteen(self):
+    def test_it_is_not_one_of_the_guards(self):
         """A kill switch is an operability control. Rendering it as a compliance
         verdict would put "the merchant switched us off" in a column of statute
         citations."""
@@ -523,7 +523,7 @@ class TestTransitionLog:
         assert not hasattr(m.transitions, "update")
         assert not hasattr(m.transitions, "delete")
 
-    def test_a_gated_transition_carries_all_thirteen_verdicts(self):
+    def test_a_gated_transition_carries_every_guard_s_verdict(self):
         """What makes the receipt worth reading: every clause considered, not
         just the one that happened to decide it."""
         m, clock = machine()
@@ -560,7 +560,7 @@ class MandateWorld:
     # -- FactStore
     def snapshot(self, *, event, proposal, now) -> PolicyFacts:
         return permissive_facts(
-            is_mandate=True,
+            mandate=card_mandate(),
             pre_debit_notice_sent_at=self.notice_sent_at,
             **self.overrides,
         )

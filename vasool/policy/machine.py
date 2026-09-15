@@ -66,8 +66,10 @@ evening nudge can hit the contact window, then the frequency cap, then a
 promise to pay, and each of those is a real rule doing its job. This is the
 anti-oscillation backstop, not the primary bound — DEFER_HORIZON is.
 
-# VERIFY: judgment, not statute. Tuned against the deferral chains the thirteen
-# can actually produce; a fourteenth guard would want it revisited.
+# VERIFY: judgment, not statute. Tuned against the deferral chains the original
+# thirteen can produce. The two guards added on 2026-09-15 defer only a UPI
+# Autopay debit — AutopayPeakHoursGuard, by a few hours — and the registered
+# universe draws none yet, so it stands; revisit it before the universe does.
 """
 
 DEFER_HORIZON = timedelta(days=7)
@@ -168,7 +170,7 @@ class PolicyMachine:
 
         `resolve` is what ablation A4 needs: the design spec short-circuits the
         chain on the first refusal and `registry.py` argues at length for
-        running all thirteen instead. A4 measures whether that correction
+        running every guard instead. A4 measures whether that correction
         mattered. Faking it by wrapping the guards was the alternative and it
         is worse — a suppressed guard would have to report NOT_APPLICABLE,
         which means "no jurisdiction" and not "never consulted", putting a

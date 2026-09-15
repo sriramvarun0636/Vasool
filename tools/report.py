@@ -1363,8 +1363,8 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 These are properties of what the agent <em>did</em>, scanned from the hash-chained
                 ledger. They hold or fail regardless of what outcome model runs underneath, which is
                 why they are the claims the submission actually rests on &mdash; and why they are
-                banded differently from every recovery number on this page. Thirteen pure-function
-                guards gate the execution plane; all thirteen are evaluated on every proposal and
+                banded differently from every recovery number on this page. Fifteen pure-function
+                guards gate the execution plane; all fifteen are evaluated on every proposal and
                 resolved by severity, never short-circuited.
             </p>
             <div class="tiles" id="safety-tiles" style="margin-bottom: 40px;"></div>
@@ -1530,10 +1530,10 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 <br><br>
                 The only two modules importing the classifier are the shadow harnesses that score
                 it, and neither can act. Note what the execution plane&rsquo;s modules include:
-                thirteen guards, of which <strong>nine rest on a statute</strong>. The other four
+                fifteen guards, of which <strong>eleven rest on a statute</strong>. The other four
                 &mdash; idempotency, the retry cap, the spend cap, the human handoff &mdash; are
                 platform constraints and house rules whose <code>statute</code> attribute is
-                <code>None</code>. Calling all thirteen statutory would be the cheapest way to
+                <code>None</code>. Calling all fifteen statutory would be the cheapest way to
                 make this page look stronger than it is.
             </p>
         </div>
@@ -1617,7 +1617,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 <a href="https://github.com/sriramvarun0636/Vasool">Repository</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/docs/EVALUATION.md">The pre-registered protocol</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Eight incidents</a> &nbsp;&middot;&nbsp;
-                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/COMPLIANCE.md">The thirteen guards</a>
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/COMPLIANCE.md">The fifteen guards</a>
             </p>
         </footer>
 
@@ -1741,13 +1741,15 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 {{id: "G01", name: "IdempotencyGuard", clause: "System Constraint"}},
                 {{id: "G02", name: "RiskBlockGuard", clause: "Card Network Norms"}},
                 {{id: "G03", name: "ConsentGuard", clause: "DPDP Act 2023 s.6"}},
+                {{id: "G14", name: "MandateStateGuard", clause: "RBI E-mandate Framework 2026 §4"}},
                 {{id: "G04", name: "RetryCapGuard", clause: "Platform Limit"}},
                 {{id: "G05", name: "PromiseToPayGuard", clause: "RBI FPC (fair dealing)"}},
                 {{id: "G06", name: "DNDGuard", clause: "TRAI TCCCPR 2018"}},
                 {{id: "G07", name: "FrequencyCapGuard", clause: "RBI FPC (anti-harassment)"}},
                 {{id: "G08", name: "ContactWindowGuard", clause: "RBI FPC ¶55"}},
-                {{id: "G09", name: "PreDebitNoticeGuard", clause: "RBI e-mandate framework"}},
-                {{id: "G10", name: "AFAThresholdGuard", clause: "RBI AFA > ₹15,000"}},
+                {{id: "G15", name: "AutopayPeakHoursGuard", clause: "NPCI OC-215A/2025-26"}},
+                {{id: "G09", name: "PreDebitNoticeGuard", clause: "RBI E-mandate Framework 2026 §6(a)"}},
+                {{id: "G10", name: "AFAThresholdGuard", clause: "RBI AFA > ₹15,000 / ₹1,00,000"}},
                 {{id: "G11", name: "DLTTemplateGuard", clause: "TRAI DLT Registration"}},
                 {{id: "G12", name: "SpendCapGuard", clause: "Merchant Ceiling"}},
                 {{id: "G13", name: "HumanApprovalGuard", clause: "Execution Handoff"}}

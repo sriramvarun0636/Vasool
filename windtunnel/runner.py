@@ -405,7 +405,7 @@ class Runner:
 
         An arm is a configuration of the real `PolicyMachine` — a §4 table, a
         guard chain and a chain-resolution rule — never a second agent. The
-        FSM, the thirteen guards, the executor and the ledger are the same
+        FSM, the fifteen guards, the executor and the ledger are the same
         objects in every arm, which is what makes the comparison a comparison
         of two policies rather than of two codebases.
         """

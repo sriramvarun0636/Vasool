@@ -3,7 +3,7 @@ on. Inert by construction — it describes an action, it cannot perform one.
 
 This is the object architectural invariant 1 is about. When the LLM classifier lands
 in Session 7 it produces one of these and nothing else: a closed enum it cannot
-invent a member of, a channel, a time, and a rationale. Thirteen guards stand
+invent a member of, a channel, a time, and a rationale. Fifteen guards stand
 between it and any executor.
 
 **One Diagnosis can describe two actions.** docs/taxonomy.md §4 gives LIQUIDITY

@@ -32,6 +32,8 @@ from datetime import date, datetime, timedelta
 
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.events.schemas import FailureEvent
+from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
+from vasool.mandate.states import MandateState
 from vasool.policy.facts import MerchantPolicy, PolicyFacts
 from vasool.policy.guards.frequency_cap import FREQUENCY_CAP_WINDOW
 from windtunnel.universe import Customer, PlannedEpisode, Universe
@@ -45,6 +47,39 @@ daily ceiling arithmetic, which is self-imposed configuration rather than a
 compliance rule, and splitting the universe across merchants would weaken
 every per-merchant number for no claim anybody makes.
 """
+
+
+SIMULATED_MANDATE_VALIDITY = timedelta(days=365)
+"""How long past the universe's horizon a simulated mandate stays valid.
+
+The registered universe draws a mandate per customer (`mandate_share`) and
+nothing else about it — no rail, no category, no expiry, no pause
+(docs/EVALUATION.md §10, 2026-09-15). So each is built as the one mandate the
+old boolean described: a card e-mandate of the general category, active and
+valid for the whole run. A year past the horizon is simply out of reach of any
+ladder or deferral, so validity never binds — which is the point, since the
+lifecycle landed with the universe untouched.
+"""
+
+
+def simulated_mandate(customer: Customer, horizon: datetime) -> MandateRecord | None:
+    """The mandate a customer's debits are presented under, if they hold one.
+
+    A card e-mandate because every envelope on disk is a card payment but one,
+    a netbanking capture; a netbanking episode on a mandate customer — a
+    pairing Razorpay would label `emandate` — is held to the card rules, as it
+    has been since `mandate_share` was registered. Correcting that pairing
+    changes the mix, which is its own §10 row.
+    """
+    if not customer.is_mandate:
+        return None
+    return MandateRecord(
+        mandate_id=f"sim_mandate_{customer.customer_id[:16]}",
+        rail=MandateRail.CARD,
+        category=MandateCategory.GENERAL,
+        state=MandateState.ACTIVE,
+        valid_until=horizon + SIMULATED_MANDATE_VALIDITY,
+    )
 
 
 def _ist_day(when: datetime) -> date:
@@ -71,6 +106,7 @@ class WorldFactStore:
 
     _by_customer_id: dict[str, Customer] = field(default_factory=dict, init=False)
     _by_entity_id: dict[str, PlannedEpisode] = field(default_factory=dict, init=False)
+    _mandates: dict[str, MandateRecord] = field(default_factory=dict, init=False)
     _contacts: dict[str, list[datetime]] = field(default_factory=dict, init=False)
     _spent: dict[tuple[str, date], int] = field(default_factory=dict, init=False)
     _notices: dict[str, datetime] = field(default_factory=dict, init=False)
@@ -78,6 +114,11 @@ class WorldFactStore:
     def __post_init__(self) -> None:
         self._by_customer_id = {c.customer_id: c for c in self.universe.customers}
         self._by_entity_id = {e.entity_id: e for e in self.universe.episodes}
+        self._mandates = {
+            c.customer_id: mandate
+            for c in self.universe.customers
+            if (mandate := simulated_mandate(c, self.universe.horizon)) is not None
+        }
 
     # -- the FactStore protocol -------------------------------------------
     def snapshot(
@@ -103,7 +144,7 @@ class WorldFactStore:
             dnd_listed=customer.dnd_listed,
             dnd_checked_at=now,
             promise_to_pay=episode.promise_to_pay,
-            is_mandate=customer.is_mandate,
+            mandate=self._mandates.get(customer.customer_id),
             pre_debit_notice_sent_at=self._notices.get(event.entity_id),
             registered_templates=template_ids(),
         )

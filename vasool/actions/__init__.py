@@ -11,6 +11,6 @@ reach a customer. Two rules hold this package to architectural invariant 1 and 3
    need a Razorpay mock.
 
 Nothing here decides *whether* an action happens — that was already settled by
-the policy plane's thirteen guards before a Proposal reaches this package.
+the policy plane's fifteen guards before a Proposal reaches this package.
 This package only knows *how*.
 """

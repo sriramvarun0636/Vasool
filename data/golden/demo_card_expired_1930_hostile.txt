@@ -44,33 +44,38 @@
 [6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
     proposal     : REAUTH_LINK (PRIMARY)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        BLOCK
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-                                       cannot judge: consent unavailable. A
-                                       fact we have not established is not the
-                                       same as one we have established to be
-                                       harmless, so this fails closed.
-    RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
-    DNDGuard            ALLOW
-                                       TRAI TCCCPR 2018 (as amended Feb 2025)
-    FrequencyCapGuard   ALLOW
-                                       RBI Fair Practices Code (anti-
-                                       harassment)
-    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
-                                       RBI Fair Practices Code ¶55
-                                       19:30 IST is outside the 08:00-19:00
-                                       contact window
-    PreDebitNoticeGuard NOT_APPLICABLE
-    AFAThresholdGuard   NOT_APPLICABLE
-    DLTTemplateGuard    ALLOW
-                                       TRAI TCCCPR — DLT template registration
-                                       (Feb 2025 amendment)
-    SpendCapGuard       NOT_APPLICABLE
-    HumanApprovalGuard  ALLOW
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         NOT_APPLICABLE
+    ConsentGuard           BLOCK
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+                                          cannot judge: consent unavailable. A
+                                          fact we have not established is not
+                                          the same as one we have established
+                                          to be harmless, so this fails
+                                          closed.
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          NOT_APPLICABLE
+    PromiseToPayGuard      ALLOW
+                                          RBI Fair Practices Code (fair
+                                          dealing)
+    DNDGuard               ALLOW
+                                          TRAI TCCCPR 2018 (as amended Feb
+                                          2025)
+    FrequencyCapGuard      ALLOW
+                                          RBI Fair Practices Code (anti-
+                                          harassment)
+    ContactWindowGuard     DEFER          -> 2026-08-22 08:09 IST
+                                          RBI Fair Practices Code ¶55
+                                          19:30 IST is outside the 08:00-19:00
+                                          contact window
+    AutopayPeakHoursGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard    NOT_APPLICABLE
+    AFAThresholdGuard      NOT_APPLICABLE
+    DLTTemplateGuard       ALLOW
+                                          TRAI TCCCPR — DLT template
+                                          registration (Feb 2025 amendment)
+    SpendCapGuard          NOT_APPLICABLE
+    HumanApprovalGuard     ALLOW
 
 [7] decision -- cycle 1
     resolved     : BLOCK
@@ -80,12 +85,12 @@
 [8] receipt
     outcome      : blocked
     receipt_id   : rcpt_08d2f2859e51f6c7
-    hash         : d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c
+    hash         : 88ef9ef54a0216866016b58aa612ed82217ce448e64f096e308939004df83a7a
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- BLOCKED by DPDP Act 2023 s.6 +
 DPDP Rules 2025, and stayed BLOCKED.
-Receipt: d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c
+Receipt: 88ef9ef54a0216866016b58aa612ed82217ce448e64f096e308939004df83a7a
 ==============================================================================

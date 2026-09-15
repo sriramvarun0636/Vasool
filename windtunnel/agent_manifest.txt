@@ -47,12 +47,18 @@ vasool/ledger/__init__.py
 vasool/ledger/receipts.py
 vasool/ledger/replay.py
 vasool/ledger/tracing.py
+vasool/mandate/__init__.py
+vasool/mandate/citations.py
+vasool/mandate/machine.py
+vasool/mandate/record.py
+vasool/mandate/states.py
 vasool/policy/__init__.py
 vasool/policy/dnd_registry.py
 vasool/policy/episode.py
 vasool/policy/facts.py
 vasool/policy/guards/__init__.py
 vasool/policy/guards/afa_threshold.py
+vasool/policy/guards/autopay_peak_hours.py
 vasool/policy/guards/base.py
 vasool/policy/guards/consent.py
 vasool/policy/guards/contact_window.py
@@ -61,6 +67,7 @@ vasool/policy/guards/dnd.py
 vasool/policy/guards/frequency_cap.py
 vasool/policy/guards/human_approval.py
 vasool/policy/guards/idempotency.py
+vasool/policy/guards/mandate_state.py
 vasool/policy/guards/pre_debit_notice.py
 vasool/policy/guards/promise_to_pay.py
 vasool/policy/guards/retry_cap.py

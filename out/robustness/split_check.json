@@ -1,5 +1,5 @@
 {
-  "agent_fingerprint": "10eba2ff81f2fdc4ffc9028b8ae78173ba27428c102528b656f125a3caf55353",
+  "agent_fingerprint": "b515d953a46147d85e5e89ab3af73a4dcd47eb5a9f3156400bd26efeb8819bdc",
   "baseline": "retry_plus_contact",
   "checks": [
     {
@@ -72,7 +72,7 @@
   "criterion": "robust to the split if all five paired 95% intervals exclude zero with the published sign",
   "metric": "recovery_rate",
   "published": {
-    "agent_fingerprint": "10eba2ff81f2fdc4ffc9028b8ae78173ba27428c102528b656f125a3caf55353",
+    "agent_fingerprint": "b515d953a46147d85e5e89ab3af73a4dcd47eb5a9f3156400bd26efeb8819bdc",
     "paired": {
       "excludes_zero": true,
       "high": -0.1918411663755949,

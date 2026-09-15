@@ -1,6 +1,6 @@
 """Everything a guard needs to know about the world, as one frozen value.
 
-Nine of the thirteen guards need history: has this already run, how many
+Nine of the fifteen guards need history: has this already run, how many
 attempts are spent, when did we last message this customer, is consent live.
 The design spec requires guards to be pure anyway, and both things are true at
 once only if the impurity is moved somewhere else.
@@ -39,6 +39,7 @@ from typing import Protocol
 
 from vasool.diagnosis.proposal import MessageCategory, Proposal
 from vasool.events.schemas import FailureEvent
+from vasool.mandate.record import MandateRecord
 
 CONSENT_PURPOSE_RECOVERY = "payment_recovery"
 """The DPDP purpose an outbound recovery message is processed under. Consent
@@ -89,7 +90,7 @@ class MerchantPolicy:
     human_approval_threshold_paise: int = DEFAULT_HUMAN_APPROVAL_PAISE
     kill_switch: bool = False
     """Honoured mid-flight by the state machine, not by a guard. It is not one
-    of the thirteen: a kill switch is an operability control, and rendering it
+    of the guards: a kill switch is an operability control, and rendering it
     as a compliance verdict would put "merchant switched us off" in a column of
     statute citations."""
 
@@ -151,11 +152,17 @@ class PolicyFacts:
     they were."""
 
     # -- mandate
-    is_mandate: bool = False
-    """Whether this is a recurring debit. Not on FailureEvent: no subscription
-    payload has ever been observed on this account (docs/VERIFIED.md), so the
-    field would have been invented. It arrives here, where a simulator can set
-    it honestly and production reads it from the mandate record."""
+    mandate: MandateRecord | None = None
+    """The mandate this debit is presented under, or None for a one-time
+    payment — known, and absent, like `promise_to_pay`. Not on FailureEvent: no
+    subscription or mandate payload has ever been observed on this account
+    (docs/VERIFIED.md), so its fields would have been invented. Production reads
+    it from its mandate store; the simulator builds one (windtunnel/world.py).
+
+    # VERIFY: None cannot say "we could not tell". A FactStore that fails to
+    # find a mandate that exists hands the guards a one-time payment, and the
+    # mandate guards then have no jurisdiction. Establishing that a payment is
+    # not on a mandate is the FactStore's job, and nothing here can check it."""
 
     pre_debit_notice_sent_at: datetime | None = None
     """None means not yet sent — known-absent. The guard's job is then to
@@ -178,6 +185,14 @@ class PolicyFacts:
     def declared_category(self, template_id: str | None) -> MessageCategory | None:
         """The merchant's declaration for one template, or None if it made none."""
         return dict(self.template_categories).get(template_id) if template_id else None
+
+    @property
+    def is_mandate(self) -> bool:
+        """Whether this is a recurring debit — read from the record, never set.
+
+        A flag beside the record could disagree with it; one derived from it
+        cannot (docs/EVALUATION.md §10, 2026-09-15)."""
+        return self.mandate is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +223,7 @@ class FactStore(Protocol):
     """The one impure thing in the policy plane.
 
     SQLite in production, a dict in the simulator. It is deliberately a single
-    method: the snapshot must be one consistent read, not thirteen guards each
+    method: the snapshot must be one consistent read, not fifteen guards each
     querying at a slightly different moment.
     """
 

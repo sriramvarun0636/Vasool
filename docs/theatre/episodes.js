@@ -187,6 +187,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -224,6 +232,14 @@ window.VASOOL_EPISODES = [
       "reason": "19:30 IST is outside the 08:00-19:00 contact window",
       "statute": "RBI Fair Practices Code \u00b655",
       "defer_until": "2026-08-22T08:09:49+05:30",
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
       "obligations": []
      },
      {
@@ -329,6 +345,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -365,6 +389,14 @@ window.VASOOL_EPISODES = [
       "decision": "ALLOW",
       "reason": null,
       "statute": "RBI Fair Practices Code \u00b655",
+      "defer_until": null,
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
       "defer_until": null,
       "obligations": []
      },
@@ -423,7 +455,7 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "clause",
-      "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+      "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
      }
     ],
     "notes": [
@@ -444,8 +476,8 @@ window.VASOOL_EPISODES = [
      {
       "receipt_id": "rcpt_aa8ce1313a1ceab9",
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":\"prop_75d309ca0abe07aa\",\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":\"plink_demo0000001\",\"razorpay_response\":{\"id\":\"plink_demo0000001\",\"short_url\":\"https://rzp.io/l/demo0001\"},\"receipt_id\":\"rcpt_aa8ce1313a1ceab9\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "hash": "de61d63b400c4aca384b2eb7bcfdcffaf9a942a14fc3e989ef0136d6069f0e71",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":\"prop_75d309ca0abe07aa\",\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":\"plink_demo0000001\",\"razorpay_response\":{\"id\":\"plink_demo0000001\",\"short_url\":\"https://rzp.io/l/demo0001\"},\"receipt_id\":\"rcpt_aa8ce1313a1ceab9\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -460,7 +492,7 @@ window.VASOOL_EPISODES = [
   ],
   "conclusion": {
    "text": "SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices Code \u00b655, then EXECUTED.",
-   "receipt_hash": "b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed"
+   "receipt_hash": "de61d63b400c4aca384b2eb7bcfdcffaf9a942a14fc3e989ef0136d6069f0e71"
   }
  },
  {
@@ -651,6 +683,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -688,6 +728,14 @@ window.VASOOL_EPISODES = [
       "reason": "19:30 IST is outside the 08:00-19:00 contact window",
       "statute": "RBI Fair Practices Code \u00b655",
       "defer_until": "2026-08-22T08:09:49+05:30",
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
       "obligations": []
      },
      {
@@ -793,6 +841,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -829,6 +885,14 @@ window.VASOOL_EPISODES = [
       "decision": "ALLOW",
       "reason": null,
       "statute": "RBI Fair Practices Code \u00b655",
+      "defer_until": null,
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
       "defer_until": null,
       "obligations": []
      },
@@ -887,7 +951,7 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "clause",
-      "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+      "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
      }
     ],
     "notes": [
@@ -908,8 +972,8 @@ window.VASOOL_EPISODES = [
      {
       "receipt_id": "rcpt_aa8ce1313a1ceab9",
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":\"prop_75d309ca0abe07aa\",\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":\"plink_demo0000001\",\"razorpay_response\":{\"id\":\"plink_demo0000001\",\"short_url\":\"https://rzp.io/l/demo0001\"},\"receipt_id\":\"rcpt_aa8ce1313a1ceab9\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "hash": "de61d63b400c4aca384b2eb7bcfdcffaf9a942a14fc3e989ef0136d6069f0e71",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":\"prop_75d309ca0abe07aa\",\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":\"plink_demo0000001\",\"razorpay_response\":{\"id\":\"plink_demo0000001\",\"short_url\":\"https://rzp.io/l/demo0001\"},\"receipt_id\":\"rcpt_aa8ce1313a1ceab9\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -967,9 +1031,9 @@ window.VASOOL_EPISODES = [
     "receipts": [
      {
       "receipt_id": "rcpt_061c7746be1932c6",
-      "prev_hash": "b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed",
-      "hash": "c2d25e76bd55dab2fcb26ef6a15b3f6fd580941f2ad3f3713fad3c1db48fa903",
-      "canonical_payload": "{\"amount_recovered_paise\":50000,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_061c7746be1932c6\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[]}",
+      "prev_hash": "de61d63b400c4aca384b2eb7bcfdcffaf9a942a14fc3e989ef0136d6069f0e71",
+      "hash": "dfb0d558be15c3f971e0f3bb350fecb6613fd367c2f998b6776c3ea484e86bbb",
+      "canonical_payload": "{\"amount_recovered_paise\":50000,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"de61d63b400c4aca384b2eb7bcfdcffaf9a942a14fc3e989ef0136d6069f0e71\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_061c7746be1932c6\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": null,
@@ -984,7 +1048,7 @@ window.VASOOL_EPISODES = [
   ],
   "conclusion": {
    "text": "SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices Code \u00b655, then RECOVERED -- \u20b9500.00 (50000 paise) recovered.",
-   "receipt_hash": "c2d25e76bd55dab2fcb26ef6a15b3f6fd580941f2ad3f3713fad3c1db48fa903"
+   "receipt_hash": "dfb0d558be15c3f971e0f3bb350fecb6613fd367c2f998b6776c3ea484e86bbb"
   }
  },
  {
@@ -1176,6 +1240,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -1213,6 +1285,14 @@ window.VASOOL_EPISODES = [
       "reason": "19:30 IST is outside the 08:00-19:00 contact window",
       "statute": "RBI Fair Practices Code \u00b655",
       "defer_until": "2026-08-22T08:09:49+05:30",
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
       "obligations": []
      },
      {
@@ -1291,8 +1371,8 @@ window.VASOOL_EPISODES = [
      {
       "receipt_id": "rcpt_08d2f2859e51f6c7",
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-21T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"blocked\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-21T14:00:00Z\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_08d2f2859e51f6c7\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"BLOCK\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":\"cannot judge: consent unavailable. A fact we have not established is not the same as one we have established to be harmless, so this fails closed.\",\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"DEFER\",\"defer_until\":\"2026-08-22T08:09:49+05:30\",\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":\"19:30 IST is outside the 08:00-19:00 contact window\",\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "hash": "88ef9ef54a0216866016b58aa612ed82217ce448e64f096e308939004df83a7a",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-21T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"blocked\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-21T14:00:00Z\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_75d309ca0abe07aa\",\"proposed_by\":\"rules\",\"rationale\":\"Zero percent chance of succeeding \\u2014 not low, zero. There is no state of the world in which the same expired card authorises on the third attempt. A retry has exactly zero expected value while consuming one of the four attempts the re-auth link needed.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_08d2f2859e51f6c7\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"BLOCK\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":\"cannot judge: consent unavailable. A fact we have not established is not the same as one we have established to be harmless, so this fails closed.\",\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"DEFER\",\"defer_until\":\"2026-08-22T08:09:49+05:30\",\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":\"19:30 IST is outside the 08:00-19:00 contact window\",\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -1307,7 +1387,7 @@ window.VASOOL_EPISODES = [
   ],
   "conclusion": {
    "text": "SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- BLOCKED by DPDP Act 2023 s.6 + DPDP Rules 2025, and stayed BLOCKED.",
-   "receipt_hash": "d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c"
+   "receipt_hash": "88ef9ef54a0216866016b58aa612ed82217ce448e64f096e308939004df83a7a"
   }
  },
  {
@@ -1491,6 +1571,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -1524,6 +1612,14 @@ window.VASOOL_EPISODES = [
      },
      {
       "guard": "ContactWindowGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
       "statute": null,
@@ -1585,7 +1681,7 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "clause",
-      "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+      "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
      }
     ],
     "notes": [
@@ -1606,8 +1702,8 @@ window.VASOOL_EPISODES = [
      {
       "receipt_id": "rcpt_19abe5843d52f01b",
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:30:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T06:30:00Z\",\"explain\":false,\"failure_class\":\"RISK_BLOCK\",\"intervention\":\"HUMAN_QUEUE\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_0fdf774b24d0bf71\",\"proposed_by\":\"rules\",\"rationale\":\"A fraud system declined this. Retrying may breach card-network rules and degrades a decline ratio the merchant cannot repair; if it was fraud, a retry loop is the fraudster's tool; if it was a false positive, an unexpected payment link to a possibly-compromised customer is structurally phishing. Hard stop, human queue, zero outbound.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_19abe5843d52f01b\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":\"nothing to refuse -- the proposal is already HUMAN_QUEUE. The handoff is escalated, never executed.\",\"statute\":\"Card network norms on retrying declined authorisations\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "hash": "add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:30:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T06:30:00Z\",\"explain\":false,\"failure_class\":\"RISK_BLOCK\",\"intervention\":\"HUMAN_QUEUE\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_0fdf774b24d0bf71\",\"proposed_by\":\"rules\",\"rationale\":\"A fraud system declined this. Retrying may breach card-network rules and degrades a decline ratio the merchant cannot repair; if it was fraud, a retry loop is the fraudster's tool; if it was a false positive, an unexpected payment link to a possibly-compromised customer is structurally phishing. Hard stop, human queue, zero outbound.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_19abe5843d52f01b\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":\"nothing to refuse -- the proposal is already HUMAN_QUEUE. The handoff is escalated, never executed.\",\"statute\":\"Card network norms on retrying declined authorisations\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -1622,7 +1718,7 @@ window.VASOOL_EPISODES = [
   ],
   "conclusion": {
    "text": "SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms on retrying declined authorisations, and stayed with a human, executor never called.",
-   "receipt_hash": "1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754"
+   "receipt_hash": "add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642"
   }
  },
  {
@@ -1821,6 +1917,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -1858,6 +1962,14 @@ window.VASOOL_EPISODES = [
       "reason": "19:30 IST is outside the 08:00-19:00 contact window",
       "statute": "RBI Fair Practices Code \u00b655",
       "defer_until": "2026-08-22T08:09:49+05:30",
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
       "obligations": []
      },
      {
@@ -1963,6 +2075,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
@@ -1999,6 +2119,14 @@ window.VASOOL_EPISODES = [
       "decision": "ALLOW",
       "reason": null,
       "statute": "RBI Fair Practices Code \u00b655",
+      "defer_until": null,
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
       "defer_until": null,
       "obligations": []
      },
@@ -2057,7 +2185,7 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "clause",
-      "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+      "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
      }
     ],
     "notes": [
@@ -2105,6 +2233,14 @@ window.VASOOL_EPISODES = [
       "obligations": []
      },
      {
+      "guard": "MandateStateGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
       "guard": "RetryCapGuard",
       "decision": "ALLOW",
       "reason": null,
@@ -2138,6 +2274,14 @@ window.VASOOL_EPISODES = [
      },
      {
       "guard": "ContactWindowGuard",
+      "decision": "NOT_APPLICABLE",
+      "reason": null,
+      "statute": null,
+      "defer_until": null,
+      "obligations": []
+     },
+     {
+      "guard": "AutopayPeakHoursGuard",
       "decision": "NOT_APPLICABLE",
       "reason": null,
       "statute": null,
@@ -2199,7 +2343,7 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "clause",
-      "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+      "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
      }
     ],
     "notes": [
@@ -2220,8 +2364,8 @@ window.VASOOL_EPISODES = [
      {
       "receipt_id": "rcpt_62f710a65c96d7b4",
       "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "hash": "df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"LIQUIDITY\",\"intervention\":\"TIMED_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_96532b24da9ff62b\",\"proposed_by\":\"rules\",\"rationale\":\"The instrument works and the customer intends to pay; the money isn't there today. The most recoverable failure in the taxonomy, and timing does the work rather than persistence \\u2014 retry on payday, not on backoff. One soft nudge, because the customer can act. Then a link: three failures spanning two paydays means the timing hypothesis has been tested and lost. Nudge plus link is two contacts, which is exactly \\u00a77's per-episode cap.\",\"role\":\"NUDGE\",\"sibling_id\":\"prop_c084bd7d1707f444\",\"supersedes\":\"prop_96532b24da9ff62b\",\"template_id\":\"VASOOL_LIQUIDITY_NUDGE\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_62f710a65c96d7b4\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "hash": "5ffb015921322041536bfb9a29e011cacf58bb1a9300e339b1c85f805d59b237",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T08:09:49+05:30\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T08:09:49+05:30\",\"explain\":false,\"failure_class\":\"LIQUIDITY\",\"intervention\":\"TIMED_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_96532b24da9ff62b\",\"proposed_by\":\"rules\",\"rationale\":\"The instrument works and the customer intends to pay; the money isn't there today. The most recoverable failure in the taxonomy, and timing does the work rather than persistence \\u2014 retry on payday, not on backoff. One soft nudge, because the customer can act. Then a link: three failures spanning two paydays means the timing hypothesis has been tested and lost. Nudge plus link is two contacts, which is exactly \\u00a77's per-episode cap.\",\"role\":\"NUDGE\",\"sibling_id\":\"prop_c084bd7d1707f444\",\"supersedes\":\"prop_96532b24da9ff62b\",\"template_id\":\"VASOOL_LIQUIDITY_NUDGE\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_62f710a65c96d7b4\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -2233,9 +2377,9 @@ window.VASOOL_EPISODES = [
      },
      {
       "receipt_id": "rcpt_38d88650746866e7",
-      "prev_hash": "df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d",
-      "hash": "aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578",
-      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-23T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-23T14:00:00Z\",\"explain\":false,\"failure_class\":\"LIQUIDITY\",\"intervention\":\"TIMED_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_c084bd7d1707f444\",\"proposed_by\":\"rules\",\"rationale\":\"The instrument works and the customer intends to pay; the money isn't there today. The most recoverable failure in the taxonomy, and timing does the work rather than persistence \\u2014 retry on payday, not on backoff. One soft nudge, because the customer can act. Then a link: three failures spanning two paydays means the timing hypothesis has been tested and lost. Nudge plus link is two contacts, which is exactly \\u00a77's per-episode cap.\",\"role\":\"PRIMARY\",\"sibling_id\":\"prop_96532b24da9ff62b\",\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":\"pay_demo_retry001\",\"razorpay_response\":{\"id\":\"pay_demo_retry001\"},\"receipt_id\":\"rcpt_38d88650746866e7\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+      "prev_hash": "5ffb015921322041536bfb9a29e011cacf58bb1a9300e339b1c85f805d59b237",
+      "hash": "d785aff011ccf1fee3a8b025dc928914adbaa4c34d77c933cc3526ed04cd0c0f",
+      "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-23T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"5ffb015921322041536bfb9a29e011cacf58bb1a9300e339b1c85f805d59b237\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-23T14:00:00Z\",\"explain\":false,\"failure_class\":\"LIQUIDITY\",\"intervention\":\"TIMED_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_c084bd7d1707f444\",\"proposed_by\":\"rules\",\"rationale\":\"The instrument works and the customer intends to pay; the money isn't there today. The most recoverable failure in the taxonomy, and timing does the work rather than persistence \\u2014 retry on payday, not on backoff. One soft nudge, because the customer can act. Then a link: three failures spanning two paydays means the timing hypothesis has been tested and lost. Nudge plus link is two contacts, which is exactly \\u00a77's per-episode cap.\",\"role\":\"PRIMARY\",\"sibling_id\":\"prop_96532b24da9ff62b\",\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":\"pay_demo_retry001\",\"razorpay_response\":{\"id\":\"pay_demo_retry001\"},\"receipt_id\":\"rcpt_38d88650746866e7\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": "TSOPQFb6VsuJ5d",
@@ -2293,9 +2437,9 @@ window.VASOOL_EPISODES = [
     "receipts": [
      {
       "receipt_id": "rcpt_061c7746be1932c6",
-      "prev_hash": "aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578",
-      "hash": "ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4",
-      "canonical_payload": "{\"amount_recovered_paise\":50000,\"at\":\"2026-08-23T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_061c7746be1932c6\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[]}",
+      "prev_hash": "d785aff011ccf1fee3a8b025dc928914adbaa4c34d77c933cc3526ed04cd0c0f",
+      "hash": "fb659ed3481953c0effb78c161b406d1c00ef8c35c6c6e216160185f81de5a2f",
+      "canonical_payload": "{\"amount_recovered_paise\":50000,\"at\":\"2026-08-23T14:00:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"d785aff011ccf1fee3a8b025dc928914adbaa4c34d77c933cc3526ed04cd0c0f\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_061c7746be1932c6\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[]}",
       "entity_id": "pay_TSOPJqQGAvaA2K",
       "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
       "event_id": null,
@@ -2310,7 +2454,7 @@ window.VASOOL_EPISODES = [
   ],
   "conclusion": {
    "text": "SUMMARY: TIMED_RETRY for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices Code \u00b655, then RECOVERED -- \u20b9500.00 (50000 paise) recovered.",
-   "receipt_hash": "ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4"
+   "receipt_hash": "fb659ed3481953c0effb78c161b406d1c00ef8c35c6c6e216160185f81de5a2f"
   }
  }
 ];

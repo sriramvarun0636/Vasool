@@ -1,4 +1,4 @@
-"""Cross-cutting properties of all thirteen guards.
+"""Cross-cutting properties of all fifteen guards.
 
 Stated over a generated input space rather than over hand-written cases. When
 someone asks how we know the contact window holds, the answer is that a property
@@ -34,7 +34,7 @@ from tests.policy.strategies import guard_contexts
 
 D = Decision
 SETTINGS = settings(max_examples=150, suppress_health_check=[HealthCheck.too_slow])
-"""Each of these runs once per guard, so the effective sample is thirteen
+"""Each of these runs once per guard, so the effective sample is fifteen
 times this. Still orders of magnitude past what anyone would hand-write."""
 GUARD_IDS = [g.name for g in GUARD_CHAIN]
 FACT_NAMES = {f.name for f in dataclasses.fields(PolicyFacts)}

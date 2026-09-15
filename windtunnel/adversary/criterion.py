@@ -14,10 +14,10 @@ scoring the same ledger differently.
 
 **Not "a guard returned BLOCKED".** A guard-level check would pass an attack
 that succeeded by never reaching a guard at all, which is the most likely
-shape of a real failure in a system whose compliance lives in thirteen pure
+shape of a real failure in a system whose compliance lives in fifteen pure
 functions downstream of a queue. So the money clause below asks something
 stronger than "did any guard object": it asks whether every executed receipt
-carries a chain naming **all thirteen** guards and resolving to ALLOW. Money
+carries a chain naming **every** guard and resolving to ALLOW. Money
 that moved with a partial chain, or with no chain, or with a chain that
 refused it, fails — regardless of what the guards would have said had they
 run.

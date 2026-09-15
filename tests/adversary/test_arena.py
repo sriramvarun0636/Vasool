@@ -4,7 +4,7 @@ The arena is deliberately thin. It decides what happens TO the agent — which
 webhooks arrive, when, who the customer really is — and never what the agent
 does about it. Everything downstream of the webhook is production's own: the
 real FastAPI receiver verifies the signature and dedupes, the real
-`PolicyMachine` runs the real thirteen guards against the real §4 table, the
+`PolicyMachine` runs the real fifteen guards against the real §4 table, the
 real `RazorpayExecutor` dispatches, and the ledger is built by the real
 `build_from_transitions`. The same boundary windtunnel/runner.py holds, for
 the same reason — an attack that reached inside the agent would be measuring a

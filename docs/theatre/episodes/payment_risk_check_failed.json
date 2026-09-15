@@ -179,6 +179,14 @@
           "obligations": []
         },
         {
+          "guard": "MandateStateGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
           "guard": "RetryCapGuard",
           "decision": "NOT_APPLICABLE",
           "reason": null,
@@ -212,6 +220,14 @@
         },
         {
           "guard": "ContactWindowGuard",
+          "decision": "NOT_APPLICABLE",
+          "reason": null,
+          "statute": null,
+          "defer_until": null,
+          "obligations": []
+        },
+        {
+          "guard": "AutopayPeakHoursGuard",
           "decision": "NOT_APPLICABLE",
           "reason": null,
           "statute": null,
@@ -273,7 +289,7 @@
         },
         {
           "label": "clause",
-          "value": "all 13 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
+          "value": "all 15 guards evaluated; none blocked, deferred, or escalated it -- no statute bars this action"
         }
       ],
       "notes": [
@@ -294,8 +310,8 @@
         {
           "receipt_id": "rcpt_19abe5843d52f01b",
           "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-          "hash": "1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754",
-          "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:30:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T06:30:00Z\",\"explain\":false,\"failure_class\":\"RISK_BLOCK\",\"intervention\":\"HUMAN_QUEUE\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_0fdf774b24d0bf71\",\"proposed_by\":\"rules\",\"rationale\":\"A fraud system declined this. Retrying may breach card-network rules and degrades a decline ratio the merchant cannot repair; if it was fraud, a retry loop is the fraudster's tool; if it was a false positive, an unexpected payment link to a possibly-compromised customer is structurally phishing. Hard stop, human queue, zero outbound.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_19abe5843d52f01b\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":\"nothing to refuse -- the proposal is already HUMAN_QUEUE. The handoff is escalated, never executed.\",\"statute\":\"Card network norms on retrying declined authorisations\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
+          "hash": "add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642",
+          "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-08-22T06:30:00+00:00\",\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":50000,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3\",\"entity_id\":\"pay_TSOPJqQGAvaA2K\",\"event_id\":\"TSOPQFb6VsuJ5d\",\"execute_at\":\"2026-08-22T06:30:00Z\",\"explain\":false,\"failure_class\":\"RISK_BLOCK\",\"intervention\":\"HUMAN_QUEUE\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_0fdf774b24d0bf71\",\"proposed_by\":\"rules\",\"rationale\":\"A fraud system declined this. Retrying may breach card-network rules and degrades a decline ratio the merchant cannot repair; if it was fraud, a retry loop is the fraudster's tool; if it was a false positive, an unexpected payment link to a possibly-compromised customer is structurally phishing. Hard stop, human queue, zero outbound.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_19abe5843d52f01b\",\"trace_id\":\"523efdb1c18c29077c2009a0ece6eae5\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":\"nothing to refuse -- the proposal is already HUMAN_QUEUE. The handoff is escalated, never executed.\",\"statute\":\"Card network norms on retrying declined authorisations\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}",
           "entity_id": "pay_TSOPJqQGAvaA2K",
           "customer_id": "29a06bb206cf5d37cd91e0a8bb7fb4ef0408a516ed3955a21fa5e2ecad8597e3",
           "event_id": "TSOPQFb6VsuJ5d",
@@ -310,6 +326,6 @@
   ],
   "conclusion": {
     "text": "SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms on retrying declined authorisations, and stayed with a human, executor never called.",
-    "receipt_hash": "1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754"
+    "receipt_hash": "add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642"
   }
 }

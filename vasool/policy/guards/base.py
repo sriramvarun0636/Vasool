@@ -3,7 +3,7 @@
 A guard is a pure function from a GuardContext to a Verdict. No I/O, no clock
 beyond the two times on the context, no store — everything it needs was
 snapshotted before the chain ran (vasool/policy/facts.py). That is what makes
-the thirteen property-testable over a generated input space rather than over
+the fifteen property-testable over a generated input space rather than over
 three hand-written cases, and it is the claim the whole compliance argument
 rests on.
 

@@ -1,4 +1,4 @@
-"""A guard's ruling, and how thirteen of them resolve into one decision.
+"""A guard's ruling, and how fifteen of them resolve into one decision.
 
 The coupling that matters here is DEFER <-> defer_until. docs/taxonomy.md's
 defer-vs-block rule is that an action may only be deferred when we can name the
@@ -159,7 +159,7 @@ class TestSeverity:
 # ---------------------------------------------------------------------------
 class TestChainResult:
     def test_it_records_every_verdict_not_just_the_deciding_one(self):
-        """The reason we evaluate all thirteen rather than short-circuiting: a
+        """The reason we evaluate every guard rather than short-circuiting: a
         receipt that names four violated clauses is worth more than one naming
         whichever guard happened to run first."""
         r = ChainResult.of((allow("A"), block("B"), block("C")))

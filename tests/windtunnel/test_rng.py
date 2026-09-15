@@ -134,7 +134,7 @@ class TestDerivedDistributions:
     def test_lognormal_has_a_heavy_enough_tail_to_reach_the_big_thresholds(self):
         """AFAThresholdGuard fires above ₹15,000 and HumanApprovalGuard above
         ₹50,000. A distribution that never reaches them would leave two of
-        the thirteen guards permanently unexercised, and the report card
+        the fifteen guards permanently unexercised, and the report card
         would show them as passing when they had never run."""
         values = [lognormal(1200.0, 1.4, 0, "amount", i) for i in range(20000)]
         assert sum(v > 15_000 for v in values) > 100

@@ -134,7 +134,7 @@ class TestTheGraphIsRealBeforeItIsUsed:
         """Sanity, and specifically that the walk is *transitive*.
 
         The executor imports the policy machine, which reaches the registry,
-        which reaches the thirteen guards — none of which the executor names.
+        which reaches the fifteen guards — none of which the executor names.
         A walk that only found direct imports would miss this, and every
         assertion below would be vacuous while still passing.
         """

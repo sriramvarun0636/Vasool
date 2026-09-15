@@ -1,6 +1,6 @@
 """The episode theatre's data, and the drift it must not be able to have.
 
-`docs/theatre/` shows a stranger a real recovery episode: thirteen guards
+`docs/theatre/` shows a stranger a real recovery episode: fifteen guards
 evaluating, one refusing, and a receipt they can verify in their own browser.
 It is the only surface where somebody who has not cloned this repository sees
 the agent work, which makes a page describing an episode the agent did not run
@@ -139,7 +139,7 @@ class TestTheGuardsAreQuotedCorrectly:
                 assert v["statute"] == self.STATUTES[v["guard"]], v["guard"]
 
     def test_a_guard_chain_evaluates_the_whole_chain(self, episode):
-        """Thirteen guards, every time, in registered order. A page that
+        """Every guard, every time, in registered order. A page that
         showed nine would be describing a chain that short-circuits, which is
         the design A4 exists to measure the absence of."""
         chains = [s for s in episode["steps"] if s["verdicts"]]

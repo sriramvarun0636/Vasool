@@ -18,6 +18,8 @@ from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, proposals_from, template_ids
 from vasool.diagnosis.rules import classify
 from vasool.events.schemas import FailureEvent
+from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
+from vasool.mandate.states import MandateState
 from vasool.policy.facts import (
     CONSENT_PURPOSE_RECOVERY,
     ConsentRecord,
@@ -55,6 +57,42 @@ def _pool() -> list[tuple[FailureEvent, Proposal]]:
 
 
 POOL: list[tuple[FailureEvent, Proposal]] = _pool()
+
+def card_mandate(**overrides) -> MandateRecord:
+    """The mandate the simulator gives every mandate customer: a card e-mandate
+    of the general category, active, valid long past anything a test gates.
+    `overrides` perturbs one field at a time, the way `permissive_facts` does
+    for the world."""
+    base = dict(
+        mandate_id="tok_test",
+        rail=MandateRail.CARD,
+        category=MandateCategory.GENERAL,
+        state=MandateState.ACTIVE,
+        valid_until=MAX_TIME,
+    )
+    return MandateRecord(**(base | overrides))
+
+
+def upi_mandate(**overrides) -> MandateRecord:
+    """A live UPI Autopay mandate, the rail NPCI's circulars govern."""
+    return card_mandate(**({"mandate_id": "umn_test", "rail": MandateRail.UPI_AUTOPAY} | overrides))
+
+
+@st.composite
+def mandate_records(draw, now: datetime) -> MandateRecord:
+    """Any mandate at all — every rail, category and state, a validity that may
+    already have ended, and a pause that may have lapsed."""
+    near = st.integers(min_value=-14, max_value=14).map(lambda d: now + timedelta(days=d))
+    return MandateRecord(
+        mandate_id=draw(st.sampled_from(["tok_a", "umn_b"])),
+        rail=draw(st.sampled_from(list(MandateRail))),
+        category=draw(st.sampled_from(list(MandateCategory))),
+        state=draw(st.sampled_from(list(MandateState))),
+        valid_until=draw(near),
+        revocable_by_payer=draw(st.booleans()),
+        paused_until=draw(st.one_of(st.none(), near)),
+    )
+
 
 merchant_policies = st.builds(
     MerchantPolicy,
@@ -115,7 +153,7 @@ def policy_facts(draw, now: datetime) -> PolicyFacts:
         promise_to_pay=draw(
             st.one_of(st.none(), near.map(lambda d: (now + timedelta(days=d)).date()))
         ),
-        is_mandate=draw(st.booleans()),
+        mandate=draw(st.one_of(st.none(), mandate_records(now))),
         pre_debit_notice_sent_at=draw(
             st.one_of(st.none(), near.map(lambda d: now + timedelta(days=d)))
         ),

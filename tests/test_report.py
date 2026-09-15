@@ -481,6 +481,70 @@ class TestAmendmentCountDoesNotDrift:
         )
 
 
+class TestGuardCountDoesNotDrift:
+    """How many guards there are, and which, is written in more places than
+    the registry.
+
+    Every one of them said "thirteen" on the day two guards joined the chain
+    (docs/EVALUATION.md §10, 2026-09-15), and only tests/test_registry.py knew.
+    The dashboard's guard list is a hand-written copy of the chain — the class
+    of copy INC-008 was about — so it is checked name by name, in order, and so
+    is its claim about how many guards rest on a statute, against the
+    `statute` attributes themselves.
+    """
+
+    WORDS = {"nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+             "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17}
+
+    @staticmethod
+    def _chain():
+        from vasool.policy.registry import GUARD_CHAIN
+
+        return GUARD_CHAIN
+
+    def test_the_dashboard_draws_the_chain_in_order(self):
+        drawn = re.findall(r'name: "(\w+Guard)"', REPORT.read_text())
+        assert drawn == [guard.name for guard in self._chain()]
+
+    def test_the_dashboard_counts_the_guards_and_the_statutes_the_code_has(self):
+        text = REPORT.read_text()
+        chain = self._chain()
+        statutes = re.search(r"(\w+) guards, of which <strong>(\w+) rest on a statute</strong>", text)
+        assert statutes, "the dashboard no longer says how many guards rest on a statute"
+        assert self.WORDS[statutes.group(1)] == len(chain)
+        assert self.WORDS[statutes.group(2)] == sum(g.statute is not None for g in chain)
+        gating = re.search(r"(\w+) pure-function\s+guards gate the execution plane", text)
+        assert gating and self.WORDS[gating.group(1).lower()] == len(chain)
+
+    def test_compliance_tabulates_every_guard_once(self):
+        rows = re.findall(
+            r"^\| G\d\d \| `(\w+)` \|", (REPO_ROOT / "COMPLIANCE.md").read_text(), re.M
+        )
+        assert sorted(rows) == sorted(guard.name for guard in self._chain())
+
+    def test_the_documents_quote_the_real_count(self):
+        claims = {
+            "COMPLIANCE.md": [
+                r"^# COMPLIANCE — the (\w+) guards",
+                r"^## The (\w+)$",
+                r"\*\*All (\w+) evaluate, then resolve by severity",
+            ],
+            "README.md": [
+                r"\*\*All (\w+) guards run, then resolve by severity",
+                r"Then (\w+) guards decide",
+            ],
+            "ARCHITECTURE.md": [r"evaluates all (\w+) and then resolves"],
+        }
+        for name, patterns in claims.items():
+            text = (REPO_ROOT / name).read_text()
+            for pattern in patterns:
+                match = re.search(pattern, text, re.M)
+                assert match, f"{name} no longer quotes a guard count ({pattern})"
+                assert self.WORDS[match.group(1).lower()] == len(self._chain()), (
+                    f"{name} says {match.group(1)!r} guards; the chain has {len(self._chain())}"
+                )
+
+
 class TestExhibitsAreOrdered:
     """The report card is a numbered argument; the numbering has to hold.
 

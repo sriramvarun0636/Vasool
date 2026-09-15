@@ -75,7 +75,7 @@ class TestArmsAreConfigurationsNotCopies:
         ungated = {a.name for a in ALL_ARMS if not a.chain}
         assert ungated == {"naive_retry", "retry_plus_contact", "vasool_ungated"}
 
-    def test_every_gated_arm_runs_all_thirteen_in_the_registered_order(self):
+    def test_every_gated_arm_runs_the_whole_chain_in_the_registered_order(self):
         for arm in ALL_ARMS:
             if arm.chain:
                 assert arm.chain == GUARD_CHAIN, arm.name

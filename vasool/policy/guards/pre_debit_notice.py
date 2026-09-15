@@ -13,31 +13,47 @@ obligation short-circuits into an executor is a hole straight through the policy
 plane. Describing it as a proposal and re-gating it costs one extra pass and
 closes the hole structurally.
 
+**Who sends the notice, as the sources have it — recorded, not acted on.** §6(a)
+of RBI's E-mandate Framework, 2026 says "An issuer shall send a pre-transaction
+notification", and for UPI the merchant's side of that is a request through the
+rail: the payee's PSP calls NPCI's pre-debit notification API, ReqValCust, 24
+hours ahead (OC-149's annexure, code NU), and the PSP and the issuing bank
+notify the customer (OC-151A ¶4). So the notice is not a merchant SMS. The
+machine still builds it as one, gated through the contact window, DND, DLT and
+the frequency cap — conservative rather than unsafe, and a change that moves
+numbers, so it waits for its own row (docs/EVALUATION.md §10, 2026-09-15).
+
 # VERIFY: this whole path is stub-only. Subscriptions are unavailable
 # pre-activation on this account (docs/VERIFIED.md), so no mandate debit has
-# ever been observed, and `is_mandate` is a fact a simulator sets rather than
-# one any payload carries.
+# ever been observed, and the mandate record is one a simulator builds rather
+# than one any payload carries.
 """
 from __future__ import annotations
 
 from datetime import timedelta
 
+from vasool.mandate.citations import cite
 from vasool.policy.facts import GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.verdict import Obligation, ObligationKind, Verdict
 
-PRE_DEBIT_NOTICE_LEAD = timedelta(hours=24)
-"""How far ahead of a mandate debit the customer must be notified.
+CITATION = cite("RBI-EMF-2026 §6(a)")
+"""The rule this guard enforces: the 24 hours."""
 
-# VERIFY: 24h is from the design spec's research on the RBI e-mandate framework
-# and is on the day-one checklist (§15) as unconfirmed. The requirement itself
-# is well established; the exact lead time is the part to check.
-"""
+WHO_SENDS_IT = cite("RBI-EMF-2026 §6(a)", "NPCI-OC-149A Annexure NU", "NPCI-OC-151A ¶4")
+"""The evidence for the finding above — the issuer notifies, through the rail —
+kept resolvable so the finding cannot drift from its sources before it is acted
+on."""
+
+PRE_DEBIT_NOTICE_LEAD = timedelta(hours=24)
+"""How far ahead of a mandate debit the customer must be notified: "at least 24
+hours prior to the actual charge / debit" (RBI E-mandate Framework, 2026, §6(a)).
+Inclusive — a notice exactly 24 hours old has matured."""
 
 
 class PreDebitNoticeGuard(Guard):
     name = "PreDebitNoticeGuard"
-    statute = "RBI e-mandate framework — pre-debit notification"
+    statute = "RBI E-mandate Framework 2026 §6(a) — pre-debit notification, 24 hours"
 
     def applies_to(self, ctx: GuardContext) -> bool:
         return ctx.facts.is_mandate and ctx.proposal.is_retry

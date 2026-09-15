@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vasool &mdash; the episode theatre</title>
-<meta name="description" content="Watch thirteen guards rule on one payment recovery, one at a time, and then break the receipt's seal yourself in the browser. Replayed from the agent's own run.">
+<meta name="description" content="Watch fifteen guards rule on one payment recovery, one at a time, and then break the receipt's seal yourself in the browser. Replayed from the agent's own run.">
 <meta name="color-scheme" content="dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -205,7 +205,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .chip.obs .dot{background:var(--compliant-green)}
 
 /* ---------- the glance: the whole chain as one dense mark --------------- */
-/* Thirteen ticks per ruling, coloured by what each guard actually returned.
+/* One tick per guard per ruling, coloured by what each guard actually returned.
    It is the page's only decorative-looking object and it is not decorative:
    every tick is one verdict, and the amber one is the reason the episode has
    a story. Clicking a row runs that ruling on the board. */
@@ -315,7 +315,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
   font-family:var(--font-mono);font-size:11.5px;line-height:1.75;color:var(--dim);max-width:90ch}
 .footnote b{color:var(--paper);font-weight:500}
 
-/* ---------- THE BOARD: thirteen guards, ruling ---------------------------- */
+/* ---------- THE BOARD: every guard, ruling ------------------------------- */
 .board{margin-top:26px;border:1px solid var(--hairline-firm);border-radius:6px;
   background:var(--panel);overflow:hidden}
 
@@ -1548,7 +1548,7 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
   }
 
   /* A ruling appears here in one line and sends you to the board rather than
-     reprinting thirteen rows the board already shows. Two full copies of the
+     reprinting fifteen rows the board already shows. Two full copies of the
      same chain is how a page starts disagreeing with itself. */
   function recapNode(step, e) {
     var chains = rulings(e), i = chains.indexOf(step);
@@ -2032,7 +2032,7 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
        and it opens on the ruling that actually decided the episode rather than
        on the last one. Playing straight through would leave a visitor who
        scrolls down later looking at a cycle where nothing objected -- the
-       least interesting thirteen rows on the page. `Replay` still runs the
+       least interesting fifteen rows on the page. `Replay` still runs the
        whole sequence from the first ruling, and reduced motion never animates. */
     var chains = rulings(ep());
     if (chains.length) {

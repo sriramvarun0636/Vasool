@@ -79,6 +79,7 @@ from vasool.policy.facts import (
     PolicyFacts,
 )
 from vasool.policy.machine import PolicyMachine
+from vasool.policy.registry import GUARD_CHAIN
 from vasool.policy.transitions import Transition
 from vasool.policy.verdict import Decision, Verdict
 
@@ -352,7 +353,10 @@ class TextEmitter:
             print(f"{INDENT}{'':<{width}}  {line}")
 
     def verdict(self, v: Verdict) -> None:
-        name_w, decision_w = 20, 15
+        # Sized from the chain, not fixed: a guard name one character longer
+        # than a fixed column ran into its own verdict (AutopayPeakHoursGuard,
+        # 2026-09-15).
+        name_w, decision_w = max(len(g.name) for g in GUARD_CHAIN) + 2, 15
         line = f"{INDENT}{v.guard:<{name_w}}{v.decision.value:<{decision_w}}"
         if v.decision is Decision.DEFER and v.defer_until is not None:
             line += f"-> {_fmt_ist(v.defer_until)}"

@@ -50,29 +50,33 @@
 [6] guard chain -- cycle 1 (2026-08-21 19:30 IST)
     proposal     : TIMED_RETRY (NUDGE)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        ALLOW
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-    RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
-    DNDGuard            ALLOW
-                                       TRAI TCCCPR 2018 (as amended Feb 2025)
-    FrequencyCapGuard   ALLOW
-                                       RBI Fair Practices Code (anti-
-                                       harassment)
-    ContactWindowGuard  DEFER          -> 2026-08-22 08:09 IST
-                                       RBI Fair Practices Code ¶55
-                                       19:30 IST is outside the 08:00-19:00
-                                       contact window
-    PreDebitNoticeGuard NOT_APPLICABLE
-    AFAThresholdGuard   NOT_APPLICABLE
-    DLTTemplateGuard    ALLOW
-                                       TRAI TCCCPR — DLT template registration
-                                       (Feb 2025 amendment)
-    SpendCapGuard       NOT_APPLICABLE
-    HumanApprovalGuard  ALLOW
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         NOT_APPLICABLE
+    ConsentGuard           ALLOW
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          NOT_APPLICABLE
+    PromiseToPayGuard      ALLOW
+                                          RBI Fair Practices Code (fair
+                                          dealing)
+    DNDGuard               ALLOW
+                                          TRAI TCCCPR 2018 (as amended Feb
+                                          2025)
+    FrequencyCapGuard      ALLOW
+                                          RBI Fair Practices Code (anti-
+                                          harassment)
+    ContactWindowGuard     DEFER          -> 2026-08-22 08:09 IST
+                                          RBI Fair Practices Code ¶55
+                                          19:30 IST is outside the 08:00-19:00
+                                          contact window
+    AutopayPeakHoursGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard    NOT_APPLICABLE
+    AFAThresholdGuard      NOT_APPLICABLE
+    DLTTemplateGuard       ALLOW
+                                          TRAI TCCCPR — DLT template
+                                          registration (Feb 2025 amendment)
+    SpendCapGuard          NOT_APPLICABLE
+    HumanApprovalGuard     ALLOW
 
 [7] decision -- cycle 1
     resolved     : DEFER -> 2026-08-22 08:09 IST
@@ -84,31 +88,35 @@
 [8] guard chain -- cycle 2 (2026-08-22 08:09 IST)
     proposal     : TIMED_RETRY (NUDGE)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        ALLOW
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-    RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
-    DNDGuard            ALLOW
-                                       TRAI TCCCPR 2018 (as amended Feb 2025)
-    FrequencyCapGuard   ALLOW
-                                       RBI Fair Practices Code (anti-
-                                       harassment)
-    ContactWindowGuard  ALLOW
-                                       RBI Fair Practices Code ¶55
-    PreDebitNoticeGuard NOT_APPLICABLE
-    AFAThresholdGuard   NOT_APPLICABLE
-    DLTTemplateGuard    ALLOW
-                                       TRAI TCCCPR — DLT template registration
-                                       (Feb 2025 amendment)
-    SpendCapGuard       NOT_APPLICABLE
-    HumanApprovalGuard  ALLOW
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         NOT_APPLICABLE
+    ConsentGuard           ALLOW
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          NOT_APPLICABLE
+    PromiseToPayGuard      ALLOW
+                                          RBI Fair Practices Code (fair
+                                          dealing)
+    DNDGuard               ALLOW
+                                          TRAI TCCCPR 2018 (as amended Feb
+                                          2025)
+    FrequencyCapGuard      ALLOW
+                                          RBI Fair Practices Code (anti-
+                                          harassment)
+    ContactWindowGuard     ALLOW
+                                          RBI Fair Practices Code ¶55
+    AutopayPeakHoursGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard    NOT_APPLICABLE
+    AFAThresholdGuard      NOT_APPLICABLE
+    DLTTemplateGuard       ALLOW
+                                          TRAI TCCCPR — DLT template
+                                          registration (Feb 2025 amendment)
+    SpendCapGuard          NOT_APPLICABLE
+    HumanApprovalGuard     ALLOW
 
 [9] decision -- cycle 2
     resolved     : ALLOW
-    clause       : all 13 guards evaluated; none blocked, deferred, or
+    clause       : all 15 guards evaluated; none blocked, deferred, or
                    escalated it -- no statute bars this action
     executing TIMED_RETRY...
 
@@ -117,38 +125,41 @@
 [10] guard chain -- cycle 3 (2026-08-23 19:30 IST)
     proposal     : TIMED_RETRY (PRIMARY)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      NOT_APPLICABLE
-    ConsentGuard        ALLOW
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-    RetryCapGuard       ALLOW
-    PromiseToPayGuard   ALLOW
-                                       RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
-    FrequencyCapGuard   NOT_APPLICABLE
-    ContactWindowGuard  NOT_APPLICABLE
-    PreDebitNoticeGuard NOT_APPLICABLE
-    AFAThresholdGuard   NOT_APPLICABLE
-    DLTTemplateGuard    NOT_APPLICABLE
-    SpendCapGuard       ALLOW
-    HumanApprovalGuard  ALLOW
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         NOT_APPLICABLE
+    ConsentGuard           ALLOW
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          ALLOW
+    PromiseToPayGuard      ALLOW
+                                          RBI Fair Practices Code (fair
+                                          dealing)
+    DNDGuard               NOT_APPLICABLE
+    FrequencyCapGuard      NOT_APPLICABLE
+    ContactWindowGuard     NOT_APPLICABLE
+    AutopayPeakHoursGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard    NOT_APPLICABLE
+    AFAThresholdGuard      NOT_APPLICABLE
+    DLTTemplateGuard       NOT_APPLICABLE
+    SpendCapGuard          ALLOW
+    HumanApprovalGuard     ALLOW
 
 [11] decision -- cycle 3
     resolved     : ALLOW
-    clause       : all 13 guards evaluated; none blocked, deferred, or
+    clause       : all 15 guards evaluated; none blocked, deferred, or
                    escalated it -- no statute bars this action
     executing TIMED_RETRY...
 
 [12] receipts
     outcome      : executed
     receipt_id   : rcpt_62f710a65c96d7b4
-    hash         : df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d
+    hash         : 5ffb015921322041536bfb9a29e011cacf58bb1a9300e339b1c85f805d59b237
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
     outcome      : executed
     receipt_id   : rcpt_38d88650746866e7
-    hash         : aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578
-    prev_hash    : df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d
+    hash         : d785aff011ccf1fee3a8b025dc928914adbaa4c34d77c933cc3526ed04cd0c0f
+    prev_hash    : 5ffb015921322041536bfb9a29e011cacf58bb1a9300e339b1c85f805d59b237
 
 
 [13] settlement webhook received
@@ -168,13 +179,13 @@
 [14] receipt
     outcome      : recovered
     receipt_id   : rcpt_061c7746be1932c6
-    hash         : ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4
-    prev_hash    : aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578
+    hash         : fb659ed3481953c0effb78c161b406d1c00ef8c35c6c6e216160185f81de5a2f
+    prev_hash    : d785aff011ccf1fee3a8b025dc928914adbaa4c34d77c933cc3526ed04cd0c0f
     recovered    : ₹500.00 (50000 paise)
 
 
 ==============================================================================
 SUMMARY: TIMED_RETRY for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then RECOVERED -- ₹500.00 (50000 paise) recovered.
-Receipt: ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4
+Receipt: fb659ed3481953c0effb78c161b406d1c00ef8c35c6c6e216160185f81de5a2f
 ==============================================================================

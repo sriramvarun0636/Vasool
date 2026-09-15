@@ -1,7 +1,7 @@
-"""What a guard returns, and how thirteen of them resolve into one decision.
+"""What a guard returns, and how fifteen of them resolve into one decision.
 
 The design spec models a ruling as `allowed: bool` plus an optional
-`defer_until`. That cannot express what the thirteen guards actually do:
+`defer_until`. That cannot express what the guards actually do:
 `AFAThresholdGuard` and `HumanApprovalGuard` neither permit nor forbid — they
 hand the action to a human — and a guard with nothing to say about a proposal
 (DLT template rules, on a silent retry that sends nothing) is making a different
@@ -11,7 +11,7 @@ boolean loses exactly the distinctions the report card exists to print.
 So: a closed Decision enum, ordered by severity, and a resolution rule that runs
 every guard rather than stopping at the first refusal.
 
-**Why evaluate all thirteen.** The spec orders the chain cheap-first "so a
+**Why evaluate every guard.** The spec orders the chain cheap-first "so a
 blocked action short-circuits before you spend an API call". No guard spends an
 API call — they are dictionary lookups over a snapshot materialised in one pass
 — so the saving is imaginary, while the cost is real: the spec's own ordering
@@ -71,7 +71,7 @@ SEVERITY: dict[Decision, int] = {
     Decision.ESCALATE: 3,
     Decision.BLOCK: 4,
 }
-"""Resolution order when thirteen guards disagree. The chain's decision is the
+"""Resolution order when the guards disagree. The chain's decision is the
 most severe verdict any guard returned."""
 
 

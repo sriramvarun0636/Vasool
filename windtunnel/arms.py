@@ -1,7 +1,7 @@
 """EVALUATION.md §5's baselines and §8's ablations, as configurations.
 
 **An arm is a configuration of the real agent, never a second agent.** Every
-arm below runs the same `PolicyMachine`, the same thirteen guard objects, the
+arm below runs the same `PolicyMachine`, the same fifteen guard objects, the
 same executor and the same ledger; what differs is the §4 table it classifies
 against, whether the guard chain is present, and how the chain's verdicts
 resolve. That is the whole design. An arm that reimplemented the state machine
@@ -95,7 +95,7 @@ def first_refusal(ctx: GuardContext, chain: tuple[Guard, ...]) -> ChainResult:
     mattered or whether it fixed a bug that never fired.
 
     **Only the guards actually consulted appear in the result.** The tempting
-    alternative — run all thirteen and mark the suppressed ones
+    alternative — run every guard and mark the suppressed ones
     NOT_APPLICABLE — would put a false verdict in the ledger §2a scans, because
     NOT_APPLICABLE is a jurisdiction claim and not a record of not having been
     asked. A short list is the honest representation of a short-circuited
@@ -165,7 +165,7 @@ VASOOL = Arm(
     kind=ArmKind.AGENT,
     rationale=(
         "The registered configuration: docs/taxonomy.md §4's table, all "
-        "thirteen guards in registry.py's order, resolved all-then-by-severity. "
+        "fifteen guards in registry.py's order, resolved all-then-by-severity. "
         "Every other arm is this with one thing changed."
     ),
     rules=RULES,
@@ -207,7 +207,7 @@ BASELINES: tuple[Arm, ...] = (
             "removed, deliberately adversarial to this project's own thesis. "
             "Expected to beat full Vasool on raw recovery; the gap is the price "
             "of the guards and is reported as a headline number rather than "
-            "hidden. If the guards cost nothing, the thirteen-guard claim is "
+            "hidden. If the guards cost nothing, the guard chain's claim is "
             "decorative. F5 is registered against this arm at 20 absolute "
             "percentage points (§10, 2026-08-23)."
         ),

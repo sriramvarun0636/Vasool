@@ -45,36 +45,38 @@
 [6] guard chain -- cycle 1 (2026-08-22 12:00 IST)
     proposal     : HUMAN_QUEUE (PRIMARY)
 
-    IdempotencyGuard    ALLOW
-    RiskBlockGuard      ALLOW
-                                       Card network norms on retrying declined
-                                       authorisations
-                                       nothing to refuse -- the proposal is
-                                       already HUMAN_QUEUE. The handoff is
-                                       escalated, never executed.
-    ConsentGuard        ALLOW
-                                       DPDP Act 2023 s.6 + DPDP Rules 2025
-    RetryCapGuard       NOT_APPLICABLE
-    PromiseToPayGuard   NOT_APPLICABLE
-    DNDGuard            NOT_APPLICABLE
-    FrequencyCapGuard   NOT_APPLICABLE
-    ContactWindowGuard  NOT_APPLICABLE
-    PreDebitNoticeGuard NOT_APPLICABLE
-    AFAThresholdGuard   NOT_APPLICABLE
-    DLTTemplateGuard    NOT_APPLICABLE
-    SpendCapGuard       NOT_APPLICABLE
-    HumanApprovalGuard  NOT_APPLICABLE
+    IdempotencyGuard       ALLOW
+    RiskBlockGuard         ALLOW
+                                          Card network norms on retrying
+                                          declined authorisations
+                                          nothing to refuse -- the proposal is
+                                          already HUMAN_QUEUE. The handoff is
+                                          escalated, never executed.
+    ConsentGuard           ALLOW
+                                          DPDP Act 2023 s.6 + DPDP Rules 2025
+    MandateStateGuard      NOT_APPLICABLE
+    RetryCapGuard          NOT_APPLICABLE
+    PromiseToPayGuard      NOT_APPLICABLE
+    DNDGuard               NOT_APPLICABLE
+    FrequencyCapGuard      NOT_APPLICABLE
+    ContactWindowGuard     NOT_APPLICABLE
+    AutopayPeakHoursGuard  NOT_APPLICABLE
+    PreDebitNoticeGuard    NOT_APPLICABLE
+    AFAThresholdGuard      NOT_APPLICABLE
+    DLTTemplateGuard       NOT_APPLICABLE
+    SpendCapGuard          NOT_APPLICABLE
+    HumanApprovalGuard     NOT_APPLICABLE
 
 [7] decision -- cycle 1
     resolved     : ALLOW
-    clause       : all 13 guards evaluated; none blocked, deferred, or
+    clause       : all 15 guards evaluated; none blocked, deferred, or
                    escalated it -- no statute bars this action
     escalated -- handed to a human queue, executor never called
 
 [8] receipt
     outcome      : escalated
     receipt_id   : rcpt_19abe5843d52f01b
-    hash         : 1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754
+    hash         : add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -82,5 +84,5 @@
 SUMMARY: HUMAN_QUEUE for pay_TSOPJqQGAvaA2K -- ESCALATED by Card network norms
 on retrying declined authorisations, and stayed with a human, executor never
 called.
-Receipt: 1f818b08e66f82c6e5c0531f4dae167fd2bec6dd86b5069f0b92e19ec4840754
+Receipt: add5a66faecfeefcdc30bac5c4acf3800c5c96279166c1ec7346fe27373fb642
 ==============================================================================

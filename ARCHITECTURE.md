@@ -83,7 +83,7 @@ So a `BLOCKED` receipt carries every clause that refused the action, hash-chaine
 alongside the executions. `docs/taxonomy.md` §5 argues this at length for the
 `RISK_BLOCK` path specifically, where correct behaviour is *always* inaction.
 
-This is also why the guard chain evaluates all thirteen and then resolves by
+This is also why the guard chain evaluates all fifteen and then resolves by
 severity rather than short-circuiting on the first refusal: a short-circuit
 receipt cites one clause, and the receipt is meant to be evidence.
 
@@ -92,7 +92,7 @@ receipt cites one clause, and the receipt is meant to be evidence.
 `windtunnel/` is a separate system from the agent, and the separation is
 load-bearing. It builds seeded universes — 500 customers, failures drawn from a
 registered mix — and runs the *real* agent against them. Not a mock: the real
-receiver, the real FSM, the real thirteen guards, the real executor behind a
+receiver, the real FSM, the real fifteen guards, the real executor behind a
 seam.
 
 Three things it buys:
@@ -167,7 +167,8 @@ tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
 |---|---|
 | `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation, and the three provenance tiers |
 | `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, and NPCI's UPI codes mapped to the taxonomy (not yet on any run path) |
-| `vasool/policy/` | Thirteen guards, the state machine, the transition log |
+| `vasool/policy/` | Fifteen guards, the state machine, the transition log |
+| `vasool/mandate/` | The e-mandate lifecycle — six states, and transitions that each cite the clause permitting them, quoted from ten documents, nine of them pinned by SHA-256. `PolicyFacts.is_mandate` reads its record |
 | `vasool/actions/` | The executor — the only code permitted to call Razorpay |
 | `vasool/ledger/` | Hash-chained receipts and `verify_chain` |
 | `windtunnel/` | Simulator, universe, outcome model, evaluator, sweeps, adversary |

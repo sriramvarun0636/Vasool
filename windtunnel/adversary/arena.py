@@ -54,6 +54,9 @@ from vasool.diagnosis.rules import IST
 from vasool.events.receiver import create_app
 from vasool.events.schemas import derive_customer_id
 from vasool.events.store import EventStore
+from vasool.mandate.machine import MandateMachine, Trigger
+from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
+from vasool.mandate.states import MandateState
 from vasool.ledger.receipts import Receipt, build_from_transitions
 from vasool.ledger.tracing import trace_id_for
 from vasool.policy.episode import State
@@ -124,7 +127,8 @@ class Person:
     this — docs/taxonomy.md §9.3."""
 
     dnd_listed: bool = False
-    is_mandate: bool = False
+    mandate: MandateRecord | None = None
+    """The mandate this person's debits are presented under, if any."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,7 +177,7 @@ class ArenaFacts:
             dnd_listed=person.dnd_listed,
             dnd_checked_at=now,
             promise_to_pay=self.promises.get(event.entity_id),
-            is_mandate=person.is_mandate,
+            mandate=person.mandate,
             pre_debit_notice_sent_at=self.notices.get(event.entity_id),
             registered_templates=self.registered_templates,
             # The world has always known where these people are; until A08 was
@@ -385,10 +389,24 @@ class Arena:
         zone: timezone | None = None,
         dnd_listed: bool = False,
         is_mandate: bool = False,
+        mandate: MandateRecord | None = None,
         consent: ConsentRecord | None = "default",  # type: ignore[assignment]
     ) -> Person:
         """Register a human. Calling this twice with one `human_id` and two
-        emails is attack A07's whole mechanism, not a mistake."""
+        emails is attack A07's whole mechanism, not a mistake.
+
+        `is_mandate` gives them the mandate the simulator gives every mandate
+        customer — card, general category, active, valid long past the arena
+        (windtunnel/world.py::simulated_mandate); `mandate` names one exactly,
+        for an attack about a particular rail, category or state."""
+        if mandate is None and is_mandate:
+            mandate = MandateRecord(
+                mandate_id=f"arena_mandate_{human_id}",
+                rail=MandateRail.CARD,
+                category=MandateCategory.GENERAL,
+                state=MandateState.ACTIVE,
+                valid_until=self.EPOCH + timedelta(days=365),
+            )
         contact = contact or self._contact_for(human_id)
         email = email or f"{human_id}@example.invalid"
         customer_id = derive_customer_id(contact, email, pepper=ADVERSARY_PEPPER)
@@ -407,7 +425,7 @@ class Arena:
             customer_id=customer_id,
             zone=zone,
             dnd_listed=dnd_listed,
-            is_mandate=is_mandate,
+            mandate=mandate,
         )
         self.facts.people[customer_id] = subject
         self.facts.consent[customer_id] = record
@@ -563,6 +581,24 @@ class Arena:
             )
         )
         self.machine.consent_withdrawn(person.customer_id)
+
+    def mandate_event(self, person: Person, trigger: Trigger, **changes: object) -> Person:
+        """Something happens to a person's mandate — they pause or revoke it,
+        the merchant cancels it — at the arena's clock.
+
+        Through `MandateMachine`, never by editing the record, so a scene can
+        only do to a mandate what the cited lifecycle permits: pausing a card
+        mandate or a payer revoking a non-revocable one raises here exactly as
+        it would anywhere else. Nothing is purged from the queue — a debit
+        built before the change meets `MandateStateGuard` when it comes due,
+        and the receipt says so.
+        """
+        if person.mandate is None:
+            raise ValueError(f"{person.human_id} holds no mandate")
+        record, _ = MandateMachine().apply(person.mandate, trigger, at=self.clock.now(), **changes)
+        updated = dataclasses.replace(person, mandate=record)
+        self.facts.people[person.customer_id] = updated
+        return updated
 
     def promise(self, entity_id: str, day: date) -> None:
         self.facts.promises[entity_id] = day

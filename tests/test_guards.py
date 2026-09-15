@@ -1,4 +1,4 @@
-"""The thirteen, one class per guard.
+"""The fifteen, one class per guard.
 
 Cross-cutting properties — fail-closed, deferral progress, purity, order
 independence — live in tests/test_guard_properties.py. This file is the
@@ -10,7 +10,7 @@ the one thing wrong with the world.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 import pytest
 
@@ -18,7 +18,21 @@ from vasool.diagnosis.proposal import MessageCategory, ProposalRole
 from vasool.diagnosis.rules import IST, QUIET_HOURS_END_HOUR_IST
 from vasool.diagnosis.taxonomy import FailureClass, InterventionType
 from vasool.policy.facts import CONSENT_PURPOSE_RECOVERY, ConsentRecord, MerchantPolicy
-from vasool.policy.guards.afa_threshold import AFA_THRESHOLD_PAISE, AFAThresholdGuard
+from vasool.mandate.record import MandateCategory
+from vasool.mandate.states import MandateState
+from vasool.policy.guards.afa_threshold import (
+    AFA_HIGHER_TIER_PAISE,
+    AFA_THRESHOLD_PAISE,
+    HIGHER_TIER,
+    AFAThresholdGuard,
+    afa_limit_paise,
+)
+from vasool.policy.guards.autopay_peak_hours import (
+    EXECUTION_JITTER_MAX,
+    RESUME_AFTER_PEAK,
+    AutopayPeakHoursGuard,
+    execution_jitter,
+)
 from vasool.policy.guards.consent import ConsentGuard
 from vasool.policy.guards.contact_window import CONTACT_JITTER_MAX, ContactWindowGuard
 from vasool.policy.guards.dlt_template import DLTTemplateGuard
@@ -30,6 +44,7 @@ from vasool.policy.guards.frequency_cap import (
 )
 from vasool.policy.guards.human_approval import HumanApprovalGuard
 from vasool.policy.guards.idempotency import IdempotencyGuard
+from vasool.policy.guards.mandate_state import MandateStateGuard
 from vasool.policy.guards.pre_debit_notice import (
     PRE_DEBIT_NOTICE_LEAD,
     PreDebitNoticeGuard,
@@ -38,6 +53,7 @@ from vasool.policy.guards.promise_to_pay import PromiseToPayGuard
 from vasool.policy.guards.retry_cap import (
     MANDATE_ATTEMPT_CAP,
     ONETIME_ATTEMPT_CAP,
+    UPI_AUTOPAY_RETRY_CAP,
     RetryCapGuard,
 )
 from vasool.policy.guards.risk_block import RiskBlockGuard
@@ -45,10 +61,12 @@ from vasool.policy.guards.spend_cap import SpendCapGuard
 from vasool.policy.verdict import Decision, ObligationKind
 from tests.policy.strategies import (
     POOL_NOW,
+    card_mandate,
     context,
     permissive_facts,
     proposal_for,
     proposals_for,
+    upi_mandate,
 )
 
 I = InterventionType
@@ -254,13 +272,13 @@ class TestRetryCapGuard:
         p = proposal_for("gateway_technical_error")
         assert (
             self.guard.evaluate(
-                context(p, is_mandate=False, attempts_used=ONETIME_ATTEMPT_CAP - 1)
+                context(p, mandate=None, attempts_used=ONETIME_ATTEMPT_CAP - 1)
             ).decision
             is D.ALLOW
         )
         assert (
             self.guard.evaluate(
-                context(p, is_mandate=False, attempts_used=ONETIME_ATTEMPT_CAP)
+                context(p, mandate=None, attempts_used=ONETIME_ATTEMPT_CAP)
             ).decision
             is D.BLOCK
         )
@@ -269,16 +287,33 @@ class TestRetryCapGuard:
         p = proposal_for("gateway_technical_error")
         assert (
             self.guard.evaluate(
-                context(p, is_mandate=True, attempts_used=MANDATE_ATTEMPT_CAP - 1)
+                context(p, mandate=card_mandate(), attempts_used=MANDATE_ATTEMPT_CAP - 1)
             ).decision
             is D.ALLOW
         )
         assert (
             self.guard.evaluate(
-                context(p, is_mandate=True, attempts_used=MANDATE_ATTEMPT_CAP)
+                context(p, mandate=card_mandate(), attempts_used=MANDATE_ATTEMPT_CAP)
             ).decision
             is D.BLOCK
         )
+
+    def test_a_upi_autopay_mandate_stops_at_three(self):
+        """NPCI OC-215A/2025-26, row 5: one attempt and three retries per
+        sequence number. The attempt is the failure that opened the episode."""
+        p = proposal_for("gateway_technical_error")
+        mandate = upi_mandate()
+        allowed = self.guard.evaluate(
+            context(p, mandate=mandate, attempts_used=UPI_AUTOPAY_RETRY_CAP - 1)
+        )
+        refused = self.guard.evaluate(
+            context(p, mandate=mandate, attempts_used=UPI_AUTOPAY_RETRY_CAP)
+        )
+        assert (allowed.decision, refused.decision) == (D.ALLOW, D.BLOCK)
+        assert "OC-215A" in refused.reason
+
+    def test_the_upi_cap_is_tighter_than_the_card_cap(self):
+        assert UPI_AUTOPAY_RETRY_CAP == 3 < MANDATE_ATTEMPT_CAP
 
     def test_the_mandate_cap_is_the_looser_one(self):
         """A one-time payment gets the stricter cap on purpose: nothing halts on
@@ -660,15 +695,15 @@ class TestPreDebitNoticeGuard:
     guard = PreDebitNoticeGuard()
 
     def mandate(self, **overrides):
-        return context(proposal_for("gateway_technical_error"), is_mandate=True, **overrides)
+        return context(proposal_for("gateway_technical_error"), mandate=card_mandate(), **overrides)
 
     def test_a_one_time_payment_is_out_of_scope(self):
-        ctx = context(proposal_for("gateway_technical_error"), is_mandate=False)
+        ctx = context(proposal_for("gateway_technical_error"), mandate=None)
         assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
 
     def test_a_contact_is_out_of_scope(self):
         """The rule is about debiting an account, not about messaging."""
-        ctx = context(proposal_for("card_expired"), is_mandate=True)
+        ctx = context(proposal_for("card_expired"), mandate=card_mandate())
         assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
 
     def test_an_unnoticed_debit_defers_by_the_notice_period(self):
@@ -713,13 +748,13 @@ class TestAFAThresholdGuard:
     def at_amount(self, paise: int):
         return context(
             proposal_for("gateway_technical_error").model_copy(update={"amount_paise": paise}),
-            is_mandate=True,
+            mandate=card_mandate(),
         )
 
     def test_a_one_time_payment_is_out_of_scope(self):
         """AFA is a recurring-mandate requirement. A one-time payment the
         customer is sitting in front of authenticates itself."""
-        ctx = context(proposal_for("gateway_technical_error"), is_mandate=False)
+        ctx = context(proposal_for("gateway_technical_error"), mandate=None)
         assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
 
     def test_fifteen_thousand_exactly_passes(self):
@@ -740,6 +775,45 @@ class TestAFAThresholdGuard:
 
     def test_the_threshold_is_fifteen_thousand_rupees(self):
         assert AFA_THRESHOLD_PAISE == 15_000 * 100
+
+    @pytest.mark.parametrize("category", list(MandateCategory))
+    def test_each_category_passes_at_its_limit_and_escalates_one_paisa_over(self, category):
+        """A11's shape, at both tiers: a threshold is only tested by a pair,
+        and there are now two thresholds (RBI E-mandate Framework, 2026, §8)."""
+        limit = afa_limit_paise(category)
+        proposal = proposal_for("gateway_technical_error")
+        mandate = card_mandate(category=category)
+        at = context(proposal.model_copy(update={"amount_paise": limit}), mandate=mandate)
+        over = context(proposal.model_copy(update={"amount_paise": limit + 1}), mandate=mandate)
+        assert self.guard.evaluate(at).decision is D.ALLOW
+        assert self.guard.evaluate(over).decision is D.ESCALATE
+
+    def test_the_higher_tier_is_one_lakh_for_exactly_the_three_named_purposes(self):
+        """§8(b): insurance premiums, mutual-fund subscriptions, credit-card
+        bills — and nothing else, however large its debits."""
+        assert AFA_HIGHER_TIER_PAISE == 1_00_000 * 100
+        assert HIGHER_TIER == {
+            MandateCategory.INSURANCE_PREMIUM,
+            MandateCategory.MUTUAL_FUND,
+            MandateCategory.CREDIT_CARD_BILL,
+        }
+        assert afa_limit_paise(MandateCategory.GENERAL) == AFA_THRESHOLD_PAISE
+
+    def test_a_premium_the_single_limit_would_have_escalated_now_runs_unattended(self):
+        """What the category buys: ₹50,000 of insurance premium needs no
+        factor an unattended system cannot supply."""
+        premium = context(
+            proposal_for("gateway_technical_error").model_copy(update={"amount_paise": 5_000_000}),
+            mandate=upi_mandate(category=MandateCategory.INSURANCE_PREMIUM),
+        )
+        assert self.guard.evaluate(premium).decision is D.ALLOW
+
+    def test_the_general_limit_still_holds_for_a_general_mandate(self):
+        ctx = context(
+            proposal_for("gateway_technical_error").model_copy(update={"amount_paise": 5_000_000}),
+            mandate=upi_mandate(),
+        )
+        assert self.guard.evaluate(ctx).decision is D.ESCALATE
 
 
 # ---------------------------------------------------------------------------
@@ -866,3 +940,130 @@ class TestHumanApprovalGuard:
             update={"amount_paise": 99_000_000}
         )
         assert self.guard.evaluate(context(p)).decision is D.NOT_APPLICABLE
+
+
+# ---------------------------------------------------------------------------
+# 14. MandateStateGuard — a debit needs a live mandate
+# ---------------------------------------------------------------------------
+class TestMandateStateGuard:
+    guard = MandateStateGuard()
+
+    def debit(self, mandate, **overrides):
+        return context(proposal_for("gateway_technical_error"), mandate=mandate, **overrides)
+
+    def test_a_one_time_payment_is_out_of_scope(self):
+        ctx = context(proposal_for("gateway_technical_error"), mandate=None)
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
+    def test_a_contact_is_out_of_scope(self):
+        """A message does not debit anything, whatever state the mandate is in."""
+        ctx = context(proposal_for("card_expired"), mandate=card_mandate(state=MandateState.REVOKED))
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
+    def test_a_live_mandate_permits_the_debit(self):
+        assert self.guard.evaluate(self.debit(card_mandate())).decision is D.ALLOW
+
+    @pytest.mark.parametrize(
+        "state", [s for s in MandateState if s is not MandateState.ACTIVE]
+    )
+    def test_every_other_state_refuses_it(self, state):
+        v = self.guard.evaluate(self.debit(upi_mandate(state=state)))
+        assert v.decision is D.BLOCK
+        assert v.statute and "E-mandate Framework" in v.statute
+
+    @pytest.mark.parametrize(
+        ("state", "code"),
+        [(MandateState.PAUSED, "VT"), (MandateState.REVOKED, "VA"), (MandateState.EXPIRED, "VU")],
+    )
+    def test_a_refusal_names_what_the_rail_would_have_answered(self, state, code):
+        v = self.guard.evaluate(self.debit(upi_mandate(state=state)))
+        assert f"NPCI {code}" in v.reason
+
+    def test_a_pause_is_refused_not_waited_out(self):
+        """Deferring to the end of the pause would collect the debit the pause
+        was for."""
+        paused = upi_mandate(state=MandateState.PAUSED, paused_until=POOL_NOW + timedelta(days=2))
+        assert self.guard.evaluate(self.debit(paused)).decision is D.BLOCK
+
+    def test_it_reads_the_moment_the_debit_lands_not_the_moment_it_was_decided(self):
+        """A04's shape: live when gated, expired when it would execute."""
+        mandate = card_mandate(valid_until=POOL_NOW + timedelta(hours=1))
+        ctx = self.debit(mandate, now=POOL_NOW, effective_at=POOL_NOW + timedelta(hours=2))
+        assert self.guard.evaluate(ctx).decision is D.BLOCK
+
+    def test_a_pause_that_has_lapsed_by_then_permits_it(self):
+        paused = upi_mandate(state=MandateState.PAUSED, paused_until=POOL_NOW + timedelta(hours=1))
+        ctx = self.debit(paused, now=POOL_NOW, effective_at=POOL_NOW + timedelta(hours=2))
+        assert self.guard.evaluate(ctx).decision is D.ALLOW
+
+
+# ---------------------------------------------------------------------------
+# 15. AutopayPeakHoursGuard — NPCI's peak windows, for UPI Autopay only
+# ---------------------------------------------------------------------------
+def _ist(hour: int, minute: int = 0) -> datetime:
+    return datetime(2026, 8, 25, hour, minute, tzinfo=IST).astimezone(timezone.utc)
+
+
+class TestAutopayPeakHoursGuard:
+    guard = AutopayPeakHoursGuard()
+
+    def at(self, when: datetime, mandate=None):
+        proposal = proposal_for("gateway_technical_error").model_copy(update={"execute_at": when})
+        return context(
+            proposal,
+            now=when,
+            effective_at=when,
+            mandate=mandate if mandate is not None else upi_mandate(),
+        )
+
+    def test_a_card_mandate_is_out_of_scope(self):
+        """NPCI's circulars govern UPI; a card mandate is not theirs."""
+        assert self.guard.evaluate(self.at(_ist(11), card_mandate())).decision is D.NOT_APPLICABLE
+
+    def test_a_one_time_payment_is_out_of_scope(self):
+        ctx = context(proposal_for("gateway_technical_error"), mandate=None)
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
+    def test_a_contact_is_out_of_scope(self):
+        ctx = context(proposal_for("card_expired"), mandate=upi_mandate())
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
+    @pytest.mark.parametrize(
+        ("hour", "minute"), [(3, 0), (9, 59), (13, 1), (16, 59), (21, 31), (23, 30)]
+    )
+    def test_outside_the_peaks_it_allows(self, hour, minute):
+        assert self.guard.evaluate(self.at(_ist(hour, minute))).decision is D.ALLOW
+
+    @pytest.mark.parametrize(
+        ("hour", "minute", "closes"),
+        [(10, 0, (13, 0)), (11, 30, (13, 0)), (13, 0, (13, 0)),
+         (17, 0, (21, 30)), (19, 30, (21, 30)), (21, 30, (21, 30))],
+    )
+    def test_inside_a_peak_it_defers_past_its_end(self, hour, minute, closes):
+        """Both ends are inside: the circular does not say whether 13:00 is
+        peak, and a minute past is outside on either reading."""
+        ctx = self.at(_ist(hour, minute))
+        v = self.guard.evaluate(ctx)
+        assert v.decision is D.DEFER
+        earliest = _ist(*closes) + RESUME_AFTER_PEAK
+        assert earliest <= v.defer_until < earliest + EXECUTION_JITTER_MAX
+
+    def test_every_minute_of_the_day_lands_outside_both_peaks(self):
+        for minute_of_day in range(0, 24 * 60, 7):
+            ctx = self.at(_ist(minute_of_day // 60, minute_of_day % 60))
+            v = self.guard.evaluate(ctx)
+            landing = (v.defer_until if v.decision is D.DEFER else ctx.effective_at).astimezone(IST)
+            assert not any(
+                opens <= landing.time() <= closes
+                for opens, closes in ((time(10), time(13)), (time(17), time(21, 30)))
+            ), landing
+
+    def test_the_release_is_spread_rather_than_a_burst(self):
+        """OC-215A row 5(a): executions at moderated TPS. One instant for every
+        held execution would be the burst."""
+        assert len({execution_jitter(f"pay_{n}") for n in range(25)}) > 1
+        assert all(timedelta(0) <= execution_jitter(f"pay_{n}") < EXECUTION_JITTER_MAX for n in range(25))
+
+    def test_the_spread_replays(self):
+        assert execution_jitter("pay_x") == execution_jitter("pay_x")
+
