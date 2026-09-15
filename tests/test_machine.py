@@ -25,6 +25,7 @@ from vasool.policy.machine import (
 from vasool.policy.registry import GUARD_CHAIN
 from vasool.policy.verdict import Verdict
 from tests.payloads import event_for
+from vasool.diagnosis.proposal import ProposalRole
 from tests.policy.strategies import card_mandate, permissive_facts
 
 NOON = datetime(2026, 8, 25, 12, 0, tzinfo=IST).astimezone(timezone.utc)
@@ -634,18 +635,22 @@ class TestPreDebitNotice:
         m.tick()
         assert len(_notices(m)) == 1
 
-    def test_the_notice_is_a_contact_and_spends_no_attempt(self):
+    def test_the_notice_is_not_a_contact_and_spends_no_attempt(self):
+        """The issuer sends the notice (RBI E-mandate Framework, 2026, §6(a));
+        the merchant only asks the rail for it. So the request carries no
+        channel, category or template (docs/EVALUATION.md §10, 2026-09-15)."""
         m, clock, _ = mandate_machine()
         m.observe(event_for("gateway_technical_error"))
         clock.advance_by(timedelta(minutes=6))
         m.tick()
         notice = _notices(m)[0].proposal
-        assert notice.is_contact and not notice.is_retry
+        assert not notice.is_contact and not notice.is_retry
+        assert (notice.channel, notice.message_category, notice.template_id) == (None, None, None)
 
-    def test_the_notice_is_gated_like_any_other_contact(self):
-        """The guard's own docstring: "a design where an obligation
-        short-circuits into an executor is a hole straight through the policy
-        plane". A notice owed at 03:00 IST waits for the contact window."""
+    def test_the_contact_window_does_not_hold_the_notice_request(self):
+        """A notice owed at 07:00 IST is requested at once. Until 2026-09-15 it
+        was built as the merchant's SMS and waited for 08:00 — a rule about a
+        merchant's messages, applied to a notification the issuer sends."""
         m, clock, world = mandate_machine(
             now=datetime(2026, 8, 25, 3, 0, tzinfo=IST).astimezone(timezone.utc)
         )
@@ -654,8 +659,23 @@ class TestPreDebitNotice:
         m.tick()
         clock.advance_by(timedelta(minutes=1))
         m.tick()
+        requested = [p for p in world.executed if p.role is ProposalRole.PRE_DEBIT_NOTICE]
+        assert len(requested) == 1
+        assert world.notice_sent_at.astimezone(IST).hour == 7
+        assert [p for p in world.executed if p.is_retry] == []
+
+    def test_the_notice_request_is_still_gated(self):
+        """The guard's own docstring: "an obligation that short-circuited into
+        an executor would be a hole straight through the policy plane". What
+        rules on any action rules on this one: a promise to pay holds it."""
+        promised = (NOON + timedelta(days=3)).astimezone(IST).date()
+        m, clock, world = mandate_machine(promise_to_pay=promised)
+        m.observe(event_for("gateway_technical_error"))
+        clock.advance_by(timedelta(minutes=6))
+        m.tick()
+        clock.advance_by(timedelta(minutes=1))
+        m.tick()
         assert world.executed == []
-        assert m.state_of(event_for("gateway_technical_error").entity_id) is State.DEFERRED
 
     def test_the_notice_goes_out_and_then_the_debit_does(self):
         m, clock, world = mandate_machine()

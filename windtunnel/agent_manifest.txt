@@ -29,6 +29,7 @@ vasool/__init__.py
 vasool/actions/__init__.py
 vasool/actions/comms.py
 vasool/actions/executor.py
+vasool/actions/notice.py
 vasool/actions/razorpay_client.py
 vasool/clock.py
 vasool/diagnosis/__init__.py

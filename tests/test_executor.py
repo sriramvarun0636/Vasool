@@ -13,8 +13,9 @@ import pytest
 
 from vasool.actions.comms import CommsSender
 from vasool.actions.executor import RazorpayExecutor, UnroutableProposal
+from vasool.actions.notice import NoticeRequest, NullPreDebitNotifier
 from vasool.actions.razorpay_client import RazorpayCallFailed
-from vasool.diagnosis.proposal import ProposalRole, template_ids
+from vasool.diagnosis.proposal import ProposalRole, notice_proposal_from, template_ids
 from vasool.diagnosis.taxonomy import InterventionType
 from tests.policy.strategies import proposal_for, proposals_for
 
@@ -62,6 +63,61 @@ def make_executor(*, registered_templates=None):
         client=client, comms=CommsSender(deliver=deliver), registered_templates=templates
     )
     return executor, client, calls
+
+
+
+class RecordingNotifier:
+    """A rail that accepts every pre-debit notification request."""
+
+    def __init__(self):
+        self.requests: list = []
+
+    def request(self, proposal):
+        self.requests.append(proposal)
+        return NoticeRequest(ok=True, detail="requested", reference="rvc_test")
+
+
+class TestThePreDebitNotice:
+    """The notice is the issuer's; the executor only asks the rail for it
+    (vasool/actions/notice.py, docs/EVALUATION.md §10, 2026-09-15)."""
+
+    def notice(self):
+        debit = proposal_for("gateway_technical_error")
+        return notice_proposal_from(debit, execute_at=debit.execute_at)
+
+    def test_it_goes_to_the_notifier_and_never_to_comms(self):
+        executor, client, calls = make_executor()
+        notifier = RecordingNotifier()
+        executor.notifier = notifier
+
+        result = executor.execute(self.notice())
+
+        assert result.ok
+        assert len(notifier.requests) == 1
+        assert calls == [], "a notice the issuer sends has no DLT template of ours to carry"
+        assert client.retries == [] and client.payment_links == []
+
+    def test_the_default_notifier_refuses_rather_than_pretending(self):
+        """No call that requests a notice has been observed on this account,
+        so the adapter wired by default cannot make one, and says so."""
+        executor, _, calls = make_executor()
+        assert isinstance(executor.notifier, NullPreDebitNotifier)
+
+        result = executor.execute(self.notice())
+
+        assert not result.ok
+        assert "no pre-debit notification request is wired" in result.detail
+        assert calls == []
+
+    def test_a_nudge_is_still_a_message(self):
+        executor, _, calls = make_executor()
+        executor.notifier = RecordingNotifier()
+        _, nudge = proposals_for("insufficient_fund")
+        assert nudge.role is ProposalRole.NUDGE
+
+        executor.execute(nudge)
+
+        assert len(calls) == 1 and executor.notifier.requests == []
 
 
 class TestRouting:

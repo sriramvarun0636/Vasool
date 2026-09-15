@@ -1,5 +1,5 @@
 {
-  "agent_fingerprint": "b515d953a46147d85e5e89ab3af73a4dcd47eb5a9f3156400bd26efeb8819bdc",
+  "agent_fingerprint": "5824199aceeca90895908173c4f11f7c5444f6101cd6171b9b75659bfcfb926e",
   "as_registered": true,
   "attacks": 22,
   "failed": 2,
@@ -422,7 +422,7 @@
           "name": "no_money_policy_forbids"
         },
         {
-          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
           "held": true,
           "name": "no_contact_outside_policy"
         },
@@ -450,7 +450,7 @@
       "dispatched": 2,
       "expectation": "survives",
       "id": "A12",
-      "ledger_sha256": "56986d51f45bdc95ee19be0512fc03538d93e065189f7e0c5d20e16167ff43bd",
+      "ledger_sha256": "89437b518eaaa601a8c481bfd7dfa390a77acfa5b652184b53814aec4f35fce9",
       "receipts": 3,
       "source": "design spec \u00a79 A11",
       "survived": true,
@@ -793,7 +793,7 @@
           "name": "no_money_policy_forbids"
         },
         {
-          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
           "held": true,
           "name": "no_contact_outside_policy"
         },
@@ -808,9 +808,9 @@
           "name": "no_debit_on_pay_a23_before_its_notice_matured"
         },
         {
-          "detail": "1 contacts executed, expected 1",
+          "detail": "1 pre_debit_notices executed, expected 1",
           "held": true,
-          "name": "1_contacts_on_pay_a23"
+          "name": "1_pre_debit_notices_on_pay_a23"
         },
         {
           "detail": "1 retries executed, expected 1",
@@ -821,7 +821,7 @@
       "dispatched": 2,
       "expectation": "survives",
       "id": "A23",
-      "ledger_sha256": "07d940568113cb80e4f19b2425daf477acc53aa5f8858a985c13ef1f661bf063",
+      "ledger_sha256": "a7e22b51d2cbdd3a839535ac542a7860b9f45c153a4ebe2367a876a9ccbe1445",
       "receipts": 2,
       "source": "design spec \u00a710's compliance row; docs/taxonomy.md \u00a79.13",
       "survived": true,

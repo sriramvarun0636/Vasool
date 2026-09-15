@@ -488,11 +488,13 @@ class PolicyMachine:
         budget of its own. It keeps `origin` pointing at the debit, so its
         horizon is measured from the action it exists to enable.
 
-        Nothing here sends anything. The notice is a Proposal and is gated like
-        any other contact — the contact window, the DND scrub, the DLT template
-        and the frequency cap all apply to it, which is the whole argument in
-        vasool/policy/guards/pre_debit_notice.py for describing it rather than
-        performing it.
+        Nothing here requests anything. The notice is a Proposal and is gated
+        before it reaches the executor, like every action — which is the whole
+        argument in vasool/policy/guards/pre_debit_notice.py for describing it
+        rather than performing it. It is not gated as a contact: the issuer
+        sends the notification and the merchant only asks the rail for it, so
+        the contact window, DND, DLT and the contact caps have no jurisdiction
+        (docs/EVALUATION.md §10, 2026-09-15).
         """
         queued = {item.proposal.idempotency_key for item in self._queue}
         for obligation in result.obligations:
@@ -500,8 +502,8 @@ class PolicyMachine:
                 notice = notice_proposal_from(item.proposal, execute_at=obligation.not_before)
                 if notice.idempotency_key in queued:
                     # The debit can re-gate before the notice it is waiting on
-                    # has gone out — the notice is a contact, so the window or
-                    # the frequency cap may hold it — and the guard correctly
+                    # has gone out — a promise to pay, or NPCI's peak hours on a
+                    # UPI mandate, may hold the request — and the guard correctly
                     # says a notice is still owed. Owed, not owed *again*:
                     # queueing a second copy would leave two identical
                     # proposals racing, one of which `IdempotencyGuard` then

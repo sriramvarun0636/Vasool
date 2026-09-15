@@ -46,6 +46,7 @@ from typing import TYPE_CHECKING
 
 from vasool.actions.comms import CommsSender
 from vasool.actions.executor import RazorpayExecutor
+from vasool.actions.notice import NoticeRequest
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.taxonomy import RULES, Rule, lookup
@@ -289,6 +290,21 @@ class SimulatedRazorpay:
         return {"id": self._id("pay_", idempotency_key)}
 
 
+class SimulatedRail:
+    """The rail a pre-debit notice request goes to, accepting every request.
+
+    The notice itself is the issuer's to send (vasool/actions/notice.py); what
+    the world needs to know is that it was asked for, which `WorldFactStore`
+    records when the request executes. No refusal rate is registered in §4, so
+    none is modelled. The reference is derived from the idempotency key, for
+    the same replay reason as `SimulatedRazorpay`'s ids.
+    """
+
+    def request(self, proposal: Proposal) -> NoticeRequest:
+        reference = "rvc_" + hashlib.sha256(proposal.idempotency_key.encode()).hexdigest()[:14]
+        return NoticeRequest(ok=True, detail="the simulated rail accepted the request", reference=reference)
+
+
 @dataclass
 class ObservingExecutor:
     """The real RazorpayExecutor, with the world watching.
@@ -425,6 +441,7 @@ class Runner:
             # and no transport-failure rate is registered in §4.
             comms=CommsSender(deliver=lambda proposal, params: {"delivered": True}),
             registered_templates=template_ids(),
+            notifier=SimulatedRail(),
         )
         self.executor = ObservingExecutor(
             inner=self._inner,

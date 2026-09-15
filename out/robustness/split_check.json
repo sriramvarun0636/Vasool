@@ -1,88 +1,88 @@
 {
-  "agent_fingerprint": "b515d953a46147d85e5e89ab3af73a4dcd47eb5a9f3156400bd26efeb8819bdc",
+  "agent_fingerprint": "5824199aceeca90895908173c4f11f7c5444f6101cd6171b9b75659bfcfb926e",
   "baseline": "retry_plus_contact",
   "checks": [
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.19191413266456836,
-        "low": -0.19571515755232782,
+        "high": -0.1787158462377015,
+        "low": -0.18246100659670608,
         "n_seeds": 1000,
-        "point": -0.19379661353615008,
+        "point": -0.1805611606457551,
         "superior": false
       },
       "pepper": "split-check-1",
       "pepper_sha256": "7481f5a2870ea08ac8910a3da1c8970e9a157854159c832dbf3e00d67ae0dc99",
-      "vasool_recovery_rate_mean": 0.45886173284901643
+      "vasool_recovery_rate_mean": 0.47209718573941145
     },
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.1908188995674725,
-        "low": -0.19454669615353437,
+        "high": -0.1774866182943859,
+        "low": -0.18116121324511372,
         "n_seeds": 1000,
-        "point": -0.19267880722537462,
+        "point": -0.179312662715652,
         "superior": false
       },
       "pepper": "split-check-2",
       "pepper_sha256": "f6cb29ef6649b616b4189b7f1c9a0e5a243a6311b1091b29479c31111da60e52",
-      "vasool_recovery_rate_mean": 0.4606367038845206
+      "vasool_recovery_rate_mean": 0.47400284839424317
     },
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.19302160323636738,
-        "low": -0.19681841425346155,
+        "high": -0.1796175408418123,
+        "low": -0.18329100567398493,
         "n_seeds": 1000,
-        "point": -0.1949534451848608,
+        "point": -0.1814712225946488,
         "superior": false
       },
       "pepper": "split-check-3",
       "pepper_sha256": "e50c8ae20b96058a39d6dd7ec3fd853055336db0e060fd0a4e49634ca20008ea",
-      "vasool_recovery_rate_mean": 0.45830117693021816
+      "vasool_recovery_rate_mean": 0.47178339952043014
     },
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.19200876175298026,
-        "low": -0.19585868339393966,
+        "high": -0.17894689568483774,
+        "low": -0.18275335802521378,
         "n_seeds": 1000,
-        "point": -0.1939200576223854,
+        "point": -0.18083565357443826,
         "superior": false
       },
       "pepper": "split-check-4",
       "pepper_sha256": "ccd0b7a3e748fe8f88995372b1bcf6e0a800dcffe899ca4ec5a18cc749c12ca6",
-      "vasool_recovery_rate_mean": 0.45806106648880696
+      "vasool_recovery_rate_mean": 0.4711454705367541
     },
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.19138706477972026,
-        "low": -0.19517254214957325,
+        "high": -0.17811530604183082,
+        "low": -0.18180600100864225,
         "n_seeds": 1000,
-        "point": -0.19328929487849494,
+        "point": -0.1799578754462213,
         "superior": false
       },
       "pepper": "split-check-5",
       "pepper_sha256": "8bc4850ba93e08259ec7576afc893c0c4c0b55f15b9404d6d82a6b91a165ccba",
-      "vasool_recovery_rate_mean": 0.46030251240794834
+      "vasool_recovery_rate_mean": 0.47363393184022196
     }
   ],
   "cohort": "development",
   "criterion": "robust to the split if all five paired 95% intervals exclude zero with the published sign",
   "metric": "recovery_rate",
   "published": {
-    "agent_fingerprint": "b515d953a46147d85e5e89ab3af73a4dcd47eb5a9f3156400bd26efeb8819bdc",
+    "agent_fingerprint": "5824199aceeca90895908173c4f11f7c5444f6101cd6171b9b75659bfcfb926e",
     "paired": {
       "excludes_zero": true,
-      "high": -0.1918411663755949,
-      "low": -0.1957078966362999,
+      "high": -0.17841166438762857,
+      "low": -0.18218256722585924,
       "n_seeds": 1000,
-      "point": -0.19378505983036554,
+      "point": -0.18028373783587626,
       "superior": false
     },
     "pepper_sha256": "f207e647748022631e8f527ab5a8dcb5756132c83ac68ec1586acba6ab56a232",
-    "vasool_recovery_rate_mean": 0.46044219381271134
+    "vasool_recovery_rate_mean": 0.4739435158072006
   },
   "registered": "docs/EVALUATION.md \u00a710, 2026-09-14",
   "robust": true,
@@ -93,9 +93,9 @@
   },
   "spread": {
     "detail": "descriptive only: \u00a710 registers no threshold on the spread",
-    "point_max": -0.19267880722537462,
-    "point_min": -0.1949534451848608,
-    "published_point": -0.19378505983036554
+    "point_max": -0.179312662715652,
+    "point_min": -0.1814712225946488,
+    "published_point": -0.18028373783587626
   },
   "treatment": "vasool"
 }

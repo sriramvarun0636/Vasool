@@ -169,7 +169,7 @@ tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
 | `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, and NPCI's UPI codes mapped to the taxonomy (not yet on any run path) |
 | `vasool/policy/` | Fifteen guards, the state machine, the transition log |
 | `vasool/mandate/` | The e-mandate lifecycle — six states, and transitions that each cite the clause permitting them, quoted from ten documents, nine of them pinned by SHA-256. `PolicyFacts.is_mandate` reads its record |
-| `vasool/actions/` | The executor — the only code permitted to call Razorpay |
+| `vasool/actions/` | The executor — the only code permitted to call Razorpay — and the port a pre-debit notice is requested through, whose default adapter refuses |
 | `vasool/ledger/` | Hash-chained receipts and `verify_chain` |
 | `windtunnel/` | Simulator, universe, outcome model, evaluator, sweeps, adversary |
 | `tools/` | CLI entry points: demo, eval, redteam, shadow, report, the split check, and the NPCI transcription |

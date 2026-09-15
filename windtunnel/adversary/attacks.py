@@ -501,6 +501,11 @@ def a23_pre_debit_notice(arena: Arena) -> None:
     what the attack was always meant to assert, split so the two halves cannot
     be confused again: the debit waits for a matured notice (safety), *and*
     both of them actually happen (liveness).
+
+    Since 2026-09-15 the notice is the issuer's, requested through the rail,
+    and not a contact, so the liveness half counts the executed request by
+    its role; it counted one contact before, and meant the notice
+    (docs/EVALUATION.md §10). The claim is the same one.
     """
     mandy = arena.person("mandy", is_mandate=True)
     arena.advance_to(arena.ist(hour=23))
@@ -771,7 +776,7 @@ ATTACKS: tuple[Attack, ...] = (
         expectation=SURVIVES,
         evidence=(
             NoDebitBeforeNoticeMatures("pay_a23", PRE_DEBIT_NOTICE_LEAD),
-            ExecutedCount("pay_a23", 1, is_contact=True),
+            ExecutedCount("pay_a23", 1, role="PRE_DEBIT_NOTICE"),
             ExecutedCount("pay_a23", 1, is_retry=True),
         ),
         run=a23_pre_debit_notice,

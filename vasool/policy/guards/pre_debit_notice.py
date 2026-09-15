@@ -1,27 +1,26 @@
-"""RBI e-mandate: notify the customer before a recurring debit.
+"""RBI e-mandate: the customer is notified before a recurring debit.
 
 This guard is the clearest case of the rule that a guard describes and never
-performs. It cannot send a notice — it is a pure function — so when one is owed
-it defers the debit and returns an inert Obligation saying so. The state machine
-turns that into a Proposal, and *that proposal goes through the guard chain like
-any other*.
+performs. It cannot request a notice — it is a pure function — so when one is
+owed it defers the debit and returns an inert Obligation saying so. The state
+machine turns that into a Proposal, and *that proposal goes through the guard
+chain like any other*: an obligation that short-circuited into an executor
+would be a hole straight through the policy plane, and describing it as a
+proposal and re-gating it closes the hole structurally.
 
-That last part is the bit worth being careful about. A pre-debit notice is a
-customer contact. A notice generated at 03:00 and sent immediately would violate
-the very contact window the rest of this package enforces, and a design where an
-obligation short-circuits into an executor is a hole straight through the policy
-plane. Describing it as a proposal and re-gating it costs one extra pass and
-closes the hole structurally.
-
-**Who sends the notice, as the sources have it — recorded, not acted on.** §6(a)
-of RBI's E-mandate Framework, 2026 says "An issuer shall send a pre-transaction
-notification", and for UPI the merchant's side of that is a request through the
-rail: the payee's PSP calls NPCI's pre-debit notification API, ReqValCust, 24
-hours ahead (OC-149's annexure, code NU), and the PSP and the issuing bank
-notify the customer (OC-151A ¶4). So the notice is not a merchant SMS. The
-machine still builds it as one, gated through the contact window, DND, DLT and
-the frequency cap — conservative rather than unsafe, and a change that moves
-numbers, so it waits for its own row (docs/EVALUATION.md §10, 2026-09-15).
+**The notice is the issuer's; the merchant only asks for it.** §6(a) of RBI's
+E-mandate Framework, 2026: "An issuer shall send a pre-transaction
+notification to the customer, at least 24 hours prior to the actual charge /
+debit." For UPI the merchant's part is a request through the rail — the
+payee's PSP calls NPCI's pre-debit notification API, ReqValCust, 24 hours ahead
+(OC-149's annexure, code NU) — and the PSP and the issuing bank then notify the
+customer (OC-151A ¶4). So the proposal the obligation becomes is not a
+message: it has no channel and no template, the executor hands it to
+`vasool/actions/notice.py` rather than to comms, and the rules written for a
+merchant's messages — the contact window, DND, DLT, the contact caps — have no
+jurisdiction over it. Until docs/EVALUATION.md §10, 2026-09-15, it was built as
+the merchant's SMS and gated through all four, which held many debits for a
+notice those rules refused.
 
 # VERIFY: this whole path is stub-only. Subscriptions are unavailable
 # pre-activation on this account (docs/VERIFIED.md), so no mandate debit has
@@ -41,9 +40,8 @@ CITATION = cite("RBI-EMF-2026 §6(a)")
 """The rule this guard enforces: the 24 hours."""
 
 WHO_SENDS_IT = cite("RBI-EMF-2026 §6(a)", "NPCI-OC-149A Annexure NU", "NPCI-OC-151A ¶4")
-"""The evidence for the finding above — the issuer notifies, through the rail —
-kept resolvable so the finding cannot drift from its sources before it is acted
-on."""
+"""The evidence that the issuer notifies, through the rail — and so why the
+notice is not a contact (docs/EVALUATION.md §10, 2026-09-15)."""
 
 PRE_DEBIT_NOTICE_LEAD = timedelta(hours=24)
 """How far ahead of a mandate debit the customer must be notified: "at least 24

@@ -85,10 +85,17 @@ class ProposalRole(StrEnum):
     primary's intervention; is a contact; does not spend attempt budget."""
 
     PRE_DEBIT_NOTICE = "PRE_DEBIT_NOTICE"
-    """The 24h notice a mandate debit owes the customer. Created by the state
-    machine from a guard's Obligation, and gated in its own right — a notice is
-    a customer contact, so one generated at 03:00 does not get to skip the
-    contact window."""
+    """The request for the notification a mandate debit owes the customer 24
+    hours ahead. Created by the state machine from a guard's Obligation, and
+    gated in its own right before it reaches the executor.
+
+    **Not a contact.** The issuer sends the notice (RBI E-mandate Framework,
+    2026, §6(a)); the merchant only asks the rail for it — for UPI, NPCI's
+    ReqValCust (OC-149's annexure, code NU). So it carries no channel, no
+    template and no category, and the rules about a merchant's messages — the
+    contact window, DND, DLT, the contact caps — have no jurisdiction over it.
+    It was built as the merchant's SMS until docs/EVALUATION.md §10,
+    2026-09-15."""
 
 
 DEFAULT_CHANNEL = Channel.SMS
@@ -99,7 +106,6 @@ file. Choosing per customer belongs with actions/comms.py."""
 
 _TEMPLATES: dict[str, str] = {
     "NUDGE": "VASOOL_LIQUIDITY_NUDGE",
-    "PRE_DEBIT_NOTICE": "VASOOL_PRE_DEBIT_NOTICE",
     "REATTEMPT_LINK": "VASOOL_REATTEMPT",
     "REAUTH_LINK": "VASOOL_REAUTH",
     "REAUTH_LINK_EXPLAIN": "VASOOL_REAUTH_EXPLAIN",
@@ -115,7 +121,7 @@ into the same one."""
 
 def _template_for(role: ProposalRole, intervention: InterventionType, explain: bool) -> str | None:
     if role is not ProposalRole.PRIMARY:
-        return _TEMPLATES[role.value]
+        return _TEMPLATES.get(role.value)
     if intervention not in CONTACT_INTERVENTIONS:
         return None
     key = f"{intervention.value}_EXPLAIN" if explain else intervention.value
@@ -202,7 +208,7 @@ class Proposal(BaseModel):
         return (
             self.channel is not None
             or self.intervention in CONTACT_INTERVENTIONS
-            or self.role in (ProposalRole.NUDGE, ProposalRole.PRE_DEBIT_NOTICE)
+            or self.role is ProposalRole.NUDGE
         )
 
     @property
@@ -303,12 +309,14 @@ def proposals_from(
 
 
 def notice_proposal_from(debit: Proposal, *, execute_at: datetime) -> Proposal:
-    """The pre-debit notice a mandate debit owes the customer.
+    """The request for the pre-debit notification a mandate debit owes.
 
     Built here rather than in the state machine so that every Proposal in the
     system is constructed by this module. The machine decides *that* a notice is
     owed — from an Obligation a guard returned — and this decides what one looks
-    like. It is a customer contact and is gated like any other.
+    like: no channel, no category and no template, because the issuer sends
+    the notice and the merchant only asks for it (see
+    ProposalRole.PRE_DEBIT_NOTICE).
     """
     return Proposal(
         proposal_id=_derive_id(
@@ -327,12 +335,10 @@ def notice_proposal_from(debit: Proposal, *, execute_at: datetime) -> Proposal:
         intervention=debit.intervention,
         attempt=debit.attempt,
         execute_at=execute_at,
-        channel=DEFAULT_CHANNEL,
-        message_category=MessageCategory.UNKNOWN,
-        template_id=_TEMPLATES["PRE_DEBIT_NOTICE"],
         rationale=(
-            "RBI e-mandate: the customer must be notified before a recurring "
-            "debit. The notice is itself a contact and is gated as one."
+            "RBI E-mandate Framework, 2026, §6(a): the issuer notifies the customer "
+            "at least 24 hours before a mandate debit; the merchant asks the rail "
+            "for that notification, and this is the request."
         ),
         sibling_id=debit.proposal_id,
     )

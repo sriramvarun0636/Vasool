@@ -301,6 +301,10 @@ class ExecutedCount:
     intervention: str | None = None
     is_retry: bool | None = None
     is_contact: bool | None = None
+    role: str | None = None
+    """A `ProposalRole` value. The one way to count a pre-debit notice request,
+    which shares its debit's intervention and is neither a retry nor, since
+    docs/EVALUATION.md §10 of 2026-09-15, a contact."""
 
     def _matching(self, scene: Scene) -> list[Receipt]:
         out = []
@@ -313,10 +317,14 @@ class ExecutedCount:
                 continue
             if self.is_contact is not None and receipt.proposal.is_contact is not self.is_contact:
                 continue
+            if self.role is not None and receipt.proposal.role.value != self.role:
+                continue
             out.append(receipt)
         return out
 
     def _kind(self) -> str:
+        if self.role is not None:
+            return f"{self.role.lower()}s"
         if self.intervention is not None:
             return self.intervention.lower()
         if self.is_retry:

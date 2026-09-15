@@ -26,6 +26,7 @@ import logging
 from dataclasses import dataclass, field
 
 from vasool.actions.comms import CommsRefused, CommsSender
+from vasool.actions.notice import NullPreDebitNotifier, PreDebitNotifier
 from vasool.actions.razorpay_client import RazorpayCallFailed, RazorpayClient, RazorpayConfig
 from vasool.diagnosis.proposal import Channel, Proposal, ProposalRole
 from vasool.diagnosis.taxonomy import InterventionType
@@ -143,6 +144,10 @@ class RazorpayExecutor:
     registered_templates: frozenset[str]
     journal: ExecutionJournal = field(default_factory=ExecutionJournal)
     retry_index: RetryIndex = field(default_factory=RetryIndex)
+    notifier: PreDebitNotifier = field(default_factory=NullPreDebitNotifier)
+    """Where a pre-debit notice is requested. Not comms: the issuer sends the
+    notice, and the merchant only asks the rail for it (vasool/actions/notice.py).
+    The default refuses, because no such request is wired."""
 
     def execute(self, proposal: Proposal) -> ExecutionResult:
         record = self._dispatch(proposal)
@@ -155,7 +160,9 @@ class RazorpayExecutor:
                 "HUMAN_QUEUE never reaches an executor — the state machine "
                 "escalates it before execute() is called (see module docstring)"
             )
-        if proposal.role in (ProposalRole.NUDGE, ProposalRole.PRE_DEBIT_NOTICE):
+        if proposal.role is ProposalRole.PRE_DEBIT_NOTICE:
+            return self._notify(proposal)
+        if proposal.role is ProposalRole.NUDGE:
             return self._send(proposal)
         if proposal.intervention in (InterventionType.SILENT_RETRY, InterventionType.TIMED_RETRY):
             return self._retry(proposal)
@@ -229,6 +236,14 @@ class RazorpayExecutor:
             razorpay_request_id=link.get("id"),
             razorpay_response=link,
         )
+
+    def _notify(self, proposal: Proposal) -> RazorpayCallRecord:
+        """Ask the rail for the pre-debit notification. Never through comms:
+        a notice the issuer sends has no DLT template of ours to carry."""
+        request = self.notifier.request(proposal)
+        if not request.ok:
+            log.warning("pre-debit notice not requested for %s: %s", proposal.proposal_id, request.detail)
+        return RazorpayCallRecord(proposal.proposal_id, ok=request.ok, detail=request.detail)
 
     def _send(self, proposal: Proposal, *, link: dict | None = None) -> RazorpayCallRecord:
         params = {"link": link["short_url"], "payment_link_id": link["id"]} if link else {}

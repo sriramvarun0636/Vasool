@@ -14,7 +14,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 import pytest
 
-from vasool.diagnosis.proposal import MessageCategory, ProposalRole
+from vasool.diagnosis.proposal import MessageCategory, ProposalRole, notice_proposal_from
 from vasool.diagnosis.rules import IST, QUIET_HOURS_END_HOUR_IST
 from vasool.diagnosis.taxonomy import FailureClass, InterventionType
 from vasool.policy.facts import CONSENT_PURPOSE_RECOVERY, ConsentRecord, MerchantPolicy
@@ -1057,6 +1057,22 @@ class TestAutopayPeakHoursGuard:
                 opens <= landing.time() <= closes
                 for opens, closes in ((time(10), time(13)), (time(17), time(21, 30)))
             ), landing
+
+    def notice_at(self, when: datetime, mandate):
+        debit = proposal_for("gateway_technical_error").model_copy(update={"execute_at": when})
+        return context(
+            notice_proposal_from(debit, execute_at=when), now=when, effective_at=when, mandate=mandate
+        )
+
+    def test_a_upi_notice_request_is_held_out_of_the_peak_too(self):
+        """OC-215A ¶3 has members restrict non-customer-initiated APIs at
+        peak, and a pre-debit notice request is one: ValCust, row 8."""
+        v = self.guard.evaluate(self.notice_at(_ist(11), upi_mandate()))
+        assert v.decision is D.DEFER
+        assert "pre-debit notice request" in v.reason
+
+    def test_a_card_notice_request_is_out_of_scope(self):
+        assert self.guard.evaluate(self.notice_at(_ist(11), card_mandate())).decision is D.NOT_APPLICABLE
 
     def test_the_release_is_spread_rather_than_a_burst(self):
         """OC-215A row 5(a): executions at moderated TPS. One instant for every

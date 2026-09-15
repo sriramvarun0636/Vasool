@@ -340,9 +340,10 @@ def _in_peak(when: datetime) -> bool:
 class TestTheDebitPath:
     def test_a_upi_debit_waits_for_a_matured_notice_and_for_the_peak_to_pass(self):
         """A failure at 10:20 IST: the retry is due at 10:25, inside NPCI's
-        morning peak and with no notice served. The notice goes out at once —
-        10:25 is inside the contact window — so the debit may run from 10:25
-        the next day, which is peak again, and waits for it to pass."""
+        morning peak and with no notice served. The notice request is a
+        non-customer-initiated API call, so the peak holds it too (OC-215A ¶3);
+        it goes out just after 13:00, and the debit runs 24 hours after that,
+        outside both peaks."""
         arena = Arena()
         mandy = arena.person("mandy", mandate=upi_mandate())
         arena.advance_to(arena.ist(hour=10, minute=20))

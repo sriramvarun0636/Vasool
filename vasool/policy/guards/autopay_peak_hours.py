@@ -4,8 +4,11 @@ NPCI's OC-215A/2025-26 lists "Autopay Mandate Execution" among the APIs its
 members must moderate: "To be initiated in non-peak hours", where peak hours
 are "10:00 hrs to 13:00 hrs and from 17:00 hrs to 21:30 hrs" and any other
 time is non-peak. A recovery retry on a UPI Autopay mandate is an execution,
-so it is held out of both windows. Card mandates are not NPCI's, and nothing
-here touches them.
+so it is held out of both windows. So is its pre-debit notice request: that is
+NPCI's ValCust API (row 8), a call no customer initiated, and ¶3 has members
+"restrict non-customer-initiated APIs" during peak hours — read here as
+holding the request, the one restriction available to a single call. Card
+mandates are not NPCI's, and nothing here touches them.
 
 Defers rather than blocks: the rule is about when, never whether, exactly as
 the contact window is.
@@ -29,6 +32,7 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, time, timedelta
 
+from vasool.diagnosis.proposal import ProposalRole
 from vasool.diagnosis.rules import IST
 from vasool.mandate.citations import cite
 from vasool.mandate.record import MandateRail
@@ -36,7 +40,7 @@ from vasool.policy.facts import GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.verdict import Verdict
 
-CITATION = cite("NPCI-OC-215A row 5", "NPCI-OC-215A ¶3")
+CITATION = cite("NPCI-OC-215A row 5", "NPCI-OC-215A row 8", "NPCI-OC-215A ¶3")
 
 PEAK_HOURS_IST: tuple[tuple[time, time], ...] = ((time(10, 0), time(13, 0)), (time(17, 0), time(21, 30)))
 """Both ends inside. NPCI OC-215A/2025-26 ¶3."""
@@ -56,12 +60,12 @@ def execution_jitter(entity_id: str) -> timedelta:
 
 class AutopayPeakHoursGuard(Guard):
     name = "AutopayPeakHoursGuard"
-    statute = "NPCI OC-215A/2025-26 — Autopay execution in non-peak hours"
+    statute = "NPCI OC-215A/2025-26 — no Autopay execution or notice request at peak"
 
     def applies_to(self, ctx: GuardContext) -> bool:
         mandate = ctx.facts.mandate
         return (
-            ctx.proposal.is_retry
+            (ctx.proposal.is_retry or ctx.proposal.role is ProposalRole.PRE_DEBIT_NOTICE)
             and mandate is not None
             and mandate.rail is MandateRail.UPI_AUTOPAY
         )
@@ -74,6 +78,10 @@ class AutopayPeakHoursGuard(Guard):
                 return self.defer(
                     resume + execution_jitter(ctx.proposal.entity_id),
                     f"{local:%H:%M} IST is inside NPCI's {opens:%H:%M}-{closes:%H:%M} peak "
-                    "window, when a UPI Autopay execution may not be initiated",
+                    f"window, when a UPI Autopay {self._kind(ctx)} is not initiated",
                 )
         return self.allow()
+
+    @staticmethod
+    def _kind(ctx: GuardContext) -> str:
+        return "execution" if ctx.proposal.is_retry else "pre-debit notice request"

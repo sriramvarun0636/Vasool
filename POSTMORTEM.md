@@ -1,13 +1,14 @@
 # POSTMORTEM — what broke, and how I got out
 
-Eight incidents. Each one is recorded somewhere else in this repository as well —
+Nine incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
 
 Four of these were found by the system catching itself rather than by me
 noticing. Those are the four worth reading — and INC-007, for the opposite
-reason: nothing caught it until after v1.0 was tagged.
+reason: nothing caught it until after v1.0 was tagged; and INC-009, which
+nothing in the apparatus could have caught, because the rule itself was wrong.
 
 ---
 
@@ -406,7 +407,52 @@ it should.
 
 ---
 
-## The pattern across all eight
+### INC-009 — The pre-debit notice was the merchant's message, and the regulation says it is the issuer's
+
+**Symptom.** Re-run #1 (§2.4, the fail-closed DND guard) took Vasool down 3.03
+points, and its registering row predicted that mandate debits would fall with
+the messages, because "RBI's pre-debit notice is itself a contact on an
+undeclared template". The prediction held. The mechanism it named was the
+defect.
+
+**Investigation.** Building §2.5's mandate lifecycle meant reading the rules
+it rests on rather than the design spec's summary of them. RBI's *Digital
+Payments – E-mandate Framework, 2026*, §6(a): "An issuer shall send a
+pre-transaction notification to the customer, at least 24 hours prior to the
+actual charge / debit." NPCI's OC-149 annexure gives the merchant's side as a
+request — the payee's PSP to "initiate Pre-debit Notification API (ReqValCust)
+prior 24hrs of the subsequent execution" — and OC-151A ¶4 has the PSP and the
+issuing bank notify the customer. Vasool built the notice as its own SMS, on a
+DLT template of its own, and gated it as a contact: the contact window, DND,
+DLT and the frequency cap all ruled on a notification the merchant never
+sends, and every notice that went out spent the customer's contact budget.
+
+**Root cause.** The design spec read "notify the customer before a recurring
+debit" as the merchant's obligation, and every layer built on that faithfully —
+the guard, whose docstring argued the notice must be gated like any contact;
+the proposal; the executor, which sent it through comms; INC-002's fix, which
+made the notice go out at all; and §2.4's row, which predicted its cost. A rule
+encoded wrongly and tested well passes every test that checks the code against
+the rule as encoded. COMPLIANCE.md's caveat says exactly this, and here it
+happened.
+
+**Fix.** §10, 2026-09-15. The notice is a request through the rail: not a
+contact, no channel, no template, sent through a port
+(`vasool/actions/notice.py`) whose default adapter refuses, because no such
+request is wired on this account. Re-run #2 measured it, and every registered
+expectation held: the three unguarded arms byte-identical; contacts down in
+every guarded arm; Vasool 46.04% → 47.39%, with 8,293 fewer refusals; the gap
+to the incumbent −19.38 → −18.03 points; and the sign against `naive_retry`
+back where it was before §2.4, from −0.55 to +0.80.
+
+**What I'd do differently.** Quote the rule before encoding it. The mandate
+lifecycle now refuses a transition without a quoted, pinned clause; the guards
+carry statute strings and no quotations, and a statute string is a claim nobody
+has to check. The next guard written starts from its clause.
+
+---
+
+## The pattern across all nine
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -426,8 +472,14 @@ it could fail. An apparatus that runs only on the machine that built it
 measures that machine. So the clean clone is part of the apparatus now: CI runs
 the suite from one on every push, with nothing configured.
 
+INC-009 is the other exception, and the harder one. Nothing in the apparatus
+could have caught it, because the apparatus implemented the wrong rule
+faithfully: every scan passed, because every scan checked the code against the
+rule as written. It was found by reading the regulation instead of a summary of
+it, which is why the mandate work quotes every clause it rests on.
+
 That is the argument this project is actually making. Not that the agent is
-correct — I have eight incidents here that say otherwise, and two known
+correct — I have nine incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

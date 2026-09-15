@@ -42,7 +42,7 @@ Four properties, and each exists because the obvious alternative is wrong:
 | G06 | `DNDGuard` | **TRAI TCCCPR 2018**, as amended Feb 2025 | No message to a DND-registered number unless the merchant has declared its template transactional or service. An undeclared category is judged like promotional, and a registry that cannot answer blocks. |
 | G07 | `FrequencyCapGuard` | **RBI FPC** (anti-harassment) | ≤2 contacts per episode; ≤3 per customer per rolling 7 days. |
 | G08 | `ContactWindowGuard` | **RBI FPC ¶55** | No contact outside 08:00–19:00 in the customer's zone, IST when unknown. Defers rather than blocks, with a per-customer jitter. |
-| G09 | `PreDebitNoticeGuard` | **RBI E-mandate Framework, 2026 §6(a)** — "at least 24 hours prior to the actual charge / debit" | A mandate debit is held until a notice has been served, 24h ahead. The same clause makes the notice the issuer's — see below. |
+| G09 | `PreDebitNoticeGuard` | **RBI E-mandate Framework, 2026 §6(a)** — "at least 24 hours prior to the actual charge / debit" | A mandate debit is held until a notice at least 24h old is on record. The notice is the issuer's: Vasool only requests it through the rail (`vasool/actions/notice.py`), so no rule about a merchant's messages applies to it. |
 | G10 | `AFAThresholdGuard` | **RBI E-mandate Framework, 2026 §8(a)–(b)**; NPCI OC-151A/2023-24 | A recurring debit over its category's limit — ₹15,000, or ₹1,00,000 for insurance premiums, mutual-fund subscriptions and credit-card bills — needs additional factor authentication, so it goes to a human. |
 | G11 | `DLTTemplateGuard` | **TRAI TCCCPR** — DLT template registration (Feb 2025 amendment) | Every message carries a template the merchant actually registered. |
 | G12 | `SpendCapGuard` | **Merchant policy** — ours, not anyone's regulation | A per-merchant daily ceiling on money moved, plus a re-check of retry quiet hours at final gating. |
@@ -93,15 +93,19 @@ compliance directly:
   bills. The category is the merchant's declaration; for UPI, NPCI keys the
   tier on merchant category code (OC-151A's Annexure A), which the merchant's
   acquirer verifies and this code does not see.
-- **`PreDebitNoticeGuard` — the notice is modelled as the merchant's, and the
-  sources say it is not.** §6(a) of the Framework: "An issuer shall send a
+- **`PreDebitNoticeGuard` — the notice was modelled as the merchant's, and is
+  now the issuer's.** §6(a) of the Framework: "An issuer shall send a
   pre-transaction notification". For UPI the payee's PSP requests it through
   NPCI's ReqValCust API, 24 hours ahead (OC-149's annexure, code NU), and the
-  PSP and the issuing bank notify the customer (OC-151A ¶4). Vasool builds it
-  as a merchant SMS and gates it through the contact window, DND, DLT and the
-  frequency cap — conservative rather than unsafe, and part of what the
-  fail-closed DND change cost. Correcting it moves numbers, so it is recorded
-  in `docs/EVALUATION.md` §10 for a row of its own, not changed quietly.
+  PSP and the issuing bank notify the customer (OC-151A ¶4). Until 2026-09-15
+  Vasool built it as a merchant SMS and gated it through the contact window,
+  DND, DLT and the frequency cap — conservative, never unsafe, and costly: a
+  debit waited on a notice those rules refused. It is now a request through a
+  port, `vasool/actions/notice.py`, whose default adapter refuses because no
+  such request is wired on this account. That default is the honest gap:
+  until an adapter exists, production cannot ask for the notice, and a fact
+  store that records only requests that succeeded would hold every mandate
+  debit here — the safe way for the gap to show.
 - **Non-revocable mandates.** NPCI OC-125A/2022-23 removes the payer's revoke
   and pause from loan-repayment and EMI mandates (MCC 7322) created with
   "revokeable" set to "N", routing revocation through the merchant with its

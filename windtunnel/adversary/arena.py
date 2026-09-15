@@ -48,6 +48,7 @@ from fastapi.testclient import TestClient
 
 from vasool.actions.comms import CommsSender
 from vasool.actions.executor import RazorpayExecutor
+from vasool.actions.notice import NoticeRequest
 from vasool.clock import VirtualClock
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.rules import IST
@@ -238,6 +239,21 @@ class WatchedExecutor:
         return result
 
 
+class SimulatedRail:
+    """The rail a pre-debit notice request goes to, accepting every request.
+
+    The notice itself is the issuer's to send (vasool/actions/notice.py); what
+    the world needs to know is that it was asked for, which `WorldFactStore`
+    records when the request executes. No refusal rate is registered in §4, so
+    none is modelled. The reference is derived from the idempotency key, for
+    the same replay reason as `SimulatedRazorpay`'s ids.
+    """
+
+    def request(self, proposal: Proposal) -> NoticeRequest:
+        reference = "rvc_" + hashlib.sha256(proposal.idempotency_key.encode()).hexdigest()[:14]
+        return NoticeRequest(ok=True, detail="the simulated rail accepted the request", reference=reference)
+
+
 class SimulatedRazorpay:
     """A Razorpay that never leaves the process.
 
@@ -282,6 +298,7 @@ class Arena:
             # no transport-failure rate is anything this package models.
             comms=CommsSender(deliver=lambda proposal, params: {"delivered": True}),
             registered_templates=template_ids(),
+            notifier=SimulatedRail(),
         )
         self.executor = WatchedExecutor(inner=self._inner, facts=self.facts, clock=self.clock)
         self.machine = PolicyMachine(
