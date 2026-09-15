@@ -533,16 +533,33 @@ class TestGuardCountDoesNotDrift:
                 r"\*\*All (\w+) guards run, then resolve by severity",
                 r"Then (\w+) guards decide",
             ],
-            "ARCHITECTURE.md": [r"evaluates all (\w+) and then resolves"],
+            "ARCHITECTURE.md": [
+                r"evaluates all (\w+) and then resolves",
+                # The five-plane diagram, in digits: it said 13 after the chain
+                # became fifteen, because this test read only spelled-out counts.
+                r"classify\s+(\d+) guards\s+Razorpay",
+            ],
         }
         for name, patterns in claims.items():
             text = (REPO_ROOT / name).read_text()
             for pattern in patterns:
                 match = re.search(pattern, text, re.M)
                 assert match, f"{name} no longer quotes a guard count ({pattern})"
-                assert self.WORDS[match.group(1).lower()] == len(self._chain()), (
+                assert self._count(match.group(1)) == len(self._chain()), (
                     f"{name} says {match.group(1)!r} guards; the chain has {len(self._chain())}"
                 )
+
+    def test_the_demo_help_quotes_the_real_count(self):
+        """`make demo --help` said "gate (13 guards)" after the chain became
+        fifteen, and no document scan reads a CLI's help."""
+        from vasool.demo import _HELP_INTRO
+
+        match = re.search(r"gate \((\d+) guards\)", _HELP_INTRO)
+        assert match, "the demo's help no longer names the guard count"
+        assert int(match.group(1)) == len(self._chain())
+
+    def _count(self, quoted: str) -> int:
+        return int(quoted) if quoted.isdigit() else self.WORDS[quoted.lower()]
 
 
 class TestExhibitsAreOrdered:

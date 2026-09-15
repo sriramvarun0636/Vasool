@@ -161,7 +161,7 @@ class _DemoFacts:
 class _HostileDemoFacts:
     """A world built to say no, not yes.
 
-    The pitch is "thirteen guards stand between the LLM and any money
+    The pitch is "fifteen guards stand between the LLM and any money
     movement", but under _DemoFacts only ContactWindowGuard can ever fire —
     every other guard is handed a world constructed so it agrees. This
     profile changes exactly one fact from the permissive baseline: no
@@ -901,8 +901,11 @@ def _print_summary(stages: _Stages, machine: PolicyMachine, event: FailureEvent,
 # ---------------------------------------------------------------------------
 _HELP_INTRO = (
     "Run one recovery episode end to end: webhook -> signature -> dedupe -> "
-    "classify -> propose -> gate (13 guards) -> execute -> receipt."
+    f"classify -> propose -> gate ({len(GUARD_CHAIN)} guards) -> execute -> receipt."
 )
+"""The count is read from the chain rather than typed: it went on saying 13
+after the chain became fifteen, and the test that checks the documents' counts
+never read `--help`."""
 
 _HELP_LIVE_MODE_NOTE = (
     "REPLAY IS THE DEFAULT: no flag needed, fully offline, deterministic --  "

@@ -8,7 +8,7 @@ that makes that claim checkable rather than aspirational.
 
 ```
 webhook ──▶ EVENT PLANE ──▶ DIAGNOSIS PLANE ──▶ POLICY PLANE ──▶ ACTION PLANE ──▶ LEDGER
-            HMAC verify      classify           13 guards        Razorpay          hash chain
+            HMAC verify      classify           15 guards        Razorpay          hash chain
             dedupe           (rules | LLM)      FSM              (only caller)     append-only
                                     │
                                     └── the LLM lives here, and only here
@@ -132,11 +132,12 @@ is reintroduced. `POSTMORTEM.md` INC-005 is why that test exists.
 
 One, named rather than quietly carried:
 
-- **`tools/report.py` is 1,581 lines of HTML, CSS and JavaScript inside a Python
-  f-string**, with 590 escaped brace pairs. No highlighting, no linting, no type
-  checking. It has tests now; it should be a Jinja2 template, and Jinja2 is
-  already a dependency. Two real bugs came out of this file's shape
-  (`POSTMORTEM.md` INC-006).
+- **`tools/report.py` holds 2,341 lines of HTML, CSS and JavaScript inside one
+  Python f-string**, with 503 escaped brace pairs — it was 1,581 lines and 590
+  pairs when INC-006 first named it, and it has grown since. No highlighting, no
+  linting, no type checking. It has tests now; it should be a Jinja2 template,
+  and Jinja2 is already a dependency. Two real bugs came out of this file's
+  shape (`POSTMORTEM.md` INC-006).
 
 **Closed 2026-09-03 — shard fingerprints.** This section carried a second entry:
 shards recorded no evidence of the code that produced them, so a resume by seed

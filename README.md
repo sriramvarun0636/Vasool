@@ -197,7 +197,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 1,676 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 1,677 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -399,7 +399,7 @@ flowchart TD
 
 Two guards follow from the sources. **G14** `MandateStateGuard` refuses a debit against a mandate that is not live when the debit would execute — paused, revoked, expired or unregistered — so a retry built on Monday cannot run on Thursday against a mandate the customer revoked on Tuesday. **G15** `AutopayPeakHoursGuard` holds a UPI Autopay execution out of NPCI's peak hours, 10:00–13:00 and 17:00–21:30 ([OC-215A/2025-26](vasool/mandate/citations.py)). `AFAThresholdGuard` now takes its limit from the mandate's category — ₹15,000, or ₹1,00,000 for insurance premiums, mutual funds and credit-card bills — and a UPI mandate gets NPCI's one attempt and three retries.
 
-**Nothing measured moved, as registered before the code was written.** The universe draws no UPI mandate, and all 9,000 base rows recomputed from nothing under the new agent are byte-identical to the previous run's. The sources did contradict the code in one place, and that is not fixed here, because fixing it moves numbers: RBI's §6(a) makes the 24-hour pre-debit notice the **issuer's**, requested through the rail — not a merchant SMS gated by DND and the contact window, which is how Vasool builds it. It is recorded in [§10](docs/EVALUATION.md) for a row of its own.
+**Nothing measured moved, as registered before the code was written.** The universe draws no UPI mandate, and all 9,000 base rows recomputed from nothing under the lifecycle's agent were byte-identical to the previous run's. The sources did contradict the code in one place: RBI's §6(a) makes the 24-hour pre-debit notice the **issuer's**, requested through the rail, and Vasool had built it as a merchant SMS gated by DND and the contact window. Correcting that moved numbers, so it came separately, with its own [§10](docs/EVALUATION.md) row and its own re-run — the 1.35 points described [above](#and-now-the-uncomfortable-part).
 
 ---
 
