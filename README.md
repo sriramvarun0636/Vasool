@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/vasool-logo.svg" width="72" height="72" alt="">
+<img src="docs/assets/vasool-logo.svg" width="64" height="64" alt="">
 
 <h1>Vasool</h1>
 
