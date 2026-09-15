@@ -10,7 +10,7 @@ payment, `from_webhook` mints a FailureEvent from it, and
 failed retry opens a brand-new episode at attempt 1 rather than advancing the
 one it belongs to.
 
-Three of the submission's claims rest on this working:
+Three of the project's claims rest on this working:
 
   - `RetryCapGuard` never counts past attempt 1, so the four-attempt halt is
     never enforced

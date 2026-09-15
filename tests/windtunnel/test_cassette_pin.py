@@ -93,7 +93,7 @@ class TestEveryRecordingIsStillReachable:
     prompt, so a one-byte edit to the prompt orphans every recording at once.
     That happened: on 2026-09-01 a cleanup commit left a trailing space inside
     the classifier's prompt, all 50 cassettes stopped matching, and `make
-    shadow` failed on the submitted commit while the suite stayed green —
+    shadow` failed on the tagged v1.0 commit while the suite stayed green —
     because every test here reads the disk, and none asked the current code for
     the addresses on it (POSTMORTEM.md, INC-007). These do. The pin tests above
     guard the model half of the address; these guard the prompt half.

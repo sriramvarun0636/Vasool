@@ -120,8 +120,8 @@ class TestGoldenOutput:
 # a fresh clone: no .env, no pepper
 # ---------------------------------------------------------------------------
 class TestAFreshClone:
-    """What `make demo` does with nothing configured — the state a stranger,
-    a reviewer and CI are all in. It used to exit on a missing pepper; a
+    """What `make demo` does with nothing configured — the state a stranger
+    and CI are both in. It used to exit on a missing pepper; a
     Makefile-wide default then papered over that for every target and, since
     `load_dotenv()` never overrides a variable already set, displaced a
     configured `.env` value while doing it (docs/EVALUATION.md §10,

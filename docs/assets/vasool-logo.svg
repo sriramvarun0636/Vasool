@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Vasool">
+  <title>Vasool</title>
+  <path d="M9 2.5 H23 A4 4 0 0 1 27 6.5 V29.5 L24.25 27 L21.5 29.5 L18.75 27 L16 29.5 L13.25 27 L10.5 29.5 L7.75 27 L5 29.5 V6.5 A4 4 0 0 1 9 2.5 Z" fill="#2D68E6"/>
+  <path d="M10.2 14.2 L14.6 20.4 L22 9.6" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

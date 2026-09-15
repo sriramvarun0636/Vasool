@@ -1,6 +1,6 @@
 """The CI workflow is a fresh clone with nothing configured, and has to stay one.
 
-POSTMORTEM.md INC-007: the submission failed eight tests and could not replay
+POSTMORTEM.md INC-007: the tagged v1.0 failed eight tests and could not replay
 its own LLM comparison on a clean checkout while every local run was green,
 because every local run had credentials configured. The workflow exists to be
 a stranger. The day it is handed a secret it stops being one, and nothing else

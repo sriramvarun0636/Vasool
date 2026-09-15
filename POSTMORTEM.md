@@ -7,7 +7,7 @@ so that nothing here rests on my summary of it.
 
 Four of these were found by the system catching itself rather than by me
 noticing. Those are the four worth reading — and INC-007, for the opposite
-reason: nothing caught it until after the submission.
+reason: nothing caught it until after v1.0 was tagged.
 
 ---
 
@@ -303,10 +303,10 @@ repository and it is recorded as such rather than quietly left.
 
 ---
 
-### INC-007 — The submission that did not reproduce on a clean clone
+### INC-007 — The v1.0 tag that did not reproduce on a clean clone
 
-**Symptom.** After the buildathon submission, on a fresh checkout with nothing
-configured — the state every reviewer is in — `pytest` failed eight tests, and
+**Symptom.** After v1.0 was tagged, on a fresh checkout with nothing
+configured — the state anyone who clones it is in — `pytest` failed eight tests, and
 the README's own reproduction command for the LLM comparison died on its first
 cell:
 
@@ -315,7 +315,7 @@ error: no cassette for provider='gemini' model='gemini-3.6-flash' repeat=0 key=5
 coverage: 0 of 12 cells, 0 of 12 classifications recorded
 ```
 
-On the machine that built the submission, every test passed.
+On the machine that built v1.0, every test passed.
 
 **Investigation.** Three unrelated faults with one cause.
 
@@ -334,7 +334,7 @@ On the machine that built the submission, every test passed.
    §3c's split orders customers by an HMAC keyed on it. So *"the whole artifact
    regenerates from source"* was true on one machine: under any other pepper,
    **0 of 27** recomputed rows match the published shards. No test could see
-   this one; it was found by an audit after the submission.
+   this one; it was found by an audit after v1.0 was tagged.
 
 A fourth fault arrived with the fixes. To make `make demo` run with nothing
 configured, the Makefile gained `export VASOOL_ID_PEPPER ?= vasool_demo_pepper`
@@ -347,7 +347,7 @@ under it.
 Every test run, every `make` target and every verification quoted in this
 repository ran on a machine with credentials configured, so three
 environment-dependent faults were invisible to all of them. This is the one
-incident here the system did not catch. A person did, after the submission.
+incident here the system did not catch. A person did, after v1.0 was tagged.
 
 **Fix.** Each fault is closed by a test that fails if it returns: an injected
 client must need no credentials (`tests/test_razorpay_client.py`); every

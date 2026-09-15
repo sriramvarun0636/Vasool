@@ -1,7 +1,7 @@
 """windtunnel/metrics.py: EVALUATION.md §6, computed as ledger scans.
 
-**What these tests are actually for.** §2a's safety predicate is the claim the
-submission rests on, and a scan that cannot fail is worth nothing — it reads
+**What these tests are actually for.** §2a's safety predicate is the claim this
+project rests on, and a scan that cannot fail is worth nothing — it reads
 as evidence while proving only that it was never pointed at a violation. So
 every scan below is tested twice: once against a real seed-0 ledger, where it
 must pass, and once against a hand-built receipt that violates the claim,

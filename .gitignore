@@ -13,7 +13,7 @@ __pycache__/
 # Evaluation output. The shards are ~320 MB and stay out. The four manifests
 # are ~380 KB and ship, because README's "check the cryptography without
 # trusting us" snippet opens one, and tests/test_report.py's drift guards
-# skip -- silently, on a green run -- when they are absent. A judge cloning
+# skip -- silently, on a green run -- when they are absent. Anyone cloning
 # this repo should be able to check every published figure without a nine-hour
 # regeneration. out/holdout/evaluation.json additionally cannot be
 # regenerated at all: EVALUATION.md 3c allows the holdout one run, and it has

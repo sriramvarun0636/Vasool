@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vasool &mdash; the episode theatre</title>
+<link rel="icon" type="image/svg+xml" href="../assets/vasool-logo.svg">
 <meta name="description" content="Watch fifteen guards rule on one payment recovery, one at a time, and then break the receipt's seal yourself in the browser. Replayed from the agent's own run.">
 <meta name="color-scheme" content="dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,7 +137,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 
 /* ---------- brand header ------------------------------------------------ */
 .brand-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-.brand-header img{height:32px;width:auto;display:block;filter:brightness(0) invert(1)}
+.brand-header img{height:32px;width:auto;display:block}
 .brand-header h2{font-family:var(--font-display);font-size:24px;font-weight:600;color:#E2E8F0;
   letter-spacing:-.5px;display:flex;align-items:center;gap:12px}
 .brand-header .vasool-tag{background:var(--signal-blue);color:#fff;padding:4px 10px;
@@ -648,7 +649,7 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
   .grow.pending .call{visibility:visible}
 }
 
-/* ---------- print. Judges save PDFs; a dark ground prints as a slab. ------ */
+/* ---------- print. Readers save PDFs; a dark ground prints as a slab. ----- */
 @media print{
   :root{--ink:#fff;--ink-lift:#fff;--panel:#fff;--panel-lift:#fff;--paper:#111;--body-text:#111;
     --dim:#444;--dimmer:#666;--hairline:rgba(0,0,0,.16);--hairline-firm:rgba(0,0,0,.28)}
@@ -1887,12 +1888,12 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
   /* ====================================================================== */
   function brandHeader() {
     var head = el("div", "brand-header");
-    var logo = document.createElement("img");
-    logo.src = "https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg";
-    logo.alt = "Razorpay";
-    logo.height = 32;
-    logo.onerror = function () { logo.style.display = "none"; };
-    put(head, logo);
+    var mark = document.createElement("img");
+    mark.src = "../assets/vasool-logo.svg";
+    mark.alt = "";
+    mark.height = 32;
+    mark.onerror = function () { mark.style.display = "none"; };
+    put(head, mark);
     var h2 = el("h2");
     put(h2, el("span", "vasool-tag", "VASOOL"));
     put(head, h2);

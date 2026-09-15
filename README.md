@@ -1,6 +1,8 @@
 <div align="center">
 
-<h1>⚖️ Vasool</h1>
+<img src="docs/assets/vasool-logo.svg" width="72" height="72" alt="">
+
+<h1>Vasool</h1>
 
 <p>
   <strong>Recovers ₹43.65 Cr of failed payments with zero compliance violations &mdash;<br/>
@@ -11,7 +13,7 @@
 
 <p>
   It also breaks policy in <b>1,000 of 1,000</b> seeded worlds. Vasool breaks it in <b>none</b>.<br/>
-  That trade is the entire submission &mdash; registered as falsification criterion <b>F1</b>
+  That trade is the whole of Vasool &mdash; registered as falsification criterion <b>F1</b>
   before the first run,<br/>and reported <a href="#and-now-the-uncomfortable-part">two sections
   down</a> rather than in an appendix.
 </p>
@@ -23,8 +25,6 @@
 </p>
 
 <p>
-  <b><a href="https://www.youtube.com/watch?v=B0Iov6qAaqs">Watch the 5-minute pitch</a></b>
-  &nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <b><a href="https://sriramvarun0636.github.io/Vasool">Open the live dashboard</a></b>
   &nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <b><a href="https://sriramvarun0636.github.io/">Read the writeup</a></b>
@@ -55,11 +55,11 @@ which <b>ships in this repo</b>. Open it and check any number here without runni
 
 ---
 
-## Track 03 asks for four things
+## Four things a recovery agent owes you
 
-> *"Don't just identify the problem. Show **measured money recovered across a batch**, with **compliant escalation**, **stopping rules**, and an **audit trail**."*
+A recovery agent is worth running only if it can show the money it recovered, that it escalates within the rules, that it knows when to stop, and a record of what it did. Each is measured here, and each links to where.
 
-| The bar | How Vasool meets it |
+| What it owes | What Vasool shows |
 | :--- | :--- |
 | **Measured money recovered** | **₹43.65 Cr** from the development cohort of 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping. [The result](#the-result) |
 | **Compliant escalation** | **12,895** episodes handed to a human, every deciding clause on the receipt. A risk-declined payment gets nothing automated, ever. [Watch one](#what-the-agent-actually-does) |
@@ -155,7 +155,7 @@ Against the development cohort as that agent measured it, no arm moved more than
 
 Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, with the two limits on it stated — F6 is not evaluated on the holdout, and F7 reports `null` there because that run predates the amendment that wired it. **The holdout was not re-run to fix that**, because a second execution is exactly what §3c forbids.
 
-**Which agent it describes.** The holdout ran on the morning of 2026-08-29 against the code at commit `99d7b89` — not the tagged submission, which came 27 commits later. That was an inference from timestamps, so it was checked: 54 holdout rows recomputed at `99d7b89` are byte-identical to the frozen shards ([§10, 2026-09-14](docs/EVALUATION.md)).
+**Which agent it describes.** The holdout ran on the morning of 2026-08-29 against the code at commit `99d7b89` — not the tagged v1.0, which came 27 commits later. That was an inference from timestamps, so it was checked: 54 holdout rows recomputed at `99d7b89` are byte-identical to the frozen shards ([§10, 2026-09-14](docs/EVALUATION.md)).
 
 ### Robust to the split
 
@@ -540,7 +540,7 @@ Every amendment to the protocol after registration — forty-eight of them — i
 
 | Path | What lives there |
 | :--- | :--- |
-| [`POSTMORTEM.md`](POSTMORTEM.md) | **Eight incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Eight incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 34 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), and NPCI's 225 UPI codes mapped to it |
@@ -558,6 +558,5 @@ Every amendment to the protocol after registration — forty-eight of them — i
 ---
 
 <div align="center">
-<sub>Built for the Razorpay AI Buildathon, Track 03.<br/>
-A figure not derivable from the protocol is not a result — including ours.</sub>
+<sub>A figure not derivable from the protocol is not a result — including ours.</sub>
 </div>

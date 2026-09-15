@@ -190,7 +190,7 @@ def regenerate() -> list[str]:
     print(f"wrote {(OUT_DIR / 'index.json').relative_to(REPO_ROOT)} ({len(index)} episodes)")
 
     # Also as a classic script assigning a global. The page could `fetch` these
-    # files, but `fetch` is blocked under file:// and a judge who has cloned the
+    # files, but `fetch` is blocked under file:// and anyone who has cloned the
     # repository should be able to open the page by double-clicking it, the way
     # `make demo` works with no setup. A <script src> is not blocked, so this
     # costs one generated file and buys the page working from disk.

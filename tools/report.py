@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds out/report.html from out/development/evaluation.json.
 
-This is the Vasool 'Proof Machine' — a zero-dependency, Razorpay-branded HTML 
+This is the Vasool 'Proof Machine' — a zero-dependency HTML 
 dashboard that injects the JSON ledger at build time. It renders a client-side
 interactive audit of the FSM constraints, highlighting the yield, safety, and
 cryptographic determinism of the system.
@@ -10,6 +10,7 @@ cryptographic determinism of the system.
 import pathlib
 import sys
 import json
+import urllib.parse
 
 def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     if not json_path.exists():
@@ -268,12 +269,19 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
         ]
     )
 
+    # The mark, from the one committed copy. Inlined rather than linked so that
+    # out/report.html, which has no assets/ beside it, shows it too.
+    _logo = (pathlib.Path(__file__).resolve().parent.parent / "docs" / "assets" / "vasool-logo.svg").read_text()
+    logo_svg = _logo.replace('role="img" aria-label="Vasool"', 'class="vasool-mark" aria-hidden="true"')
+    favicon_href = "data:image/svg+xml," + urllib.parse.quote(" ".join(_logo.split()))
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vasool | AI Safety Control Plane</title>
+    <link rel="icon" type="image/svg+xml" href="{favicon_href}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
@@ -603,7 +611,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
         }}
         .noscript-panel td {{ font-family: var(--font-mono); text-align: right; }}
 
-        /* Print. Judges save PDFs, and a dark ground prints as a slab of ink
+        /* Print. Readers save PDFs, and a dark ground prints as a slab of ink
            with the type knocked out of it. Scrollers are expanded because a
            clipped table in a PDF is a table nobody can check. */
         @media print {{
@@ -1085,6 +1093,13 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             gap: 12px;
         }}
         
+        .brand-header .vasool-mark {{
+            display: block;
+            width: 32px;
+            height: 32px;
+            flex: none;
+        }}
+
         .brand-header .vasool-tag {{
             background-color: var(--signal-blue);
             color: #fff;
@@ -1145,7 +1160,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
         }}
 
         /* ---------------------------------------------------------------
-           Narrow viewports. A judge opening the Pages link on a phone was
+           Narrow viewports. Anyone opening the Pages link on a phone was
            getting a 1,273px page in a 390px window: the left rail's 72px
            margin and 48px padding stayed fixed, and the forest plot's 640px
            and the sweep grid's 620px min-widths pushed the container past the
@@ -1279,7 +1294,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
 
         <div class="hero">
             <div class="brand-header">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" height="32" style="filter: brightness(0) invert(1);">
+                {logo_svg}
                 <h2><span class="vasool-tag">VASOOL</span></h2>
             </div>
             <h1 id="hero-money">&mdash;</h1>
@@ -1362,7 +1377,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             <p class="viz-caption">
                 These are properties of what the agent <em>did</em>, scanned from the hash-chained
                 ledger. They hold or fail regardless of what outcome model runs underneath, which is
-                why they are the claims the submission actually rests on &mdash; and why they are
+                why they are the claims this project actually rests on &mdash; and why they are
                 banded differently from every recovery number on this page. Fifteen pure-function
                 guards gate the execution plane; all fifteen are evaluated on every proposal and
                 resolved by severity, never short-circuited.
@@ -2391,7 +2406,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             }}
 
             // Money first. The run count is effort; this is the result, and it is
-            // what Track 03's bar actually asks for.
+            // what a recovery agent exists to produce.
             let HOLDOUT = {{}};
             try {{
                 HOLDOUT = JSON.parse(document.getElementById("holdout-data").textContent) || {{}};
