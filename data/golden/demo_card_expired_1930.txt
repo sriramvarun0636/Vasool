@@ -51,7 +51,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -84,7 +85,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -107,12 +109,12 @@
 [10] receipt
     outcome      : executed
     receipt_id   : rcpt_aa8ce1313a1ceab9
-    hash         : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
+    hash         : b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then EXECUTED.
-Receipt: 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
+Receipt: b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed
 ==============================================================================

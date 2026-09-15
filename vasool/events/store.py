@@ -8,6 +8,24 @@ operation, not an error condition.
 Append-only is enforced by omission: this class has no update or delete
 method. tests/test_store.py::test_store_exposes_no_update_or_delete checks
 that stays true.
+
+**A file-backed store runs in WAL mode with `synchronous=FULL`, and both are
+read back, not assumed.** WAL lets the receiver's request threads write while a
+reader reads. FULL is the choice that matters: the receiver answers 2xx only
+after `append` commits, Razorpay does not redeliver an event it has had a 2xx
+for, and SQLite documents that a WAL commit under `synchronous=NORMAL` "might
+roll back following a power loss or system crash", while FULL syncs the WAL
+after every commit and is durable across one (sqlite.org/pragma.html). An
+acknowledged event lost to a power cut is a payment event nobody will ever send
+again, so the throughput NORMAL buys is not worth it at webhook volumes.
+
+`PRAGMA journal_mode=WAL` does not fail when it fails: it returns the mode it
+left the database in, which on a filesystem that cannot hold a WAL is the old
+one. So the mode is read back and a refusal raises. An in-memory database has
+no file for a WAL — SQLite ignores the attempt — and every store in this
+repository's tests, demo and arena is in memory, so there the mode stays
+`memory` and `journal_mode` says so rather than pretending
+(docs/EVALUATION.md §10, 2026-09-15).
 """
 from __future__ import annotations
 
@@ -29,9 +47,35 @@ CREATE TABLE IF NOT EXISTS events (
 """
 
 
+IN_MEMORY = ":memory:"
+SYNCHRONOUS_FULL = 2
+"""`PRAGMA synchronous` reads back as an integer; FULL is 2."""
+
+
+class JournalModeRefused(RuntimeError):
+    """SQLite left a file-backed database out of WAL mode."""
+
+
+def _make_durable(conn: sqlite3.Connection) -> str:
+    mode = conn.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower()
+    if mode != "wal":
+        raise JournalModeRefused(
+            f"PRAGMA journal_mode=WAL left the database in {mode!r} mode — this "
+            "filesystem cannot hold a WAL (a network mount is the usual cause)"
+        )
+    conn.execute("PRAGMA synchronous=FULL")
+    if conn.execute("PRAGMA synchronous").fetchone()[0] != SYNCHRONOUS_FULL:
+        raise JournalModeRefused("PRAGMA synchronous=FULL did not take")
+    return mode
+
+
 class EventStore:
-    def __init__(self, db_path: str | Path = ":memory:") -> None:
+    def __init__(self, db_path: str | Path = IN_MEMORY) -> None:
         self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
+        if str(db_path) == IN_MEMORY:
+            self.journal_mode = self._conn.execute("PRAGMA journal_mode").fetchone()[0].lower()
+        else:
+            self.journal_mode = _make_durable(self._conn)
         self._conn.execute(_SCHEMA)
         self._conn.commit()
 

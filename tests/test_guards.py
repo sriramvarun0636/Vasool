@@ -368,12 +368,52 @@ class TestDNDGuard:
             update={"message_category": MessageCategory.PROMOTIONAL}
         )
 
-    def test_a_transactional_message_is_out_of_scope(self):
-        """The registry governs promotional traffic. Whether a recovery message
-        counts as transactional is the uncertain part, and it is recorded on
-        MessageCategory rather than decided here."""
-        v = self.guard.evaluate(context(proposal_for("card_expired")))
-        assert v.decision is D.NOT_APPLICABLE
+    @staticmethod
+    def declared(proposal, category):
+        return frozenset({(proposal.template_id, category)})
+
+    def test_an_undeclared_recovery_message_is_judged(self):
+        """docs/EVALUATION.md §10, 2026-09-15. The diagnosis cannot know how
+        the merchant registered a template on DLT, so a recovery message
+        carries UNKNOWN — and an unknown category is not a transactional one.
+        This is what closes A09."""
+        p = proposal_for("card_expired")
+        assert p.message_category is MessageCategory.UNKNOWN
+        listed = context(p, dnd_listed=True, dnd_checked_at=POOL_NOW)
+        assert self.guard.evaluate(listed).decision is D.BLOCK
+        unlisted = context(p, dnd_listed=False, dnd_checked_at=POOL_NOW)
+        assert self.guard.evaluate(unlisted).decision is D.ALLOW
+
+    @pytest.mark.parametrize("category", [MessageCategory.TRANSACTIONAL, MessageCategory.SERVICE])
+    def test_a_template_the_merchant_declared_non_promotional_is_out_of_scope(self, category):
+        """The registry governs promotional traffic, and a merchant that has
+        registered its template otherwise on DLT can say so — taking on the
+        obligation of the declaration being true."""
+        p = proposal_for("card_expired")
+        ctx = context(p, dnd_listed=True, dnd_checked_at=POOL_NOW,
+                      template_categories=self.declared(p, category))
+        assert self.guard.evaluate(ctx).decision is D.NOT_APPLICABLE
+
+    def test_the_merchant_s_declaration_outranks_the_proposal_s(self):
+        p = proposal_for("card_expired").model_copy(
+            update={"message_category": MessageCategory.TRANSACTIONAL}
+        )
+        ctx = context(p, dnd_listed=True, dnd_checked_at=POOL_NOW,
+                      template_categories=self.declared(p, MessageCategory.PROMOTIONAL))
+        assert self.guard.evaluate(ctx).decision is D.BLOCK
+
+    def test_an_undeclared_message_to_an_unscrubbed_customer_blocks(self):
+        """What production looks like with no registry adapter wired: the null
+        adapter cannot tell, `dnd_listed` stays None, and the guard base fails
+        closed — unknown, therefore blocked."""
+        from vasool.policy.dnd_registry import NullDNDRegistry, dnd_facts
+
+        facts = dnd_facts(NullDNDRegistry(), "+919999999999", POOL_NOW)
+        assert (facts.dnd_listed, facts.dnd_checked_at) == (None, None)
+        ctx = context(proposal_for("card_expired"), dnd_listed=facts.dnd_listed,
+                      dnd_checked_at=facts.dnd_checked_at)
+        v = self.guard.evaluate(ctx)
+        assert v.decision is D.BLOCK and "cannot judge" in v.reason
 
     def test_a_silent_retry_is_out_of_scope(self):
         v = self.guard.evaluate(context(proposal_for("gateway_technical_error")))

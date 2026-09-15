@@ -57,7 +57,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -90,7 +91,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -140,13 +142,13 @@
 [12] receipts
     outcome      : executed
     receipt_id   : rcpt_62f710a65c96d7b4
-    hash         : bab552d76e182f6c9f8bb56b11df0156b10d32ac884a85b01bdeeab3f34eb784
+    hash         : df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
     outcome      : executed
     receipt_id   : rcpt_38d88650746866e7
-    hash         : 744ac90fbf1cb8d78e87762508577f9146d62bff416bd63f5cb54e36748fcb8f
-    prev_hash    : bab552d76e182f6c9f8bb56b11df0156b10d32ac884a85b01bdeeab3f34eb784
+    hash         : aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578
+    prev_hash    : df20bad1d729d9c9d968eb1d0c188ba92674e7c3473a08d56ff88c3fd0e64c2d
 
 
 [13] settlement webhook received
@@ -166,13 +168,13 @@
 [14] receipt
     outcome      : recovered
     receipt_id   : rcpt_061c7746be1932c6
-    hash         : 9a3373d8214866904150a62c169c60ca7ea5767221ed88c446a5c5174897168c
-    prev_hash    : 744ac90fbf1cb8d78e87762508577f9146d62bff416bd63f5cb54e36748fcb8f
+    hash         : ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4
+    prev_hash    : aa857ab25d44b2e70d8102f74acafc2cc6bcbe0a22039a0f9e29aca9fe62e578
     recovered    : ₹500.00 (50000 paise)
 
 
 ==============================================================================
 SUMMARY: TIMED_RETRY for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then RECOVERED -- ₹500.00 (50000 paise) recovered.
-Receipt: 9a3373d8214866904150a62c169c60ca7ea5767221ed88c446a5c5174897168c
+Receipt: ca433c3db29054e0576ae26dcebc485aba363ded683342f77ed111e97365b6d4
 ==============================================================================

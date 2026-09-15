@@ -39,7 +39,7 @@ Four properties, and each exists because the obvious alternative is wrong:
 | G03 | `ConsentGuard` | **DPDP Act 2023 s.6** + DPDP Rules 2025 | No processing without consent; on withdrawal, blocks *and* purges work already queued for that customer. |
 | G04 | `RetryCapGuard` | **Platform constraint** — Razorpay halts a subscription after 4 consecutive failures | Caps attempts below the halt. |
 | G05 | `PromiseToPayGuard` | **RBI Fair Practices Code** (fair dealing) | A customer who promised a date is not chased before it. Has no jurisdiction over `HUMAN_QUEUE`. |
-| G06 | `DNDGuard` | **TRAI TCCCPR 2018**, as amended Feb 2025 | No promotional traffic to a DND-registered number. |
+| G06 | `DNDGuard` | **TRAI TCCCPR 2018**, as amended Feb 2025 | No message to a DND-registered number unless the merchant has declared its template transactional or service. An undeclared category is judged like promotional, and a registry that cannot answer blocks. |
 | G07 | `FrequencyCapGuard` | **RBI FPC** (anti-harassment) | ≤2 contacts per episode; ≤3 per customer per rolling 7 days. |
 | G08 | `ContactWindowGuard` | **RBI FPC ¶55** | No contact outside 08:00–19:00 in the customer's zone, IST when unknown. Defers rather than blocks, with a per-customer jitter. |
 | G09 | `PreDebitNoticeGuard` | **RBI e-mandate framework** — pre-debit notification | A mandate debit is held until a notice has been served, 24h ahead. |
@@ -84,10 +84,15 @@ assertion. **There are 33 of them.** The ones that bear on compliance directly:
 - **`RetryCapGuard` — the 4-retry halt is documented and was never observed** on
   this account. Subscriptions are unavailable pre-activation, so it could not
   be exercised even once.
-- **`DNDGuard` scopes to promotional traffic only.** Whether a payment-recovery
-  message is transactional, service or promotional under TCCCPR is a
-  classification I made and flagged; adversary attack **A09** exploits the gap
-  and is open.
+- **`DNDGuard`'s scope rests on the merchant's declaration.** Whether a
+  payment-recovery message is transactional, service or promotional under
+  TCCCPR is decided by how its template is registered on DLT, which only the
+  merchant knows. Until 2026-09-15 every message was assumed transactional and
+  adversary attack **A09** was open; now an undeclared template is `UNKNOWN`,
+  judged like promotional, and A09 survives. A merchant that declares a
+  template transactional takes that message out of the guard's jurisdiction,
+  and a false declaration is the merchant's. No DND scrub is built — the port
+  exists (`vasool/policy/dnd_registry.py`) with a null adapter that blocks.
 - **`MAX_DEFERRALS = 5` and `DEFER_HORIZON = 7 days` are judgement, not
   statute**, and their docstrings say so.
 

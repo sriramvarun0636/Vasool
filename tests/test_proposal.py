@@ -119,7 +119,10 @@ class TestContactShape:
     def test_a_link_carries_a_channel_a_category_and_a_template(self, reason):
         (p,) = propose(reason)
         assert p.channel is Channel.SMS
-        assert p.message_category is MessageCategory.TRANSACTIONAL
+        # UNKNOWN, not TRANSACTIONAL: a message's TCCCPR category is its
+        # template's DLT registration, which is the merchant's to declare
+        # (docs/EVALUATION.md §10, 2026-09-15).
+        assert p.message_category is MessageCategory.UNKNOWN
         assert p.template_id is not None
 
     def test_a_silent_retry_carries_none_of_them(self):

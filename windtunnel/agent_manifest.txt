@@ -48,6 +48,7 @@ vasool/ledger/receipts.py
 vasool/ledger/replay.py
 vasool/ledger/tracing.py
 vasool/policy/__init__.py
+vasool/policy/dnd_registry.py
 vasool/policy/episode.py
 vasool/policy/facts.py
 vasool/policy/guards/__init__.py

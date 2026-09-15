@@ -184,13 +184,12 @@ class _HostileDLTDemoFacts:
     """A second world built to say no, through a different statute and a
     different mechanism than _HostileDemoFacts (item 5).
 
-    DNDGuard was the other obvious candidate, but it structurally cannot
-    fire against anything the rules classifier currently emits: every
-    contact this system sends is tagged MessageCategory.TRANSACTIONAL
-    (vasool/diagnosis/proposal.py), and DNDGuard.applies_to only ever returns
-    True for MessageCategory.PROMOTIONAL — see that guard's own docstring.
-    Choosing it would demo a guard that never actually runs, not one that
-    blocks. DLTTemplateGuard is the real second guard: it applies to any
+    DNDGuard was the other obvious candidate, and when this world was built
+    it structurally could not fire: every contact was tagged
+    MessageCategory.TRANSACTIONAL and DNDGuard only judged PROMOTIONAL. It
+    judges undeclared (UNKNOWN) categories since 2026-09-15, but this world
+    keeps its DLT block because it pins a mechanism, not a statute count.
+    DLTTemplateGuard is the real second guard: it applies to any
     contact-carrying proposal, and blocks in `check()` on a normal set
     lookup rather than failing closed on a missing `requires` fact the way
     ConsentGuard does — a genuinely different mechanism, not just a

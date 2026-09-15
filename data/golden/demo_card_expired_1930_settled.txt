@@ -51,7 +51,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -84,7 +85,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -107,7 +109,7 @@
 [10] receipt
     outcome      : executed
     receipt_id   : rcpt_aa8ce1313a1ceab9
-    hash         : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
+    hash         : b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
@@ -128,13 +130,13 @@
 [12] receipt
     outcome      : recovered
     receipt_id   : rcpt_061c7746be1932c6
-    hash         : 2429aeeb93dfa664fb2fc6ae3243b00bd05220f3a76ba76b8dafa3332f8dfe45
-    prev_hash    : 6d937be9a6870d4a835d9106db83351dae180f1153379a335498dae17ba9d66c
+    hash         : c2d25e76bd55dab2fcb26ef6a15b3f6fd580941f2ad3f3713fad3c1db48fa903
+    prev_hash    : b2e7f46ea00552acc8589d5500763b39b8ae3524bf099c7464a065d5071239ed
     recovered    : ₹500.00 (50000 paise)
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- DEFERRED by RBI Fair Practices
 Code ¶55, then RECOVERED -- ₹500.00 (50000 paise) recovered.
-Receipt: 2429aeeb93dfa664fb2fc6ae3243b00bd05220f3a76ba76b8dafa3332f8dfe45
+Receipt: c2d25e76bd55dab2fcb26ef6a15b3f6fd580941f2ad3f3713fad3c1db48fa903
 ==============================================================================

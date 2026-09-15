@@ -68,6 +68,32 @@ class TestNoHardcodedMeasurements:
         code ever updated — true by luck rather than by measurement."""
         assert "0 safety violations</span>" not in SOURCE
 
+    def test_no_figure_starts_life_as_a_number(self):
+        """POSTMORTEM.md INC-008: `let totalRuns = 160200`, to be overwritten
+        from keys no manifest has ever carried, so the hero showed a constant
+        as a count on every build — the shape of INC-005 that the `||` test
+        above does not match. A figure the page displays starts as null and
+        becomes a number only by being read."""
+        starts = re.findall(r"\blet\s+(\w+)\s*=\s*-?\d[\d_,.]*\s*;", SOURCE)
+        displayed = {"vasoolYield", "baselineYield", "greedyYield", "totalRuns", "baseRuns"}
+        assert not set(starts) & displayed, (
+            f"{sorted(set(starts) & displayed)} start as numeric literals"
+        )
+
+    def test_the_run_count_is_derived_from_the_manifest(self):
+        """The count the hero prints is the manifest's arms and seeds, not a
+        sentence: '9,000 base + 151,200 sweep' was typed into the markup and
+        would have survived a base-only re-run unchanged."""
+        assert "151,200 sweep" not in SOURCE and "9,000 base" not in SOURCE
+        assert "EVAL.sweep_reference" in SOURCE and "a?.seeds" in SOURCE
+
+    def test_cohorts_are_added_only_when_one_agent_produced_both(self):
+        """A sum across two agents is a number neither produced — true of the
+        development cohort re-measured after 2026-09-15 beside the holdout of
+        2026-08-29 — so both the build-time table and the hero check it."""
+        assert "_same_agent" in SOURCE and "sameAgent" in SOURCE
+        assert "HOLDOUT.agent_fingerprint === EVAL?.agent_fingerprint" in SOURCE
+
 
 class TestTraceDiscipline:
     """`trace()` is the only sanctioned route for a figure onto the page."""
@@ -242,9 +268,13 @@ class TestReadmeDoesNotDrift:
             )
 
     def test_the_headline_gap_matches(self, report, readme):
+        """The gap README leads with is the manifest's, to two decimals. It
+        was a literal `-16.35` until re-run #1 (§10, 2026-09-15) moved the
+        headline on purpose; a pinned number that a registered re-run is
+        meant to move tests the pin, not the README."""
         point = report["paired_vs_vasool"]["retry_plus_contact"]["recovery_rate"]["point"]
-        assert f"{point * 100:.2f}" == "-16.35"
-        assert "16.35" in readme
+        assert f"{abs(point) * 100:.2f}" in readme
+        assert point < 0, "README's narrative is that the incumbent recovers more"
 
     def test_the_adversary_count_matches(self, readme):
         artifact = REPO_ROOT / "out" / "adversary" / "redteam.json"
@@ -277,13 +307,19 @@ class TestReadmeDoesNotDrift:
         allowed = set()
         dev = report["per_arm"]["vasool"]["recovered_paise_total"]
         allowed.add(f"{dev / 100 / 1e7:.2f}")
-        total = dev
         if HOLDOUT.exists():
-            hold = json.loads(HOLDOUT.read_text())["per_arm"]["vasool"]["recovered_paise_total"]
+            holdout = json.loads(HOLDOUT.read_text())
+            hold = holdout["per_arm"]["vasool"]["recovered_paise_total"]
             allowed.add(f"{hold / 100 / 1e7:.2f}")
-            total = dev + hold
-        allowed.add(f"{total / 100 / 1e7:.2f}")
-        allowed.add(f"{total / 100 / 1e7:.0f}")          # the tagline rounds to whole crore
+            # A total only when one agent produced both cohorts, the rule the
+            # dashboard applies: from re-run #1 (§10, 2026-09-15) the holdout of
+            # 2026-08-29 describes an earlier agent, and a sum across two agents
+            # is a number neither produced — "derivable from the manifests"
+            # would otherwise let exactly that through.
+            if holdout.get("agent_fingerprint") == report.get("agent_fingerprint"):
+                total = dev + hold
+                allowed.add(f"{total / 100 / 1e7:.2f}")
+                allowed.add(f"{total / 100 / 1e7:.0f}")  # the tagline rounds to whole crore
 
         printed = set(re.findall(r"(?:\u20b9|\bRs\.?)\s?(\d+(?:\.\d+)?)\s*Cr", readme))
         stale = sorted(printed - allowed)

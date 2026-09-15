@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, tzinfo
 from typing import Protocol
 
-from vasool.diagnosis.proposal import Proposal
+from vasool.diagnosis.proposal import MessageCategory, Proposal
 from vasool.events.schemas import FailureEvent
 
 CONSENT_PURPOSE_RECOVERY = "payment_recovery"
@@ -164,6 +164,20 @@ class PolicyFacts:
     # -- comms
     registered_templates: frozenset[str] = field(default_factory=frozenset)
     """DLT template ids registered to this merchant."""
+
+    template_categories: frozenset[tuple[str, MessageCategory]] = field(default_factory=frozenset)
+    """What the merchant declares each DLT template is registered as —
+    TRANSACTIONAL, SERVICE or PROMOTIONAL — as (template id, category) pairs.
+
+    Under TCCCPR a message's category is its template's registration, and
+    only the merchant knows that. A template with no pair here is UNKNOWN, and
+    DNDGuard judges UNKNOWN as it judges PROMOTIONAL. Empty is known-absent,
+    not unknown — a merchant that has declared nothing — so it is not in any
+    guard's `requires` (docs/EVALUATION.md §10, 2026-09-15)."""
+
+    def declared_category(self, template_id: str | None) -> MessageCategory | None:
+        """The merchant's declaration for one template, or None if it made none."""
+        return dict(self.template_categories).get(template_id) if template_id else None
 
 
 @dataclass(frozen=True, slots=True)

@@ -3,11 +3,11 @@
 <h1>⚖️ Vasool</h1>
 
 <p>
-  <strong>Recovers ₹116 Cr of failed payments with zero compliance violations &mdash;<br/>
+  <strong>Recovers ₹43.65 Cr of failed payments with zero compliance violations &mdash;<br/>
   and a hash-chained receipt for every rupee, including the ones it refused to chase.</strong>
 </p>
 
-<h3>A dumber baseline beats it by 16 percentage points.</h3>
+<h3>A dumber baseline beats it by 19 percentage points.</h3>
 
 <p>
   It also breaks policy in <b>1,000 of 1,000</b> seeded worlds. Vasool breaks it in <b>none</b>.<br/>
@@ -17,9 +17,9 @@
 </p>
 
 <p>
-  <a href="#the-result"><img src="https://img.shields.io/badge/Recovered-%E2%82%B9116.09_Cr-0ca30c?style=for-the-badge" alt="Recovered Rs 116.09 Cr"></a>
+  <a href="#the-result"><img src="https://img.shields.io/badge/Recovered-%E2%82%B943.65_Cr-0ca30c?style=for-the-badge" alt="Recovered Rs 43.65 Cr"></a>
   <a href="#the-result"><img src="https://img.shields.io/badge/Safety_predicate-1%2C000_%2F_1%2C000_seeds-0ca30c?style=for-the-badge" alt="Safety predicate held on 1000 of 1000 seeds"></a>
-  <a href="#and-now-the-uncomfortable-part"><img src="https://img.shields.io/badge/Cost_of_compliance-16.4pp_of_recovery-c1443c?style=for-the-badge" alt="Compliance costs 16.4 percentage points of recovery"></a>
+  <a href="#and-now-the-uncomfortable-part"><img src="https://img.shields.io/badge/Cost_of_compliance-19.4pp_of_recovery-c1443c?style=for-the-badge" alt="Compliance costs 19.4 percentage points of recovery"></a>
 </p>
 
 <p>
@@ -43,7 +43,7 @@
 </p>
 
 <a href="https://sriramvarun0636.github.io/Vasool">
-  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 116.09 Cr recovered across both cohorts with zero safety violations in 1,000 seeds, split Rs 46.50 Cr development and Rs 69.60 Cr holdout. Three arm cards below it: the baseline at 65.42% with the safety predicate holding on 0 of 1,000 seeds, the ungated variant at 53.81% also on 0 of 1,000, and Vasool at 49.07% holding on 1,000 of 1,000." onerror="this.style.display='none'">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 43.65 Cr recovered in the development cohort with zero safety violations in 1,000 seeds; the holdout's Rs 69.60 Cr, evaluated on 2026-08-29 against an earlier agent, is reported beside it and not added. Three arm cards below it: the baseline at 65.42% with the safety predicate holding on 0 of 1,000 seeds, the ungated variant at 53.81% also on 0 of 1,000, and Vasool at 46.04% holding on 1,000 of 1,000." onerror="this.style.display='none'">
 </a>
 
 <sub><i>The top of <a href="https://sriramvarun0636.github.io/Vasool">the live dashboard</a> &mdash;
@@ -61,8 +61,8 @@ which <b>ships in this repo</b>. Open it and check any number here without runni
 
 | The bar | How Vasool meets it |
 | :--- | :--- |
-| **Measured money recovered** | **₹116.09 Cr** across 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping. [The result](#the-result) |
-| **Compliant escalation** | **13,014** episodes handed to a human, every deciding clause on the receipt. A risk-declined payment gets nothing automated, ever. [Watch one](#what-the-agent-actually-does) |
+| **Measured money recovered** | **₹43.65 Cr** from the development cohort of 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping. [The result](#the-result) |
+| **Compliant escalation** | **12,895** episodes handed to a human, every deciding clause on the receipt. A risk-declined payment gets nothing automated, ever. [Watch one](#what-the-agent-actually-does) |
 | **Stopping rules** | Five bounds in [`machine.py`](vasool/policy/machine.py): `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget, a daily spend cap, and a kill switch that **holds** queued work rather than dropping it. Measured: Vasool exhausts a budget **0 times**; `naive_retry` does it **189,476** times. [The partition](#what-didnt-recover-actually-means) |
 | **An audit trail** | Every action **and every refusal** writes a SHA-256 hash-chained receipt. Twelve ship in the manifest with the exact bytes each hash covers. [Verify one](#check-the-cryptography-without-trusting-us) |
 
@@ -78,75 +78,78 @@ So the agent classifies before it acts: five failure classes, each with a regist
 
 ## The result
 
-Across 1,000 seeded universes of 500 customers each, Vasool detected revenue at risk, diagnosed each failure, chose an intervention, and executed a bounded recovery workflow:
+Across the development cohort of 1,000 seeded universes of 500 customers each, Vasool detected revenue at risk, diagnosed each failure, chose an intervention, and executed a bounded recovery workflow:
 
-| | Development set (40%) | Holdout (60%, sealed) | Total |
-| :--- | ---: | ---: | ---: |
-| **Money recovered** | **₹46.50 Cr** | **₹69.60 Cr** | **₹116.09 Cr** |
-| Episodes recovered | 49.07% | 48.92% | — |
-| **§2a safety predicate held** | **1,000 / 1,000 seeds** | **1,000 / 1,000 seeds** | — |
-| Automated actions on risk-declined payments | **0** | **0** | — |
+| Development set (40%) | |
+| :--- | ---: |
+| **Money recovered** | **₹43.65 Cr** |
+| Episodes recovered | 46.04% |
+| **§2a safety predicate held** | **1,000 / 1,000 seeds** |
+| Automated actions on risk-declined payments | **0** |
 
-The component figures are rounded to two decimals; **the total is the sum of the underlying paise, not of the rounded numbers** — which is why it reads 116.09 rather than 116.10. Every rupee in that column is summed from hash-chained receipts, not from the simulator's own bookkeeping — the two records are compared and every disagreement is reported rather than reconciled away.
+Every rupee there is summed from hash-chained receipts, not from the simulator's own bookkeeping — the two records are compared and every disagreement is reported rather than reconciled away. **There is no two-cohort total any more, on purpose.** The sealed holdout was evaluated once, on 2026-08-29, against the agent of that day; since [§2.4's re-run](#and-now-the-uncomfortable-part) the development cohort is measured on a different agent, and a sum across two agents is a number neither of them produced. The holdout is reported [on its own](#the-holdout-agrees), and a fresh-seed holdout under the final agent brings a total back.
 
 ### And now the uncomfortable part
 
-**A dumber agent recovers more.** The realistic incumbent — retry everything, then send a link — recovers **65.4%** to Vasool's 49.1%: a paired difference of **−16.35 percentage points**, interval [−16.54, −16.17], nowhere near zero.
+**A dumber agent recovers more.** The realistic incumbent — retry everything, then send a link — recovers **65.4%** to Vasool's 46.0%: a paired difference of **−19.38 percentage points**, interval [−19.57, −19.18], nowhere near zero.
 
 That was registered as falsification criterion **F1** in [`docs/EVALUATION.md`](docs/EVALUATION.md) before the first run, along with the rule that a criterion which fires gets said out loud. So here it is, second paragraph, not an appendix.
 
-Here is what the incumbent does to earn those extra 16 points:
+**And since 2026-09-15 it is worse than that: the dumbest arm of all recovers more too.** `naive_retry` — retry until the cap, no classification, no guards, no contact — now beats Vasool by **0.55 points** [0.37, 0.73]. Vasool led it by 2.5 until DND started to count. The gap to the incumbent was 16.35 points on the agent published before then; 3.03 of today's 19.38 are one decision: Vasool no longer assumes a merchant registered its message templates as transactional on DLT, and blocks a DND-listed customer rather than guess. The universe puts 8% of customers on the registry, so that is what not guessing costs, registered before [the re-run](docs/EVALUATION.md) measured it. A merchant that declares its templates gets those points back, and owns the declaration.
+
+Here is what the incumbent does to earn those extra 19 points:
 
 | | `retry_plus_contact` (incumbent) | ⚖️ **Vasool** |
 | :--- | ---: | ---: |
-| Recovery rate | **65.42%** | 49.07% |
+| Recovery rate | **65.42%** | 46.04% |
 | Seeds where the §2a safety predicate held | **0 / 1,000** | **1,000 / 1,000** |
 | Automated actions on risk-declined payments | 20,988 | **0** |
-| Retries burned on a dead instrument | 292,256 | 64,321 |
+| Retries burned on a dead instrument | 292,256 | 62,583 |
 | Retries on a class the taxonomy prices at zero attempts | 66,040 | **0** |
 
 The incumbent is not a worse agent that happens to score higher. It is an agent that **cannot legally be deployed**, scoring higher *because* of the actions that make it undeployable. Every one of those columns is a ledger scan, reproducible from a seed — not a self-report.
 
-**The honest one-line summary:** the taxonomy did not buy recovery. It bought a deployable system, and the 16 points are what that cost in this simulator.
+**The honest one-line summary:** the taxonomy did not buy recovery. It bought a deployable system, and the 19 points are what that cost in this simulator.
 
 ### What "didn't recover" actually means
 
 A recovery rate reports one bucket and leaves everything else as a single undifferentiated failure. It isn't one. The four terminal states are absorbing, so this is a partition — every episode appears exactly once:
 
-| Vasool · 1,000 seeds · 354,826 episodes | Count | Share of the 180,723 that did not recover |
+| Vasool · 1,000 seeds · 354,826 episodes | Count | Share of the 191,458 that did not recover |
 | :--- | ---: | ---: |
-| **Recovered** | **174,103** | — |
-| `awaiting` — still in flight when the horizon ended | 138,591 | **76.7%** |
-| `blocked` — the guards declined to act | **29,118** | 16.1% |
-| `escalated` — handed to a human | 13,014 | 7.2% |
+| **Recovered** | **163,368** | — |
+| `awaiting` — still in flight when the horizon ended | 127,390 | **66.5%** |
+| `blocked` — the guards declined to act | **51,173** | 26.7% |
+| `escalated` — handed to a human | 12,895 | 6.7% |
 | `exhausted` — attempt budget burned to nothing | **0** | 0% |
 
-Three things a reader should take from that. **`awaiting` is right-censored, not failed** — the horizon ended mid-episode, and folding it into "failure" is the blur this table removes; terminal non-recoveries are **42,132**, not 180,723. **29,118 refusals are an outcome, not a shortfall** — they are the behaviour [`docs/EVALUATION.md` §2a](docs/EVALUATION.md) scans for, and until now the dashboard reported every one of them as a miss. And the last row is the taxonomy, measured: **Vasool exhausts an attempt budget 0 times; `naive_retry` does it 189,476 times** — 53% of every episode it sees.
+Three things a reader should take from that. **`awaiting` is right-censored, not failed** — the horizon ended mid-episode, and folding it into "failure" is the blur this table removes; terminal non-recoveries are **64,068**, not 191,458. **51,173 refusals are an outcome, not a shortfall** — they are the behaviour [`docs/EVALUATION.md` §2a](docs/EVALUATION.md) scans for, and the 22,055 more than before §2.4 are the DND registry being respected. And the last row is the taxonomy, measured: **Vasool exhausts an attempt budget 0 times; `naive_retry` does it 189,476 times** — 53% of every episode it sees.
 
 Added 2026-08-29 and logged in §10. It is a subtraction over fields the shards already carried, not a re-run: `awaiting = episodes − recovered − blocked − escalated − exhausted`, valid because the three receipt-derived counters are disjoint — checked over 25 seeds, zero overlap in all three pairs.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/forest-dark.svg">
-  <img src="docs/assets/forest-light.svg" width="100%" alt="Paired difference in recovery rate against Vasool across eight comparison arms, with 95% bootstrap intervals. Vasool trails retry_plus_contact by 16.35 percentage points and vasool_ungated by 4.74, and leads the remaining six.">
+  <img src="docs/assets/forest-light.svg" width="100%" alt="Paired difference in recovery rate against Vasool across eight comparison arms, with 95% bootstrap intervals. Vasool trails retry_plus_contact by 19.38 percentage points, vasool_ungated by 7.77 and naive_retry by 0.55, and leads the five ablations.">
 </picture>
 
-Every arm runs the **same seeded universe** — same customers, same arrivals, same outcome draws — so the comparison is the per-seed difference, bootstrapped over 1,000 seeds. At this sample size every interval is narrower than its own marker (the widest spans 0.37pp), so the dots *are* the intervals. Regenerate the plot with `python3 tools/make_forest_svg.py`; it reads the same manifest the dashboard does, so the two cannot disagree.
+Every arm runs the **same seeded universe** — same customers, same arrivals, same outcome draws — so the comparison is the per-seed difference, bootstrapped over 1,000 seeds. At this sample size every interval is narrower than its own marker (the widest spans 0.39pp), so the dots *are* the intervals. Regenerate the plot with `python3 tools/make_forest_svg.py`; it reads the same manifest the dashboard does, so the two cannot disagree.
 
 ### The holdout agrees
 
-60% of customers were sealed before any tuning began, and §3c registers that they are evaluated **exactly once**. That once has now happened:
+60% of customers were sealed before any tuning began, and §3c registers that they are evaluated **exactly once**. That once happened on 2026-08-29, against the agent of that day:
 
-| | Holdout (sealed 60%) | Development (40%) |
-| :--- | ---: | ---: |
-| Vasool recovery | **48.92%** | 49.07% |
-| Incumbent recovery | **65.24%** | 65.42% |
-| F1 paired difference | **−16.311pp** [−16.454, −16.166] | −16.353pp [−16.540, −16.166] |
-| F5 gap (threshold 20pp) | **4.719pp** | 4.742pp |
-| §2a predicate, Vasool | **1,000 / 1,000** | 1,000 / 1,000 |
-| §2a predicate, incumbent | **0 / 1,000** | 0 / 1,000 |
-| F1–F5 | **none fired** | none fired |
+| Holdout (sealed 60%) · the agent of 2026-08-29 | |
+| :--- | ---: |
+| Money recovered | **₹69.60 Cr** |
+| Vasool recovery | **48.92%** |
+| Incumbent recovery | **65.24%** |
+| F1 paired difference | **−16.311pp** [−16.454, −16.166] |
+| F5 gap (threshold 20pp) | **4.719pp** |
+| §2a predicate, Vasool | **1,000 / 1,000** |
+| §2a predicate, incumbent | **0 / 1,000** |
+| F1–F5 | **none fired** |
 
-No arm moved more than 0.19pp. Every conclusion replicates in sign, magnitude and verdict.
+Against the development cohort as that agent measured it, no arm moved more than 0.19pp, and every conclusion replicated in sign, magnitude and verdict — the side-by-side is in [§10, 2026-08-29](docs/EVALUATION.md). **It confirms that agent, not today's.** Since §2.4 the development figures above come from an agent that respects the DND registry and this holdout's does not, so the two are no longer set side by side here or added together; the holdout is not re-run to make them match, because a second look is what §3c forbids, and a fresh-seed holdout confirms the final agent instead.
 
 **What that does and doesn't prove.** It does not validate the outcome model — both cohorts come from the same registered universe, so a wrong parameter is wrong in both. What it rules out is the thing §3c was written against: tuning thresholds against visible numbers until the result appears. A taxonomy fitted to the development set would not reproduce its own effect sizes to within two hundredths of a point on customers it had never been measured on.
 
@@ -156,13 +159,13 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 ### Robust to the split
 
-§3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between −16.46 and −16.26 points, every 95% interval excluding zero, and the registered split fourth of six, in the middle. The one place it sits at an edge is stated rather than left to be found: Vasool's own recovery rate under the registered split is the highest of the six, by less than a hundredth of a point. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
+§3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between −19.50 and −19.27 points, every 95% interval excluding zero, and the registered split fourth of six, in the middle. It was run against the agent before §2.4 as well, with the same result, and one caveat from that run is corrected rather than carried: the registered split then gave Vasool's own recovery rate the highest of the six, by less than a hundredth of a point; on this agent it is second. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
 
 ### What the gap bought
 
 - **1,000 / 1,000 seeds** satisfy the [§2a safety predicate](docs/EVALUATION.md) — eight ledger-scanned claims covering contact windows, DLT templates, risk blocks, consent withdrawal, dead-instrument retries, contact caps, hash-chain integrity and receipt uniqueness.
 - **pass^k = 1.0** at every registered k ∈ {1, 5, 10, 25, 50, 100}. A system safe in 99 of 100 worlds is not safe; `pass^k` is what makes an intermittent violation visible where a mean would bury it.
-- **4.7 percentage points** is the measured price of the guard chain — `vasool_ungated` (identical taxonomy, no guards) recovers 53.8%. F5 was registered at a 20-point threshold. It did not fire.
+- **7.8 percentage points** is the measured price of the guard chain — `vasool_ungated` (identical taxonomy, no guards) recovers 53.8% — and 3.0 of them are the DND registry, respected since §2.4 for every message whose DLT category no one declared. F5 was registered at a 20-point threshold. It did not fire.
 - **Byte-identical ledgers** on re-run. Same seed → same SHA-256 chain, asserted by [`tests/test_replay.py`](tests/test_replay.py) for one episode and [`tests/windtunnel/test_runner.py`](tests/windtunnel/test_runner.py) for a whole 500-customer run, and recomputed as `determinism.identical` in the manifest.
 
 ---
@@ -194,7 +197,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 1,526 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 1,538 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 22 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -215,9 +218,10 @@ make eval
 ```
 
 That is §5's nine arms over §6a's thousand seeds, recomputed from nothing — about
-twenty-five minutes on eight cores. It was run exactly that way on 2026-09-14: all
-9,000 rows came back byte-identical to the ones behind the manifest, and so did
-every one of its 576 base-protocol values, `0.4906981214797104` included
+twenty-five minutes on eight cores. The manifest behind every figure here is
+itself such a run: re-run #1 rebuilt all 9,000 rows from nothing on 2026-09-15.
+The agent before it was checked the same way on 2026-09-14 — all 9,000 rows and
+all 576 base-protocol values came back byte-identical to the published ones
 ([§10](docs/EVALUATION.md)).
 
 Nothing above needs a key, a `.env` or a network. `make demo` and `make shadow`
@@ -238,20 +242,20 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 
 | Claim in this README | Manifest key | Value |
 | :--- | :--- | ---: |
-| Vasool recovers 49.07% | `per_arm.vasool.recovery_rate_mean` | `0.4906981214797104` |
+| Vasool recovers 46.04% | `per_arm.vasool.recovery_rate_mean` | `0.46044219381271134` |
 | Incumbent recovers 65.42% | `per_arm.retry_plus_contact.recovery_rate_mean` | `0.6542272536430769` |
 | Ungated recovers 53.81% | `per_arm.vasool_ungated.recovery_rate_mean` | `0.5381228185488008` |
-| −16.35pp, interval excludes zero | `paired_vs_vasool.retry_plus_contact.recovery_rate` | `point: -0.163529…` |
+| −19.38pp, interval excludes zero | `paired_vs_vasool.retry_plus_contact.recovery_rate` | `point: -0.193785…` |
 | Safety predicate on 1,000/1,000 | `per_arm.vasool.safety_holds_on` | `1000` |
 | pass^100 = 1.0 | `pass_k.100` | `1.0` |
 | 20,988 actions on risk-declined | `per_arm.retry_plus_contact.risk_block_actions_world` | `20988` |
 | 66,040 retries on a zero-budget class | `per_arm.retry_plus_contact.customer_action_retries_world` | `66040` |
-| F5 gap 4.74pp of a 20pp threshold | `falsification.F5_compliance_unaffordable.gap_pp` | `4.742469…` |
-| 13,014 episodes escalated to a human | `per_arm.vasool.closure.escalated` | `13014` |
+| F5 gap 7.77pp of a 20pp threshold | `falsification.F5_compliance_unaffordable.gap_pp` | `7.768062…` |
+| 12,895 episodes escalated to a human | `per_arm.vasool.closure.escalated` | `12895` |
 | `naive_retry` exhausts a budget 189,476 times | `per_arm.naive_retry.closure.exhausted` | `189476` |
 | Vasool exhausts a budget 0 times | `per_arm.vasool.closure.exhausted` | `0` |
 | Ledgers byte-identical on re-run | `determinism.identical` | `true` |
-| 19 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `19` |
+| 20 of 22 attacks survive | `out/adversary/redteam.json` → `survived` | `20` |
 | The conclusion holds under five other splits | `out/robustness/split_check.json` → `robust` | `true` |
 
 The dashboard makes this checkable without leaving the page: **click _trace every number_ and every figure on it displays the exact manifest key it was read from** — the button reports how many, so the count is never a number this README can get wrong. A value the manifest does not carry renders as a dash and raises a warning banner — never as a plausible number.
@@ -308,7 +312,8 @@ Real output from `make demo`, copied from [`data/golden/demo_card_expired_1930.t
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -440,12 +445,12 @@ Registered in [`docs/EVALUATION.md` §9](docs/EVALUATION.md) before any run, wit
 
 | | Criterion | Threshold | Result |
 | :--- | :--- | :--- | :--- |
-| **F1** | The taxonomy adds nothing | interval vs `retry_plus_contact` includes zero | did not fire — but **excludes zero on the wrong side**, −16.35pp. Read as *worse* than F1 firing. |
-| **F2** | The flagship `card_expired` claim is inert | A3 inert on recovery **and** attempts | did not fire — attempts-per-recovery −0.151 |
-| **F3** | Salary-aware timing is noise | A2 interval includes zero | did not fire — +4.98pp |
+| **F1** | The taxonomy adds nothing | interval vs `retry_plus_contact` includes zero | did not fire — but **excludes zero on the wrong side**, −19.38pp. Read as *worse* than F1 firing. |
+| **F2** | The flagship `card_expired` claim is inert | A3 inert on recovery **and** attempts | did not fire — attempts-per-recovery −0.156 |
+| **F3** | Salary-aware timing is noise | A2 interval includes zero | did not fire — +4.58pp |
 | **F4** | The guards are unreliable | pass^100 < 1.0 | did not fire — pass^100 = 1.0 |
-| **F5** | Compliance is unaffordable | ungated beats gated by >20pp | did not fire — 4.74pp |
-| **F6** | The conclusions are model artifacts | ≥5 of 8 comparisons flip across the 83-config grid | did not fire |
+| **F5** | Compliance is unaffordable | ungated beats gated by >20pp | did not fire — 7.77pp |
+| **F6** | The conclusions are model artifacts | ≥5 of 8 comparisons flip across the 83-config grid | **not evaluated for this agent** — it needs §7's nine-hour grid, re-run once at the end of the programme. It did not fire on the agent before §2.4. |
 | **F7** | Determinism fails | two runs of one seed differ | did not fire — ledgers identical |
 
 **F1's `fired: false` is not good news and the artifact says so in its own `detail` field.** F1 as registered fires when the interval *includes* zero. Ours excludes zero — in the baseline's favour. The criterion is silent on that case, which is exactly why the manifest carries a `direction` field beside it.
@@ -479,13 +484,14 @@ Every test I had written asked whether the agent did something *wrong*. Not one 
 
 I wrote a survival criterion, registered it, and only then wrote 22 attacks against it. [`windtunnel/adversary/criterion.py`](windtunnel/adversary/criterion.py)'s `judge()` is the only thing that can return a verdict, and it scans the ledger the way §2a scans — never "a guard returned BLOCKED".
 
-**19 of 22 survive.** Three remain open, and they are the complete set:
+**20 of 22 survive.** Two remain open, and they are the complete set:
 
 | | Attack | Why it still wins |
 | :--- | :--- | :--- |
 | **A01** | Out-of-band payment mid-ladder | A customer who pays through another channel carries no join key. Vasool keeps chasing money the merchant already has — a double-collection hazard, not a lost-revenue one. |
 | **A07** | One human, two customer IDs | Per-human contact caps key on a derived id; two ids for one person defeat the cap. Worst case seen: 4 contacts in 7 days against a cap of 3. |
-| **A09** | Message to a DND-listed customer | `DNDGuard` scopes to promotional traffic; the classification gap lets one through. |
+
+**A09 — a message to a DND-listed customer — closed on 2026-09-15, and it cost recovery.** `DNDGuard` judged only promotional messages, and every message was built as transactional — an assumption, since under TRAI's rules a message's category is how its template was registered on DLT, which only the merchant knows. Now a message carries `UNKNOWN` unless the merchant declares its template, an unknown category is judged, and a registry that cannot answer blocks. The universe has always put 8% of customers on the registry, so closing the attack moved the headline — down **3.03 points**, to 46.04% — and every other number with it; the cost was registered before the re-run measured it, along with the prediction that the three arms without guards would not move at all, which held on 3,000 of 3,000 rows ([§10, 2026-09-15](docs/EVALUATION.md)).
 
 **A08 was on that list until 2026-08-30**, and closing it is the clearest demonstration in the repository that the apparatus works. The guard evaluated the RBI contact window in IST — the *merchant's* timezone — so a customer elsewhere was protected by that clock rather than their own, and the attack landed a message at 22:30 customer-local. The guard now reads the customer's zone and falls back to IST when it doesn't have one.
 
@@ -514,7 +520,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — forty-four of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — forty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
@@ -522,7 +528,7 @@ Every amendment to the protocol after registration — forty-four of them — is
 
 | Path | What lives there |
 | :--- | :--- |
-| [`POSTMORTEM.md`](POSTMORTEM.md) | **Seven incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Eight incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after the submission. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All thirteen guards, what each rests on, and the 33 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), and NPCI's 225 UPI codes mapped to it |

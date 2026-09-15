@@ -233,13 +233,13 @@ def a08_customer_timezone(arena: Arena) -> None:
 def a09_dnd_never_fires(arena: Arena) -> None:
     """A message to a customer on the DND registry.
 
-    `DNDGuard` has jurisdiction only over PROMOTIONAL messages, and every
-    proposal this system builds is TRANSACTIONAL. `MessageCategory`'s own
-    VERIFY note says the categorisation of a payment-recovery message under
-    TCCCPR is genuinely unsettled and that "if they do [categorise otherwise],
-    DNDGuard becomes load-bearing overnight". Today it is one of the thirteen
-    that never fires — which this attack makes visible rather than argues
-    about.
+    Registered FAILS: `DNDGuard` had jurisdiction only over PROMOTIONAL
+    messages and every proposal this system built was TRANSACTIONAL, so it was
+    one of the thirteen that never fired — which this attack made visible
+    rather than argued about. Since 2026-09-15 a contact carries UNKNOWN unless
+    the merchant has declared its template's DLT category, DNDGuard judges
+    UNKNOWN, and bob's message is blocked. The name is kept, because the
+    registration it records is what the fix changed (docs/EVALUATION.md §10).
     """
     bob = arena.person("dnd_bob", dnd_listed=True)
     arena.advance_to(arena.ist(hour=10))
@@ -623,9 +623,10 @@ ATTACKS: tuple[Attack, ...] = (
     Attack(
         id="A09",
         title="a message to a DND-listed customer",
-        targets="the TRAI scrub, which no proposal this system builds can reach",
-        source="vasool/diagnosis/proposal.py::MessageCategory VERIFY",
-        expectation=FAILS,
+        targets="DNDGuard's jurisdiction over a message whose DLT category no one declared",
+        source="vasool/diagnosis/proposal.py::MessageCategory VERIFY. Registered FAILS; "
+               "fixed and re-registered 2026-09-15",
+        expectation=SURVIVES,
         evidence=(NoContactToDndListed(),),
         run=a09_dnd_never_fires,
     ),

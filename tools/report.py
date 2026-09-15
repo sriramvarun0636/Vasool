@@ -228,7 +228,17 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
     _arms = raw_data.get("per_arm", {})
     _v, _b, _u = (_arms.get(k, {}) for k in ("vasool", "retry_plus_contact", "vasool_ungated"))
     _hold = holdout_data.get("per_arm", {}).get("vasool", {})
-    _paise = (_v.get("recovered_paise_total") or 0) + (_hold.get("recovered_paise_total") or 0)
+    # Cohorts are added only when one agent produced both — the same rule the
+    # hero's script applies. The holdout of 2026-08-29 carries no fingerprint,
+    # so from the first re-measurement of the development cohort under a
+    # changed agent it is reported beside the result, never summed into it.
+    _same_agent = bool(holdout_data) and (
+        holdout_data.get("agent_fingerprint") == raw_data.get("agent_fingerprint")
+    )
+    _paise = (_v.get("recovered_paise_total") or 0) + (
+        (_hold.get("recovered_paise_total") or 0) if _same_agent else 0
+    )
+    hero_scope = "recovered across both cohorts" if _same_agent else "recovered in the development cohort"
     _closure = _v.get("closure", {})
     _rt = redteam_data or {}
     _sh = (shadow_data or {}).get("overall", {})
@@ -236,7 +246,8 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
     noscript_rows = "\n".join(
         f"<tr><th scope='row'>{label}</th><td>{value}</td></tr>"
         for label, value in [
-            ("Money recovered, both cohorts", f"&#8377;{_paise / 100 / 1e7:,.2f} Cr" if _paise else "&mdash;"),
+            ("Money recovered, " + ("both cohorts" if _same_agent else "development cohort"),
+             f"&#8377;{_paise / 100 / 1e7:,.2f} Cr" if _paise else "&mdash;"),
             ("Vasool recovery rate", _fig(_v.get("recovery_rate_mean"))),
             ("Incumbent (retry_plus_contact)", _fig(_b.get("recovery_rate_mean"))),
             ("Ungated (no guard chain)", _fig(_u.get("recovery_rate_mean"))),
@@ -1272,11 +1283,11 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 <h2><span class="vasool-tag">VASOOL</span></h2>
             </div>
             <h1 id="hero-money">&mdash;</h1>
-            <p id="hero-sub">recovered across both cohorts &middot;
+            <p id="hero-sub">{hero_scope} &middot;
                <span id="hero-violations">&mdash;</span></p>
             <p id="hero-split" style="margin-top: 6px; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">&mdash;</p>
             <p style="margin-top: 10px; font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8;">
-               <span id="hero-trajectories">0</span> arm-seed runs &middot; 9,000 base + 151,200 sweep
+               <span id="hero-trajectories">&mdash;</span> arm-seed runs &middot; <span id="hero-run-split">&mdash;</span>
             </p>
         </div>
 
@@ -1605,7 +1616,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             <p class="footer-links">
                 <a href="https://github.com/sriramvarun0636/Vasool">Repository</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/docs/EVALUATION.md">The pre-registered protocol</a> &nbsp;&middot;&nbsp;
-                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Seven incidents</a> &nbsp;&middot;&nbsp;
+                <a href="https://github.com/sriramvarun0636/Vasool/blob/main/POSTMORTEM.md">Eight incidents</a> &nbsp;&middot;&nbsp;
                 <a href="https://github.com/sriramvarun0636/Vasool/blob/main/COMPLIANCE.md">The thirteen guards</a>
             </p>
         </footer>
@@ -1615,10 +1626,17 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
     <script>
         // --- DATA LAYER & ROBUST PARSING ---
         let EVAL = {{}};
-        let vasoolYield = 49.07;
-        let baselineYield = 65.42;
-        let greedyYield = 53.81;
-        let totalRuns = 160200;
+        // No literal starting values. These were 49.07, 65.42, 53.81 and
+        // 160200, and the last one was on screen in every build: the keys
+        // meant to overwrite it never existed in any manifest, so the hero
+        // showed a constant as a count (POSTMORTEM.md INC-008). A figure the
+        // manifest does not carry is a dash.
+        let vasoolYield = null;
+        let baselineYield = null;
+        let greedyYield = null;
+        let baseRuns = null;
+        let sweepRuns = 0;
+        let totalRuns = null;
         let usingFallback = false;
         // No literal default. §2a's whole point is that a compliance number is
         // measured; a hardcoded stand-in rendering as a measurement is the
@@ -1639,20 +1657,30 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             EVAL = JSON.parse(raw);
             const arms = EVAL.per_arm || {{}};
             
-            if (arms.vasool && arms.vasool.recovery_rate_mean) {{
+            if (typeof arms.vasool?.recovery_rate_mean === "number") {{
                 vasoolYield = (arms.vasool.recovery_rate_mean * 100).toFixed(2);
             }}
-            if (arms.retry_plus_contact && arms.retry_plus_contact.recovery_rate_mean) {{
+            if (typeof arms.retry_plus_contact?.recovery_rate_mean === "number") {{
                 baselineYield = (arms.retry_plus_contact.recovery_rate_mean * 100).toFixed(2);
             }}
-            if (arms.vasool_ungated && arms.vasool_ungated.recovery_rate_mean) {{
+            if (typeof arms.vasool_ungated?.recovery_rate_mean === "number") {{
                 greedyYield = (arms.vasool_ungated.recovery_rate_mean * 100).toFixed(2);
             }}
-            
-            if (EVAL.metadata && EVAL.metadata.total_trajectories) {{
-                totalRuns = EVAL.metadata.total_trajectories;
-            }} else if (EVAL.summary && EVAL.summary.total_runs) {{
-                totalRuns = EVAL.summary.total_runs;
+
+            // The run count is the manifest's own: every arm's seeds, plus —
+            // when the manifest carries §7's grid — its configurations and
+            // reference, times the arms, times the grid's seeds.
+            const seedsPerArm = Object.values(arms).map(a => a?.seeds).filter(n => typeof n === "number");
+            if (seedsPerArm.length) {{
+                baseRuns = seedsPerArm.reduce((total, n) => total + n, 0);
+                const reference = Object.values(EVAL.sweep_reference || {{}})[0] || {{}};
+                const sweepSeeds = Object.values(reference)[0]?.n_seeds;
+                if (EVAL.sweeps && typeof sweepSeeds === "number") {{
+                    sweepRuns = (Object.keys(EVAL.sweeps).length + 1) * (EVAL.arms || []).length * sweepSeeds;
+                }}
+                totalRuns = baseRuns + sweepRuns;
+            }} else {{
+                usingFallback = true;
             }}
             
             sampleLedger = EVAL.ledger || (EVAL.determinism ? EVAL.determinism.sample_receipts : []) || [];
@@ -2336,7 +2364,16 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             const heroRuns = document.getElementById("hero-trajectories");
             const formatNum = (num) => new Intl.NumberFormat().format(num);
             
-            if (prefersReducedMotion) {{
+            const heroRunSplit = document.getElementById("hero-run-split");
+            if (heroRunSplit && baseRuns !== null) {{
+                heroRunSplit.innerText = sweepRuns
+                    ? `${{formatNum(baseRuns)}} base + ${{formatNum(sweepRuns)}} sweep`
+                    : `${{formatNum(baseRuns)}} base · this manifest carries no sweep grid`;
+            }}
+
+            if (totalRuns === null) {{
+                heroRuns.innerText = "—";
+            }} else if (prefersReducedMotion) {{
                 heroRuns.innerText = formatNum(totalRuns);
             }} else {{
                 let currentRuns = 0;
@@ -2363,11 +2400,17 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             const holdPaise = HOLDOUT?.per_arm?.vasool?.recovered_paise_total;
             const heroMoney = document.getElementById("hero-money");
             const heroSplit = document.getElementById("hero-split");
+            // Two cohorts are added only when one agent produced both. The
+            // holdout was evaluated once, on 2026-08-29, and carries no
+            // fingerprint; once the development cohort is re-measured under a
+            // changed agent, their sum is a number neither agent produced.
+            const sameAgent = typeof HOLDOUT?.agent_fingerprint === "string"
+                && HOLDOUT.agent_fingerprint === EVAL?.agent_fingerprint;
 
             if (heroMoney) {{
                 if (typeof devPaise !== "number") {{
                     heroMoney.innerText = "\u2014";
-                }} else if (typeof holdPaise === "number") {{
+                }} else if (typeof holdPaise === "number" && sameAgent) {{
                     trace(heroMoney,
                           "per_arm.vasool.recovered_paise_total (development + holdout)",
                           crore(devPaise + holdPaise));
@@ -2376,12 +2419,23 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
                 }}
             }}
             if (heroSplit) {{
-                heroSplit.innerHTML = (typeof devPaise === "number" && typeof holdPaise === "number")
-                    ? `${{crore(devPaise)}} development (40% of customers) &nbsp;+&nbsp; ` +
+                if (typeof devPaise !== "number") {{
+                    heroSplit.innerHTML = "&mdash;";
+                }} else if (typeof holdPaise !== "number") {{
+                    heroSplit.innerHTML = `development cohort only &mdash; the holdout has not been evaluated`;
+                }} else if (sameAgent) {{
+                    heroSplit.innerHTML =
+                      `${{crore(devPaise)}} development (40% of customers) &nbsp;+&nbsp; ` +
                       `${{crore(holdPaise)}} holdout (the sealed 60%, evaluated once) &middot; ` +
                       `<span style="color: var(--status-good)">every other figure on this page is ` +
-                      `the development cohort</span>`
-                    : `development cohort only &mdash; the holdout has not been evaluated`;
+                      `the development cohort</span>`;
+                }} else {{
+                    heroSplit.innerHTML =
+                      `development cohort (40% of customers) &middot; the holdout &mdash; ` +
+                      `${{crore(holdPaise)}}, evaluated once on 2026-08-29 &mdash; describes an ` +
+                      `earlier agent and is not added: a sum across two agents is a number ` +
+                      `neither produced`;
+                }}
             }}
 
             // The close carries manifest keys like everything else -- a footer
@@ -2406,11 +2460,11 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
 
             // 4. Populate Yield
             trace(document.getElementById("yield-vasool"),
-                  "per_arm.vasool.recovery_rate_mean", vasoolYield + "%");
+                  "per_arm.vasool.recovery_rate_mean", vasoolYield === null ? "—" : vasoolYield + "%");
             trace(document.getElementById("yield-baseline"),
-                  "per_arm.retry_plus_contact.recovery_rate_mean", baselineYield + "%");
+                  "per_arm.retry_plus_contact.recovery_rate_mean", baselineYield === null ? "—" : baselineYield + "%");
             trace(document.getElementById("yield-greedy"),
-                  "per_arm.vasool_ungated.recovery_rate_mean", greedyYield + "%");
+                  "per_arm.vasool_ungated.recovery_rate_mean", greedyYield === null ? "—" : greedyYield + "%");
             
             // 5. Pre-fill a valid receipt ID if the ledger exists
             if (sampleLedger.length > 0 && sampleLedger[0].receipt_id) {{
@@ -2506,7 +2560,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
             
             if (!record) {{
                 consoleBox.innerHTML += `<span class="console-error">&gt; ERROR: Receipt ${{safeInputId}} not found in EVAL.</span>\\n`;
-                consoleBox.innerHTML += `<span class="console-error">&gt; NOTE: evaluation.json limits ledger size. Run 'make replay' for the full 9,000 base trajectories.</span>`;
+                consoleBox.innerHTML += `<span class="console-error">&gt; NOTE: the manifest carries the head of one seed's ledger. 'make eval' recomputes every ledger behind it.</span>`;
                 return;
             }}
             

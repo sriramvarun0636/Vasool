@@ -1,8 +1,8 @@
 {
-  "agent_fingerprint": "7ee7f5b57b0d746df5bbada5ac83abba3c5b267bcd686b84ee48762137933535",
+  "agent_fingerprint": "10eba2ff81f2fdc4ffc9028b8ae78173ba27428c102528b656f125a3caf55353",
   "as_registered": true,
   "attacks": 22,
-  "failed": 3,
+  "failed": 2,
   "results": [
     {
       "as_registered": true,
@@ -70,7 +70,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A02",
-      "ledger_sha256": "23e822f2e3cf65b8c01d00b8f986048a5e479413ae84898a2389d8e078e05bfc",
+      "ledger_sha256": "55eddff54abb1d660a1e083d9cc2e03867f4ab8342c0095367560e9e4d05bca5",
       "receipts": 2,
       "source": "docs/VERIFIED.md's settlement DECISION; the control for A01",
       "survived": true,
@@ -114,7 +114,7 @@
       "dispatched": 4,
       "expectation": "survives",
       "id": "A03",
-      "ledger_sha256": "ceb2c3fea28b7421e9341a16d5dac01e9d5480e4c7ff554effec0009a8fc2e91",
+      "ledger_sha256": "716d079e70b02b277dcfe7588644045390b44ce6df048d1b8ef0080e706e2e82",
       "receipts": 5,
       "source": "docs/taxonomy.md \u00a79.11 (EXHAUSTED is unreachable)",
       "survived": true,
@@ -153,7 +153,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A04",
-      "ledger_sha256": "eea65084cb473ed20a5e1ffac7ca07ec68666f72d7f41c8ad010eb083d1faa4b",
+      "ledger_sha256": "1dc3e989fb491e9311433084cad95446c1fd5452f469a40e07f65e40c52546e9",
       "receipts": 2,
       "source": "docs/VERIFIED.md: duplicate delivery is normal operation",
       "survived": true,
@@ -192,7 +192,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A05",
-      "ledger_sha256": "d66ddbc985dc86356440c01395e5204d6367ed9ffd6609d2fbdbfec6b777fc24",
+      "ledger_sha256": "775a7dd0cc4059dc6380fff32eff58aedce216a9346b9947a1a331f3ff83eabb",
       "receipts": 2,
       "source": "design spec \u00a79 A02",
       "survived": true,
@@ -231,7 +231,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A06",
-      "ledger_sha256": "3704acb599bef10d40722bddaf5c292fe4086b8a746554d58a3b3f9d5413fab1",
+      "ledger_sha256": "c61704e59e335eb954a0615f496581b6ab24f699949c078d84537453cf4eb896",
       "receipts": 1,
       "source": "docs/VERIFIED.md (two IPs, same millisecond); the postmortem list",
       "survived": true,
@@ -265,7 +265,7 @@
       "dispatched": 4,
       "expectation": "fails",
       "id": "A07",
-      "ledger_sha256": "d8e09268c71dd0162280d00e85a6b9bacc7312d94a2508aab0b80fc7fd56e53e",
+      "ledger_sha256": "9eee4d4fc395b04390b099184a06d57ea0fa51e06680b5be1df98166f160d869",
       "receipts": 4,
       "source": "vasool/events/schemas.py::derive_customer_id KNOWN LIMITATION; spec A13",
       "survived": false,
@@ -299,7 +299,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A08",
-      "ledger_sha256": "8c7b90fef286f07a4d1d1b292a9f807469495a2abf566ecb62276ce9cb2f7c8e",
+      "ledger_sha256": "331eb27b990e80d92e4dbcf531bef9ee284a43bb11dcbd2805492a438e695606",
       "receipts": 1,
       "source": "docs/taxonomy.md \u00a79.3; spec A05. Registered FAILS; fixed 2026-08-30",
       "survived": true,
@@ -310,12 +310,12 @@
       "as_registered": true,
       "clauses": [
         {
-          "detail": "1 executed actions, each with a full ALLOW chain",
+          "detail": "0 executed actions, each with a full ALLOW chain",
           "held": true,
           "name": "no_money_policy_forbids"
         },
         {
-          "detail": "1 messages, all inside \u00a72a's four contact rows",
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
           "held": true,
           "name": "no_contact_outside_policy"
         },
@@ -325,19 +325,19 @@
           "name": "ledger_records_the_refusal"
         },
         {
-          "detail": "1 messages to DND-listed customers, first rcpt_96dd1fcdc560890d",
-          "held": false,
+          "detail": "no message reached a DND-listed customer",
+          "held": true,
           "name": "no_contact_to_a_dnd_listed_customer"
         }
       ],
-      "dispatched": 1,
-      "expectation": "fails",
+      "dispatched": 0,
+      "expectation": "survives",
       "id": "A09",
-      "ledger_sha256": "a4109a23354b4b8e5198e136ab979a3c5492a1d861b4a6ddf671b230f66b1d00",
+      "ledger_sha256": "414da5d2829587060e29b3f23d06adda0afd738d95f14f04f9cd875184171d78",
       "receipts": 1,
-      "source": "vasool/diagnosis/proposal.py::MessageCategory VERIFY",
-      "survived": false,
-      "targets": "the TRAI scrub, which no proposal this system builds can reach",
+      "source": "vasool/diagnosis/proposal.py::MessageCategory VERIFY. Registered FAILS; fixed and re-registered 2026-09-15",
+      "survived": true,
+      "targets": "DNDGuard's jurisdiction over a message whose DLT category no one declared",
       "title": "a message to a DND-listed customer"
     },
     {
@@ -367,7 +367,7 @@
       "dispatched": 1,
       "expectation": "survives",
       "id": "A10",
-      "ledger_sha256": "53e39170f77afbede837d10ad44b3c0d47362cab0606a8a02698301c729b2e3f",
+      "ledger_sha256": "5c7be122031809e9496eab275c75d1714013447ccf7c1a9eab1f86b498f0b8ff",
       "receipts": 1,
       "source": "design spec \u00a79 A04",
       "survived": true,
@@ -406,7 +406,7 @@
       "dispatched": 4,
       "expectation": "survives",
       "id": "A11",
-      "ledger_sha256": "7956eb7dc2e41d2ffee766e75b2dfc6419e4fd990570f68648d88d3d30f0f041",
+      "ledger_sha256": "f0ae5de519da417216b3f5ed2b3ab93f7e3a1f45924f9ab1809f0b5a9c7d4a12",
       "receipts": 4,
       "source": "the control for A07",
       "survived": true,
@@ -450,7 +450,7 @@
       "dispatched": 2,
       "expectation": "survives",
       "id": "A12",
-      "ledger_sha256": "baeb433d012e31344c57b011ae6a0a55e3ec79aa23f26226184fd4137f9ba73f",
+      "ledger_sha256": "dc1ad4f17254f1731549fc031c68f28435149df164574b14bee2c57975f150fa",
       "receipts": 3,
       "source": "design spec \u00a79 A11",
       "survived": true,
@@ -499,7 +499,7 @@
       "dispatched": 0,
       "expectation": "survives",
       "id": "A13",
-      "ledger_sha256": "1c683f15e97b5436f493c3bf3f9abff165581152b3b0639fcec7a605843f0bb0",
+      "ledger_sha256": "dca6c946688968dd91bd44c5337350bb77b0fba000b761323a34f3a0224b82e6",
       "receipts": 2,
       "source": "design spec \u00a79 A12; taxonomy \u00a77",
       "survived": true,
@@ -616,7 +616,7 @@
       "dispatched": 2,
       "expectation": "survives",
       "id": "A16",
-      "ledger_sha256": "fbfeff1fee4207bd319188cf6f3d3f7b77a227b027626a3b37fb589ed93a27bf",
+      "ledger_sha256": "6ca91ddc3444256c674f888374931a1e1adb2f1db892d63de53ecdc0d2a23da7",
       "receipts": 2,
       "source": "design spec \u00a79 A06; taxonomy \u00a75's card_expired",
       "survived": true,
@@ -821,7 +821,7 @@
       "dispatched": 2,
       "expectation": "survives",
       "id": "A23",
-      "ledger_sha256": "77f08c8de864ee9054f3a99ed87aa0b8b33176593d246fa40214893cbec80d6f",
+      "ledger_sha256": "545ef71c1112d06cc7fe2d7b9e24c38db3d7dbf32d283a8080cdd3599b534d66",
       "receipts": 2,
       "source": "design spec \u00a710's compliance row; docs/taxonomy.md \u00a79.13",
       "survived": true,
@@ -868,5 +868,5 @@
       "title": "the failure arrives after the capture"
     }
   ],
-  "survived": 19
+  "survived": 20
 }

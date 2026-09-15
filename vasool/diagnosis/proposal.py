@@ -54,16 +54,24 @@ class MessageCategory(StrEnum):
 
     # VERIFY: whether a payment-recovery message is transactional, service or
     # promotional under TCCCPR is genuinely unsettled, and it is the single fact
-    # that decides whether DNDGuard fires at all. We categorise recovery
-    # messages as TRANSACTIONAL — they concern a payment the customer already
-    # initiated — but a telecom operator or the merchant's DLT registration
-    # could categorise them otherwise, and if they do, DNDGuard becomes
-    # load-bearing overnight. Not a detail to guess about in production.
+    # that decides whether DNDGuard has jurisdiction. Under TCCCPR it is not a
+    # message's content that decides its category but the category its
+    # template is registered under on DLT — which is the merchant's
+    # registration, not something this module can see.
+
+    So the diagnosis no longer guesses. Every contact it builds carries
+    `UNKNOWN`, and a merchant declares what its templates are registered as
+    in `PolicyFacts.template_categories`, beside the registrations themselves. Until 2026-09-15 every contact
+    was built as TRANSACTIONAL, which kept DNDGuard out of every decision and
+    left adversary attack A09 open (docs/EVALUATION.md §10, 2026-09-15).
     """
 
     TRANSACTIONAL = "TRANSACTIONAL"
     SERVICE = "SERVICE"
     PROMOTIONAL = "PROMOTIONAL"
+    UNKNOWN = "UNKNOWN"
+    """No declaration covers this message's template. DNDGuard treats it as it
+    treats PROMOTIONAL: an unknown category is not a transactional one."""
 
 
 class ProposalRole(StrEnum):
@@ -243,7 +251,7 @@ def _build(
         attempt=diagnosis.attempt,
         execute_at=execute_at,
         channel=DEFAULT_CHANNEL if is_contact else None,
-        message_category=MessageCategory.TRANSACTIONAL if is_contact else None,
+        message_category=MessageCategory.UNKNOWN if is_contact else None,
         template_id=template,
         explain=diagnosis.explain,
         rationale=diagnosis.rationale,
@@ -320,7 +328,7 @@ def notice_proposal_from(debit: Proposal, *, execute_at: datetime) -> Proposal:
         attempt=debit.attempt,
         execute_at=execute_at,
         channel=DEFAULT_CHANNEL,
-        message_category=MessageCategory.TRANSACTIONAL,
+        message_category=MessageCategory.UNKNOWN,
         template_id=_TEMPLATES["PRE_DEBIT_NOTICE"],
         rationale=(
             "RBI e-mandate: the customer must be notified before a recurring "

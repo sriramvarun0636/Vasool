@@ -383,13 +383,14 @@ WORLD_PARAMETERS: dict[str, Parameter] = {
         registered_in="§10",
         bounds=UNIT_INTERVAL,
         note=(
-            "Share of customers on TRAI's DND registry. Inert today and "
-            "registered anyway: DNDGuard.applies_to only returns True for "
-            "PROMOTIONAL messages and every message this system sends is "
-            "TRANSACTIONAL, so the guard is NOT_APPLICABLE throughout. "
-            "vasool/diagnosis/proposal.py's own VERIFY note says that "
-            "categorisation is genuinely unsettled, and if it moves this "
-            "parameter becomes load-bearing overnight."
+            "Share of customers on TRAI's DND registry, stated to the agent as "
+            "a fresh scrub. Drawn in every universe and inert until "
+            "2026-09-15, because DNDGuard judged only PROMOTIONAL messages and "
+            "every contact was built TRANSACTIONAL. Load-bearing since: a "
+            "contact now carries UNKNOWN unless the merchant declares its "
+            "template's DLT category, the simulated merchant declares none, "
+            "and DNDGuard blocks this share of customers' contacts in every "
+            "guarded arm (docs/EVALUATION.md §10, 2026-09-15)."
         ),
     ),
     "mandate_share": Parameter(

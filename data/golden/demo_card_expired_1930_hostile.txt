@@ -55,7 +55,8 @@
     RetryCapGuard       NOT_APPLICABLE
     PromiseToPayGuard   ALLOW
                                        RBI Fair Practices Code (fair dealing)
-    DNDGuard            NOT_APPLICABLE
+    DNDGuard            ALLOW
+                                       TRAI TCCCPR 2018 (as amended Feb 2025)
     FrequencyCapGuard   ALLOW
                                        RBI Fair Practices Code (anti-
                                        harassment)
@@ -79,12 +80,12 @@
 [8] receipt
     outcome      : blocked
     receipt_id   : rcpt_08d2f2859e51f6c7
-    hash         : d68942c9613aa34594d2aa2130a01b535a19355ac95dcf149e8cda0149f11d56
+    hash         : d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c
     prev_hash    : 0000000000000000000000000000000000000000000000000000000000000000
 
 
 ==============================================================================
 SUMMARY: REAUTH_LINK for pay_TSOPJqQGAvaA2K -- BLOCKED by DPDP Act 2023 s.6 +
 DPDP Rules 2025, and stayed BLOCKED.
-Receipt: d68942c9613aa34594d2aa2130a01b535a19355ac95dcf149e8cda0149f11d56
+Receipt: d0cc54102344c68cebd499f187c9f5bdf2a14800540efc6f74d9d0664cac2a9c
 ==============================================================================

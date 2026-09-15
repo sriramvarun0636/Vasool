@@ -1,6 +1,6 @@
 # POSTMORTEM — what broke, and how I got out
 
-Seven incidents. Each one is recorded somewhere else in this repository as well —
+Eight incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
@@ -369,7 +369,44 @@ is green" in this repository's history had been measured on mine.
 
 ---
 
-## The pattern across all seven
+### INC-008 — The run count that was never read
+
+**Symptom.** The dashboard's hero read *160,200 arm-seed runs · 9,000 base +
+151,200 sweep* on every build. It was right, for the manifest it sat on. It had
+never been read from it. This surfaced on 2026-09-15, while making the hero
+honest about re-run #1's manifest, which carries no sweep grid: the count would
+have gone on saying 151,200 sweep runs beside a manifest holding none.
+
+**Investigation.** `let totalRuns = 160200;`, overwritten only from
+`EVAL.metadata.total_trajectories` or `EVAL.summary.total_runs` — keys no
+manifest this project has written has ever carried. The breakdown beside it was
+typed into the markup. The three hero yields started life as `49.07`, `65.42`
+and `53.81`, overwritten when the manifest had values and shown silently when it
+did not. And a console note hardcoded "9,000 base trajectories" and sent the
+reader to `make replay`, which replays nothing.
+
+**Root cause.** This is INC-005 again. INC-005's test forbids `|| <number>` on
+an expression reading the manifest; a literal starting value, overwritten by a
+branch that never runs, is the same failure in a shape that test did not know
+about.
+
+**Fix.** Every displayed figure starts as `null` and becomes a number only by
+being read. The run count is derived from the manifest — each arm's seeds, plus
+§7's configurations and reference times arms times seeds when the grid is there
+— and the breakdown says so when it is not. `tests/test_report.py` now fails on a
+numeric starting value for any displayed figure, and was checked against the old
+source: it catches all four.
+
+**What I'd do differently.** A guard written against the syntax of the last bug
+catches the last bug. The property is *nothing on the page is a number the
+manifest did not produce*, and the test that holds it renders the page against
+a manifest with every field removed and asserts that no figure survives as a
+digit. That test does not exist yet, and until it does this entry is the reason
+it should.
+
+---
+
+## The pattern across all eight
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -390,7 +427,7 @@ measures that machine. So the clean clone is part of the apparatus now: CI runs
 the suite from one on every push, with nothing configured.
 
 That is the argument this project is actually making. Not that the agent is
-correct — I have seven incidents here that say otherwise, and three known
+correct — I have eight incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by
