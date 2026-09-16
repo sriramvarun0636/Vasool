@@ -118,6 +118,31 @@ class TestTraceDiscipline:
             "on the page will fall back to a dash at runtime"
         )
 
+    def test_every_path_traced_into_another_artifact_resolves(self):
+        """`traceIn` is `trace` for the four artifacts that are not the
+        manifest. The same rule applies to all of them: a figure names a key
+        something actually carries, or it is not on the page."""
+        files = {
+            "holdout": HOLDOUT,
+            "redteam": REPO_ROOT / "out" / "adversary" / "redteam.json",
+            "shadow": SHADOW,
+        }
+        cited = re.findall(r'traceIn\("(\w+)",\s*[^,]+,\s*"([a-z_][\w.]*)"', SOURCE)
+        assert cited, "no literal traceIn() paths found"
+        for artifact, path in cited:
+            if artifact == "chain":
+                assert path in {"count", "statutes"}, f"chain has no {path!r}"
+                continue
+            source = files[artifact]
+            if not source.exists():
+                continue
+            node = json.loads(source.read_text())
+            for part in path.split("."):
+                assert isinstance(node, dict) and part in node, (
+                    f"traceIn cites {artifact}.{path}, but {part!r} is not in {source.name}"
+                )
+                node = node[part]
+
     def test_every_traced_path_is_a_manifest_key(self):
         if not MANIFEST.exists():
             pytest.skip("no manifest on disk — run `make sweeps` first")
@@ -508,9 +533,35 @@ class TestGuardCountDoesNotDrift:
 
         return GUARD_CHAIN
 
-    def test_the_dashboard_draws_the_chain_in_order(self):
-        drawn = re.findall(r'name: "(\w+Guard)"', SOURCE)
-        assert drawn == [guard.name for guard in self._chain()]
+    def test_the_dashboard_draws_the_chain_from_the_registry(self):
+        """The list is read from `GUARD_CHAIN`, not typed beside it.
+
+        Until 2026-09-16 the page carried its own array of the guards, each
+        with a clause written by hand: a copy of the registry that this test
+        had to compare name by name, and whose clauses no test compared at
+        all. `tools/report.py::guard_chain` serialises the real thing, so the
+        page cannot name a guard the code does not have, quote a statute the
+        guard has stopped citing, or miss one that joined the chain.
+        """
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_report", REPORT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        chain = module.guard_chain()
+        assert [g["name"] for g in chain["guards"]] == [g.name for g in self._chain()]
+        assert [g["statute"] for g in chain["guards"]] == [
+            getattr(g, "statute", None) for g in self._chain()
+        ]
+        assert chain["count"] == len(self._chain())
+        assert chain["statutes"] == sum(g.statute is not None for g in self._chain())
+        assert all(g["id"] for g in chain["guards"]), "a guard has no COMPLIANCE.md number"
+
+    def test_no_hand_written_copy_of_the_chain_survives(self):
+        assert not re.search(r'name: "\w+Guard"', SOURCE), (
+            "the page has grown a second, hand-written guard list"
+        )
 
     def test_the_dashboard_counts_the_guards_and_the_statutes_the_code_has(self):
         text = SOURCE
@@ -566,6 +617,43 @@ class TestGuardCountDoesNotDrift:
 
     def _count(self, quoted: str) -> int:
         return int(quoted) if quoted.isdigit() else self.WORDS[quoted.lower()]
+
+
+class TestProseDoesNotCountThingsItself:
+    """Every count on the page is the artifact's, including the ones inside
+    sentences.
+
+    Three sentences had gone stale in the markup while the figures above them
+    were right: a red-team tile reading "13" guards after the chain became
+    fifteen, "Four are open and named" after two of the four closed, and a
+    paragraph describing an 83-configuration grid that the manifest on disk
+    does not contain. A number typed into prose is a number nobody updates.
+    """
+
+    def test_no_sentence_counts_the_open_attacks(self):
+        stale = re.findall(r"\b(?:One|Two|Three|Four|Five|Six)\s+(?:is|are)\s+open", SOURCE)
+        assert not stale, f"the open-attack count is typed into the page: {stale}"
+
+    def test_the_guard_count_beside_the_attacks_is_not_a_literal(self):
+        assert '"13", "guards' not in SOURCE and '"15", "guards' not in SOURCE
+
+    def test_the_sweep_exhibit_does_not_describe_a_grid_it_may_not_have(self):
+        """It claimed "A3 fails in all 83" beside an empty figure. The sentence
+        is built from the grid when there is one, and replaced by a statement
+        that there is none when there is not."""
+        assert "fails in all 83" not in SOURCE
+        assert "sweep-absent" in SOURCE and "sweepNames.length" in SOURCE
+
+
+class TestNoFigureIsAnimated:
+    """A figure counted up from zero is, for most of a second, a number no
+    artifact produced -- and that is what a screenshot catches. The page used
+    to animate the hero's run count and all three recovery rates; every value
+    now renders once, at the value it was read at."""
+
+    def test_no_count_up(self):
+        assert "count-up" not in SOURCE
+        assert "setInterval" not in SOURCE, "a figure is being stepped through values"
 
 
 class TestExhibitsAreOrdered:

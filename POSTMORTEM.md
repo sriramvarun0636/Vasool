@@ -1,6 +1,6 @@
 # POSTMORTEM — what broke, and how I got out
 
-Ten incidents. Each one is recorded somewhere else in this repository as well —
+Eleven incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
@@ -510,7 +510,58 @@ is the only place a double debit exists, so it is the only place to count one.
 
 ---
 
-## The pattern across all ten
+### INC-011 — The page counted things in its own prose
+
+**Symptom.** Found by eye while rebuilding the dashboard on 2026-09-16. Three
+sentences disagreed with the artifacts printed beside them. A tile under the
+adversarial table read **13 guards** while the chain had fifteen and the
+paragraph two screens above said so. Exhibit G closed with *"Four are open and
+named"* above a table listing two. Exhibit C explained that *"A3 fails in all
+83"* configurations — above an empty figure, because the manifest on disk
+carries no sweep grid at all. A fourth was not a count: the guard board
+displayed `Status: COMPLIANT` for fourteen of the fifteen guards, which nothing
+had measured.
+
+**Investigation.** Every one was a literal in the markup or in the script,
+outside `trace()` — so INC-005's discipline, which fails the build on a
+`|| <number>` fallback and stamps every figure with the key it came from, had
+nothing to say about any of them. Each had been true when it was typed: the
+tile when the chain had thirteen guards, the "four" when four attacks were
+open, the A3 paragraph when the artifact still carried §7's grid. The page's
+figures were audited; its sentences were not.
+
+**Root cause.** Provenance had been applied to *numbers* and not to *claims*.
+A sentence is exactly where a number goes to be forgotten, and the page was
+free to state anything at all as long as it stated it in prose.
+
+**Fix.** Every count in the prose is now computed from the artifact it
+describes. The guard chain is serialised from `GUARD_CHAIN` by
+`tools/report.py` and drawn from that — names, statutes and COMPLIANCE.md's
+numbers — so the hand-written list that carried the `13`, and the invented
+`Status: COMPLIANT` beside each guard, are both gone. The open attacks are
+counted and named from `redteam.json`. When the manifest has no sweep grid,
+Exhibit C says so in the space the figure would have filled and quotes the
+artifact's own `detail` field rather than describing a grid that is not there.
+The counting animation went with them: a figure that counts up from zero
+displays, for a second and a half, values no artifact produced — and a
+screenshot taken in that second is a screenshot of numbers that were never
+measured.
+
+Four tests hold the line: prose may not count the open attacks, the tile beside
+the adversarial table may not be a literal, the sweep exhibit may not describe a
+grid the manifest may not carry, and the chain the page draws is compared
+against `GUARD_CHAIN` name by name and statute by statute.
+
+**What I'd do differently.** Treat a sentence as a figure. Every count worth
+printing is worth deriving, and the ones that read as background — "fifteen
+guards", "four open" — are precisely the ones nobody revisits.
+
+**Cross-reference.** `tests/test_report.py::TestProseDoesNotCountThingsItself`,
+`::TestNoFigureIsAnimated`, `::TestGuardCountDoesNotDrift`.
+
+---
+
+## The pattern across all eleven
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -536,13 +587,20 @@ faithfully: every scan passed, because every scan checked the code against the
 rule as written. It was found by reading the regulation instead of a summary of
 it, which is why the mandate work quotes every clause it rests on.
 
+INC-011 is the fourth, and the smallest of them, which is why it is worth
+keeping: the apparatus was pointed at the right layer and stopped one line
+short of it. Every figure on the report card had to name its source; the
+sentences around those figures could say anything, and three of them had
+quietly stopped being true. Provenance that covers numbers and not claims
+covers the easier half.
+
 INC-010 is the third, and it widens the lesson. The apparatus scanned the right
 records correctly; the defect lived below every record it scans. A double debit
 existed only at the rail, so an attack now counts there — the survival
 criterion's first check that does not ask the agent what it did.
 
 That is the argument this project is actually making. Not that the agent is
-correct — I have ten incidents here that say otherwise, and two known
+correct — I have eleven incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

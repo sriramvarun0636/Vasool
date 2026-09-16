@@ -43,7 +43,7 @@
 </p>
 
 <a href="https://sriramvarun0636.github.io/Vasool">
-  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool dashboard: Rs 44.72 Cr recovered in the development cohort with zero safety violations in 1,000 seeds; the holdout's Rs 69.60 Cr, evaluated on 2026-08-29 against an earlier agent, is reported beside it and not added. Three arm cards below it: the baseline at 65.42% with the safety predicate holding on 0 of 1,000 seeds, the ungated variant at 53.81% also on 0 of 1,000, and Vasool at 47.39% holding on 1,000 of 1,000." onerror="this.style.display='none'">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool report card: Rs 44.72 Cr recovered in the development cohort with zero safety violations in 1,000 seeds; the holdout's Rs 69.60 Cr, evaluated on 2026-08-29 against an earlier agent, is reported beside it and not added. Beside the headline, the record read off the artifacts: the safety predicate held on 1,000 of 1,000 seeds, pass^100 of 1.00, 21 of 23 attacks survived with 2 open, no registered criterion fired, re-run ledgers identical, and a chain of 15 guards of which 11 cite a statute." onerror="this.style.display='none'">
 </a>
 
 <sub><i>The top of <a href="https://sriramvarun0636.github.io/Vasool">the live dashboard</a> &mdash;
@@ -197,7 +197,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,125 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,131 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -207,8 +207,9 @@ git status --short
 > ⚠️ **Read this before running `make eval`.** It **overwrites the committed
 > manifest** with a base-protocol-only run. Every value in it reproduces, but the
 > `sweeps` block and F6's verdict do not exist in it — only `make sweeps` writes
-> those — so the dashboard's sensitivity grid would render as dashes afterwards,
-> and a dash on that dashboard means *the manifest does not carry this*.
+> those — so the dashboard's sensitivity exhibit would say it has no grid and F6
+> would read *not evaluated here*, which on that page means exactly what it says:
+> *the manifest does not carry this*.
 > `git checkout out/` puts the shipped one back. **Every claim in this README is
 > checkable without running anything** — the manifest ships; see
 > [the table below](#every-claim-and-where-it-comes-from).
@@ -405,7 +406,7 @@ Two guards follow from the sources. **G14** `MandateStateGuard` refuses a debit 
 
 **A Razorpay merchant is never told NPCI's code.** The design asked for a UPI Autopay debit that "fails with a cited NPCI code"; Razorpay's own documentation of a failed subsequent UPI payment names none. It sends one of **61 documented reasons** instead, and those are what Vasool classifies ([`docs/taxonomy.md` §12](docs/taxonomy.md)): **29** fit the five classes and **32** do not, and **fifteen** of those say money may already have moved — "Any amount deducted will be refunded", a pending payment, a timeout, a response that never came. For fourteen of the fifteen, Razorpay's own next step is to try again. That is how a customer is charged twice while a refund is in transit, and the same page says as much a few lines earlier: "Do not create another subsequent payment until you get the status of the previous one."
 
-So Vasool asks the rail instead. A failure whose money may be in flight gets a **status check** — NPCI's OC-215: the first at 90 seconds, at most three within two hours — and never a retry. "Debited" closes the episode as recovered; anything else goes to a person. **No unmapped reason is ever retried**, a failure that reports a revoked, paused or expired mandate moves the mandate record, citing Razorpay's reason and NPCI's code, and NPCI's own vocabulary waits behind a port for a provider that passes it on. [Watch one in the theatre](https://sriramvarun0636.github.io/Vasool/theatre/), or `SCENARIO=payment_pending RAIL=upi make demo`.
+So Vasool asks the rail instead. A failure whose money may be in flight gets a **status check** — NPCI's OC-215: the first at 90 seconds, at most three within two hours — and never a retry. "Debited" closes the episode as recovered; anything else goes to a person. **No unmapped reason is ever retried**, a failure that reports a revoked, paused or expired mandate moves the mandate record, citing Razorpay's reason and NPCI's code, and NPCI's own vocabulary waits behind a port for a provider that passes it on. [Watch that episode in the theatre](https://sriramvarun0636.github.io/Vasool/theatre/#upi_payment_pending), or `SCENARIO=payment_pending RAIL=upi make demo`.
 
 **And the client under all of it re-sent debits it could not confirm.** On a gateway error, four times; on a timeout, the exception escaped unrecorded. A new attack, **A26**, loses a debit's response and counts debits **at the rail** — and against the old client every one of the survival criterion's original clauses held while the rail took the customer's money twice. One proposal, one receipt, one dispatch: a double debit no record the agent keeps could show. A debit is now never re-sent, and A26 survives ([`POSTMORTEM.md` INC-010](POSTMORTEM.md)). Registered, with its expectations, before any of this was written ([§10, 2026-09-15](docs/EVALUATION.md)).
 
@@ -550,7 +551,7 @@ Every amendment to the protocol after registration — fifty-two of them — is 
 
 | Path | What lives there |
 | :--- | :--- |
-| [`POSTMORTEM.md`](POSTMORTEM.md) | **Ten incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well; the tenth is a double debit every record the agent keeps would have shown as one. Start here. |
+| [`POSTMORTEM.md`](POSTMORTEM.md) | **Eleven incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well; the tenth is a double debit every record the agent keeps would have shown as one. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the structural debt it has paid off, kept as a record |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 36 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), Razorpay's 61 UPI Autopay failure reasons, and NPCI's 225 UPI codes, each mapped to it |

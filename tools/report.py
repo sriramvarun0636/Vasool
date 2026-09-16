@@ -19,16 +19,50 @@ and an undefined name raises rather than rendering as nothing.
 
 import json
 import pathlib
+import re
 import sys
 import urllib.parse
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+if str(REPO) not in sys.path:
+    # Run as `python tools/report.py`, the script's own directory is on the
+    # path and the repository is not; the guard chain is read from the code.
+    sys.path.insert(0, str(REPO))
 
 _TEMPLATES = Environment(
     loader=FileSystemLoader(pathlib.Path(__file__).resolve().parent / "templates"),
     autoescape=False,
     undefined=StrictUndefined,
 )
+
+def guard_chain() -> dict:
+    """The chain the page draws, read from the registry rather than copied.
+
+    The dashboard used to carry its own list of the fifteen guards, with a
+    clause beside each written by hand -- a copy of `GUARD_CHAIN` that a test
+    had to compare name by name, and whose clauses no test compared at all.
+    It is serialised here instead: each guard's own `name` and `statute`, in
+    evaluation order, with COMPLIANCE.md's G number beside it. The counts the
+    page prints are this list's.
+    """
+    from vasool.policy.registry import GUARD_CHAIN
+
+    ids = dict(
+        (name, gid)
+        for gid, name in re.findall(r"^\| (G\d\d) \| `(\w+)` \|", (REPO / "COMPLIANCE.md").read_text(), re.M)
+    )
+    guards = [
+        {"id": ids.get(g.name), "name": g.name, "statute": getattr(g, "statute", None)}
+        for g in GUARD_CHAIN
+    ]
+    return {
+        "guards": guards,
+        "count": len(guards),
+        "statutes": sum(g["statute"] is not None for g in guards),
+    }
+
 
 def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     if not json_path.exists():
@@ -205,7 +239,7 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
                          f'text-anchor="middle">+ {extra} more modules</text>')
 
         imp = " &middot; ".join(short(m) for m in g["llm_importers"])
-        return f"""<svg viewBox="0 0 940 372" class="airgap-svg" role="img"
+        return f"""<svg viewBox="0 0 940 318" class="airgap-svg" role="img"
      aria-label="Import graph: the LLM module and the execution plane both import three shared
      data modules, and no edge connects them in either direction.">
   <text x="150" y="34" class="ag-h" text-anchor="middle">SHADOW PLANE</text>
@@ -300,6 +334,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
         shadow_json=json.dumps(shadow_data),
         redteam_json=json.dumps(redteam_data),
         holdout_json=json.dumps(holdout_data),
+        chain_json=json.dumps(guard_chain()),
         logo_svg=logo_svg,
         hero_scope=hero_scope,
         airgap_svg=airgap_svg,

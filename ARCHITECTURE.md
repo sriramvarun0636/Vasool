@@ -144,10 +144,16 @@ windtunnel  ──▶  out/development/*.jsonl   ──▶  evaluation.json  ─
                                           every figure carries its manifest key
 ```
 
-The report card reads the manifest and nothing else. A value the manifest does
-not carry renders as a dash and raises a banner — it is never defaulted to a
-plausible number, and `tests/test_report.py` fails the build if that discipline
-is reintroduced. `POSTMORTEM.md` INC-005 is why that test exists.
+The report card reads the manifests and nothing else — the development
+manifest, and beside it the holdout, the adversary's artifact and the shadow
+comparison, each parsed on its own so that one that is absent costs its own
+exhibit and nothing else. A value none of them carries renders as a dash and
+raises a banner; it is never defaulted to a plausible number, and
+`tests/test_report.py` fails the build if that discipline is reintroduced.
+`POSTMORTEM.md` INC-005 is why that test exists, and INC-011 is why the rule now
+covers the page's sentences as well as its figures: the guard chain it draws is
+serialised from `GUARD_CHAIN` at build time rather than copied, and every count
+in its prose is computed from the artifact it describes.
 
 ## Known structural debt
 
