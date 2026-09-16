@@ -20,6 +20,8 @@ import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPORT = REPO_ROOT / "tools" / "report.py"
+TEMPLATE = REPO_ROOT / "tools" / "templates" / "report.html.j2"
+"""The page itself. Until 2026-09-16 it lived inside REPORT as one f-string."""
 MANIFEST = REPO_ROOT / "out" / "development" / "evaluation.json"
 HOLDOUT = REPO_ROOT / "out" / "holdout" / "evaluation.json"
 def _shadow_path() -> pathlib.Path:
@@ -38,7 +40,11 @@ def _shadow_path() -> pathlib.Path:
 
 SHADOW = _shadow_path()
 
-SOURCE = REPORT.read_text()
+SOURCE = REPORT.read_text() + TEMPLATE.read_text()
+"""Everything that decides what the dashboard says: the Python that computes
+the page's values and the template that lays them out. Every rule below about
+the page's JavaScript and markup scans both, so moving code between them cannot
+move it out of a rule's sight."""
 
 
 class TestNoHardcodedMeasurements:
@@ -430,7 +436,7 @@ class TestIncidentCountDoesNotDrift:
             re.compile(r"^## The pattern across all (\w+)$", re.M),
         ],
         "README.md": [re.compile(r"\*\*(\w+) incidents, in detail\.\*\*")],
-        "tools/report.py": [re.compile(r">(\w+) incidents</a>")],
+        "tools/templates/report.html.j2": [re.compile(r">(\w+) incidents</a>")],
     }
 
     def test_every_quoted_count_matches_the_headings(self):
@@ -503,11 +509,11 @@ class TestGuardCountDoesNotDrift:
         return GUARD_CHAIN
 
     def test_the_dashboard_draws_the_chain_in_order(self):
-        drawn = re.findall(r'name: "(\w+Guard)"', REPORT.read_text())
+        drawn = re.findall(r'name: "(\w+Guard)"', SOURCE)
         assert drawn == [guard.name for guard in self._chain()]
 
     def test_the_dashboard_counts_the_guards_and_the_statutes_the_code_has(self):
-        text = REPORT.read_text()
+        text = SOURCE
         chain = self._chain()
         statutes = re.search(r"(\w+) guards, of which <strong>(\w+) rest on a statute</strong>", text)
         assert statutes, "the dashboard no longer says how many guards rest on a statute"
@@ -668,3 +674,31 @@ class TestThePublishedDashboardMatchesItsGenerator:
             "regenerate and republish it in the same commit:\n"
             "    make report"
         )
+
+
+class TestThePageIsATemplate:
+    """ARCHITECTURE.md's structural debt, closed on 2026-09-16: the page is a
+    Jinja2 template, generated from the f-string it used to be."""
+
+    def test_the_module_holds_no_page(self):
+        assert 'f"""<!DOCTYPE html>' not in REPORT.read_text()
+        assert "<!DOCTYPE html>" in TEMPLATE.read_text()
+
+    def test_the_template_renders_exactly_what_is_published(self, tmp_path):
+        """The byte-for-byte check CI runs after `make report`, here too, so a
+        template edit that changes the page fails before it is pushed."""
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_report", REPORT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        out = tmp_path / "report.html"
+        module.build_report(MANIFEST, out)
+        assert out.read_bytes() == (REPO_ROOT / "docs" / "index.html").read_bytes()
+
+    def test_every_value_the_template_names_is_passed(self):
+        """StrictUndefined makes a missing one raise; this names them, so a
+        placeholder added to the template without a value fails here first."""
+        placeholders = set(re.findall(r"{{\s*(\w+)\s*}}", TEMPLATE.read_text()))
+        passed = set(re.findall(r"^\s+(\w+)=", REPORT.read_text().split(".render(", 1)[1].split(")\n", 1)[0], re.M))
+        assert placeholders == passed

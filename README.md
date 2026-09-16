@@ -197,7 +197,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,122 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,125 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -551,7 +551,7 @@ Every amendment to the protocol after registration — fifty-two of them — is 
 | Path | What lives there |
 | :--- | :--- |
 | [`POSTMORTEM.md`](POSTMORTEM.md) | **Ten incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well; the tenth is a double debit every record the agent keeps would have shown as one. Start here. |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the named structural debt |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the structural debt it has paid off, kept as a record |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 36 places the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), Razorpay's 61 UPI Autopay failure reasons, and NPCI's 225 UPI codes, each mapped to it |
 | [`data/cited_payloads/`](data/cited_payloads/) | The third provenance tier: NPCI's UPI response codes, transcribed verbatim, each file pinned to the SHA-256 of the specification it cites |

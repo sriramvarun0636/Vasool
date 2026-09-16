@@ -151,14 +151,18 @@ is reintroduced. `POSTMORTEM.md` INC-005 is why that test exists.
 
 ## Known structural debt
 
-One, named rather than quietly carried:
+None open. The entries below are kept as closed rather than deleted, because
+each is the reason something exists that a reader will otherwise wonder about.
 
-- **`tools/report.py` holds 2,341 lines of HTML, CSS and JavaScript inside one
-  Python f-string**, with 503 escaped brace pairs — it was 1,581 lines and 590
-  pairs when INC-006 first named it, and it has grown since. No highlighting, no
-  linting, no type checking. It has tests now; it should be a Jinja2 template,
-  and Jinja2 is already a dependency. Two real bugs came out of this file's
-  shape (`POSTMORTEM.md` INC-006).
+**Closed 2026-09-16 — the dashboard in an f-string.** `tools/report.py` held
+2,341 lines of HTML, CSS and JavaScript inside one Python f-string, with 503
+escaped brace pairs — 1,581 lines and 590 pairs when INC-006 first named it —
+and no tool that could read it as what it was. Two real bugs came out of that
+shape (`POSTMORTEM.md` INC-006). The page is now a Jinja2 template,
+`tools/templates/report.html.j2`, generated from the f-string's own parse
+rather than retyped, and it renders `docs/index.html` byte for byte as before —
+CI's `make report` check and a test both hold that. The provenance rules that
+scanned the module's source now scan the template with it.
 
 **Closed 2026-09-03 — shard fingerprints.** This section carried a second entry:
 shards recorded no evidence of the code that produced them, so a resume by seed

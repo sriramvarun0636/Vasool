@@ -300,8 +300,10 @@ escaped brace pairs — no syntax highlighting, no linter, no type checker, noth
 that would have flagged it. The same file is where I typed a full-width `］`
 instead of `]` earlier the same day and caught it only by eye. **That file should
 be a Jinja2 template, and Jinja2 is already a declared dependency of this
-project.** It is the largest piece of known, named, unpaid technical debt in the
-repository and it is recorded as such rather than quietly left.
+project.** It was the largest piece of known, named, unpaid technical debt in the
+repository, and was recorded as such rather than quietly left. *(Paid on
+2026-09-16: the page is `tools/templates/report.html.j2`, generated from the
+f-string's own parse and rendering the published page byte for byte.)*
 
 ---
 
