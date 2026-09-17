@@ -53,30 +53,30 @@ every per-merchant number for no claim anybody makes.
 SIMULATED_MANDATE_VALIDITY = timedelta(days=365)
 """How long past the universe's horizon a simulated mandate stays valid.
 
-The registered universe draws a mandate per customer (`mandate_share`) and
-nothing else about it — no rail, no category, no expiry, no pause
-(docs/EVALUATION.md §10, 2026-09-15). So each is built as the one mandate the
-old boolean described: a card e-mandate of the general category, active and
-valid for the whole run. A year past the horizon is simply out of reach of any
-ladder or deferral, so validity never binds — which is the point, since the
-lifecycle landed with the universe untouched.
+The registered universe draws a mandate per customer (`mandate_share`) and,
+since 2026-09-16, its rail (`upi_mandate_share`) — and nothing else about it:
+no category, no expiry, no pause. So each is built active, general-category
+and valid for the whole run, on the rail the universe drew. A year past the
+horizon is simply out of reach of any ladder or deferral, so validity never
+binds; every expiry this evaluation sees arrives as a *failure reason* from
+the rail, which is what moves the record (vasool/mandate/evidence.py).
 """
 
 
 def simulated_mandate(customer: Customer, horizon: datetime) -> MandateRecord | None:
     """The mandate a customer's debits are presented under, if they hold one.
 
-    A card e-mandate because every envelope on disk is a card payment but one,
-    a netbanking capture; a netbanking episode on a mandate customer — a
-    pairing Razorpay would label `emandate` — is held to the card rules, as it
-    has been since `mandate_share` was registered. Correcting that pairing
-    changes the mix, which is its own §10 row.
+    On the rail the universe drew for them. A card customer is what every
+    mandate in this simulator was until `upi_mandate_share` was registered,
+    and the pairing that predates both stands: a netbanking episode on a card
+    mandate customer — which Razorpay would label `emandate` — is held to the
+    card rules.
     """
     if not customer.is_mandate:
         return None
     return MandateRecord(
         mandate_id=f"sim_mandate_{customer.customer_id[:16]}",
-        rail=MandateRail.CARD,
+        rail=customer.mandate_rail or MandateRail.CARD,
         category=MandateCategory.GENERAL,
         state=MandateState.ACTIVE,
         valid_until=horizon + SIMULATED_MANDATE_VALIDITY,

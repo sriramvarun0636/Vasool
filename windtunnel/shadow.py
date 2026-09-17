@@ -125,8 +125,13 @@ HEADER_CAVEATS: tuple[str, ...] = (
     "registered truth is PlannedEpisode.failure_class, which resolves through "
     "the same taxonomy lookup the rules classifier reads. Read it as the "
     "definition of truth in this world, never as evidence the table is right.",
+    "Card rail only. Since UPI Autopay entered the universe (EVALUATION.md "
+    "§10, 2026-09-16) a share of episodes fail with reasons from Razorpay's "
+    "UPI list, and none of them is asked here: every recording is keyed to a "
+    "cell and the free tier allows twenty requests a day, so the model has "
+    "never answered a UPI question and this table does not pretend it has.",
 )
-"""The three limits that have to travel with the numbers.
+"""The four limits that have to travel with the numbers.
 
 Rendered into the artifact rather than filed in a document, because a reader
 meets the artifact and may never meet the document. Each is asserted
@@ -240,6 +245,18 @@ def build_corpus(*, pepper: str, seeds: Iterable[int] = CORPUS_SEEDS) -> tuple[C
         development = split_customers(universe).development
         for episode in universe.episodes:
             if episode.customer.customer_id not in development:
+                continue
+            if episode.is_upi:
+                # §4.5's comparison is scoped to the card rail, and stays
+                # there. Every recording behind it is keyed to a cell
+                # (windtunnel/cassette.py), the free tier allows twenty
+                # requests a day, and the UPI mix would add twenty-one cells
+                # with no recording — so including them would either ask the
+                # model questions it has never been asked and report the
+                # dashes as coverage, or spend a week of quota re-recording a
+                # comparison nothing in the protocol asks for. Registered as a
+                # limit rather than taken silently (docs/EVALUATION.md §10,
+                # 2026-09-16).
                 continue
             event = episode.event
             key = (
@@ -747,6 +764,7 @@ def render_table(comparison: Comparison, *, stability: CellResult | None = None)
     """
     out: list[str] = []
     out.append("CLASSIFIER COMPARISON — deterministic rules vs LLM, shadow mode")
+    out.append("scope: the card rail only — no UPI Autopay reason is asked here")
     out.append(
         f"provider={comparison.provider}  model={comparison.model}  "
         f"repeats={comparison.repeats}  cells={comparison.total_cells}  "
@@ -916,6 +934,7 @@ def to_document(
         "provider": comparison.provider,
         "model": comparison.model,
         "repeats": comparison.repeats,
+        "rail_scope": "card",
         "cells": comparison.total_cells,
         "total_cells": comparison.total_cells,
         "covered_cells": comparison.covered_cells,

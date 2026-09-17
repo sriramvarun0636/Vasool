@@ -383,9 +383,12 @@ class TestSweepTargetSelection:
 
     def test_every_registered_knob_and_composite_is_addressable(self):
         targets = sweep_targets()
-        assert len(targets) == 23, "20 swept scalars plus §10's three mix composites"
+        assert len(targets) == 29, "23 swept scalars plus §10's six mix composites"
         assert "retry_success_instrument_dead" not in targets, "§10: not swept"
         assert "mix:recoverable_heavy" in targets
+        assert "upi_mix:unmapped_heavy" in targets
+        for knob in ("upi_mandate_share", "upi_in_flight_debited_rate", "status_answer_pending_rate"):
+            assert knob in targets, knob
 
     def test_no_target_is_the_whole_registered_grid(self):
         assert selected_grid([]) == sweep_configurations()

@@ -296,6 +296,43 @@ def upi_failure_body(
     return body
 
 
+def upi_failure_event(
+    *,
+    reason: str,
+    entity_id: str,
+    contact: str,
+    email: str,
+    amount_paise: int,
+    occurred_at: datetime,
+    pepper: str,
+    sequence: int = 0,
+    retry_index: RetryIndex | None = None,
+) -> FailureEvent:
+    """`failure_event`, for a UPI Autopay debit.
+
+    Same route, deliberately: the stub is decoded through the production
+    `from_webhook` rather than turned into a `FailureEvent` here, so the
+    simulator meets a UPI failure through the same field mapping the receiver
+    does — including the null `error_source` and `error_step` that no Razorpay
+    page documents for this rail, which is the whole reason step 1 made those
+    fields optional.
+    """
+    body = upi_failure_body(
+        reason=reason,
+        entity_id=entity_id,
+        contact=contact,
+        email=email,
+        amount_paise=amount_paise,
+        occurred_at=occurred_at,
+    )
+    return from_webhook(
+        event_id=_event_id_for(entity_id, sequence),
+        body=body,
+        pepper=pepper,
+        retry_index=retry_index,
+    )
+
+
 def link_paid_body(*, entity_id: str, amount_paise: int) -> dict[str, Any]:
     """The `payment_link.paid` webhook a link this agent sent would fire.
 

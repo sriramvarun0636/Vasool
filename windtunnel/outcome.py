@@ -69,6 +69,8 @@ from windtunnel.rng import draw, uniform
 
 SETTLEMENT = "settlement"
 OUT_OF_BAND = "out_of_band"
+IN_FLIGHT = "in_flight"
+STATUS_ANSWER = "status_answer"
 """Draw stream names. Distinct so that an episode's settlement answers and its
 out-of-band exposure can never collide at the same coordinates."""
 
@@ -217,10 +219,11 @@ class OutcomeModel:
 
         # HUMAN_QUEUE never reaches an executor at all (vasool/policy/machine.py
         # escalates first). STATUS_CHECK does, and asks the rail a question:
-        # it moves no money, and whatever settlement it may reveal arrives as a
-        # settlement, never as the check's own recovery. No registered universe
-        # draws the UPI failures that produce one (docs/EVALUATION.md §10,
-        # 2026-09-15).
+        # it moves no money, and whatever it reveals was already true before it
+        # asked — `debited_in_flight` below decides that, once, per episode.
+        # Pricing the check itself at anything but zero would credit the
+        # taxonomy with a recovery the rail had already made
+        # (docs/EVALUATION.md §10, 2026-09-16).
         return 0.0, *_NO_MONEY, None
 
     def _retry_rate(self, attempt: Attempt) -> tuple[float, str, tuple[str, ...]]:
@@ -284,6 +287,33 @@ class OutcomeModel:
         )
 
     # -- the world acting on its own --------------------------------------
+    def debited_in_flight(self, episode_id: str) -> bool:
+        """Whether the rail actually took the money on a failure whose reason
+        says it might have.
+
+        One draw per episode, from the episode alone, for exactly the reason
+        `out_of_band_at` is drawn that way: what the rail did is a fact about
+        the world and must be identical across all nine arms, including the
+        arms that never ask. An arm that asks finds out; an arm that retries
+        instead presents a second debit against money already taken, and the
+        ledger — not this model — is where that shows up.
+        """
+        return draw(self.seed, episode_id, IN_FLIGHT) < self._value("upi_in_flight_debited_rate")
+
+    def status_answer_pending(self, episode_id: str, *, check: int) -> bool:
+        """Whether the rail still cannot say, at this check.
+
+        NPCI OC-215 fixes when the agent may ask — 90 seconds, then at most
+        three times within two hours — and says nothing about when an answer
+        is ready, so the wait is modelled as an independent draw per check
+        rather than as a resolution time. Addressed by check number, so
+        asking again is a new question and not a re-roll of the last one.
+        """
+        return (
+            draw(self.seed, episode_id, STATUS_ANSWER, check)
+            < self._value("status_answer_pending_rate")
+        )
+
     def out_of_band_at(
         self, episode_id: str, *, arrived_at: datetime, horizon_days: int
     ) -> datetime | None:

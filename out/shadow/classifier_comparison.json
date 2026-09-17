@@ -3,7 +3,7 @@
   "by_cell": [
     {
       "absent": 0,
-      "episodes": 757,
+      "episodes": 612,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "gateway",
@@ -25,7 +25,7 @@
     },
     {
       "absent": 0,
-      "episodes": 732,
+      "episodes": 593,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "insufficient_fund",
       "error_source": "bank",
@@ -47,7 +47,7 @@
     },
     {
       "absent": 0,
-      "episodes": 435,
+      "episodes": 362,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_declined",
       "error_source": "bank",
@@ -69,7 +69,7 @@
     },
     {
       "absent": 0,
-      "episodes": 356,
+      "episodes": 303,
       "error_code": "GATEWAY_ERROR",
       "error_reason": "gateway_technical_error",
       "error_source": "gateway",
@@ -91,7 +91,7 @@
     },
     {
       "absent": 0,
-      "episodes": 314,
+      "episodes": 250,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_timed_out",
       "error_source": "customer",
@@ -113,7 +113,7 @@
     },
     {
       "absent": 0,
-      "episodes": 284,
+      "episodes": 217,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "bank",
@@ -135,7 +135,7 @@
     },
     {
       "absent": 0,
-      "episodes": 259,
+      "episodes": 211,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_cancelled",
       "error_source": "customer",
@@ -157,7 +157,7 @@
     },
     {
       "absent": 0,
-      "episodes": 159,
+      "episodes": 127,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_expired",
       "error_source": "bank",
@@ -179,7 +179,7 @@
     },
     {
       "absent": 0,
-      "episodes": 104,
+      "episodes": 83,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_disabled_for_online_payments",
       "error_source": "bank",
@@ -201,7 +201,7 @@
     },
     {
       "absent": 0,
-      "episodes": 73,
+      "episodes": 63,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_number_invalid",
       "error_source": "customer",
@@ -223,7 +223,7 @@
     },
     {
       "absent": 0,
-      "episodes": 56,
+      "episodes": 51,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "business",
@@ -245,7 +245,7 @@
     },
     {
       "absent": 0,
-      "episodes": 36,
+      "episodes": 34,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_risk_check_failed",
       "error_source": "business",
@@ -272,10 +272,10 @@
       "cells": 3,
       "consistency": null,
       "covered_cells": 3,
-      "episodes": 1427,
+      "episodes": 1165,
       "failure_class": "TRANSIENT",
       "llm_accuracy": 0.3333333333333333,
-      "llm_accuracy_weighted": 0.24947442186405044,
+      "llm_accuracy_weighted": 0.26008583690987125,
       "rejected": 0,
       "rules_accuracy": 1.0
     },
@@ -284,7 +284,7 @@
       "cells": 1,
       "consistency": null,
       "covered_cells": 1,
-      "episodes": 732,
+      "episodes": 593,
       "failure_class": "LIQUIDITY",
       "llm_accuracy": 1.0,
       "llm_accuracy_weighted": 1.0,
@@ -296,10 +296,10 @@
       "cells": 4,
       "consistency": null,
       "covered_cells": 4,
-      "episodes": 982,
+      "episodes": 789,
       "failure_class": "INSTRUMENT_DEAD",
       "llm_accuracy": 0.75,
-      "llm_accuracy_weighted": 0.7107942973523421,
+      "llm_accuracy_weighted": 0.7249683143219265,
       "rejected": 0,
       "rules_accuracy": 1.0
     },
@@ -308,7 +308,7 @@
       "cells": 2,
       "consistency": null,
       "covered_cells": 2,
-      "episodes": 332,
+      "episodes": 274,
       "failure_class": "CUSTOMER_ACTION",
       "llm_accuracy": 1.0,
       "llm_accuracy_weighted": 1.0,
@@ -320,10 +320,10 @@
       "cells": 2,
       "consistency": null,
       "covered_cells": 2,
-      "episodes": 92,
+      "episodes": 85,
       "failure_class": "RISK_BLOCK",
       "llm_accuracy": 0.5,
-      "llm_accuracy_weighted": 0.391304347826087,
+      "llm_accuracy_weighted": 0.4,
       "rejected": 0,
       "rules_accuracy": 1.0
     }
@@ -331,30 +331,32 @@
   "caveats": [
     "The LLM arm runs on a model chosen for cost \u2014 a free tier is the budget this comparison had. A stronger model might close the gap, and nothing measured here bounds one that was not run.",
     "Nine of the ten error reasons are _SIMULATED stubs, documentation-derived rather than captured; only payment_failed is reproducible against live test mode (docs/VERIFIED.md). EVALUATION.md \u00a711 registers that this comparison does not generalise beyond these ten.",
-    "The Rules column is 1.000 by construction, not by measurement: the registered truth is PlannedEpisode.failure_class, which resolves through the same taxonomy lookup the rules classifier reads. Read it as the definition of truth in this world, never as evidence the table is right."
+    "The Rules column is 1.000 by construction, not by measurement: the registered truth is PlannedEpisode.failure_class, which resolves through the same taxonomy lookup the rules classifier reads. Read it as the definition of truth in this world, never as evidence the table is right.",
+    "Card rail only. Since UPI Autopay entered the universe (EVALUATION.md \u00a710, 2026-09-16) a share of episodes fail with reasons from Razorpay's UPI list, and none of them is asked here: every recording is keyed to a cell and the free tier allows twenty requests a day, so the model has never answered a UPI question and this table does not pretend it has."
   ],
   "cells": 12,
   "complete": true,
   "covered_cells": 12,
-  "covered_episodes": 3565,
-  "episodes": 3565,
+  "covered_episodes": 2906,
+  "episodes": 2906,
   "model": "gemini-3.6-flash",
   "overall": {
     "agreement": 0.6666666666666666,
     "consistency": null,
     "intervention_agreement": 0.5833333333333334,
     "llm_accuracy": 0.6666666666666666,
-    "llm_accuracy_weighted": 0.6042075736325385,
+    "llm_accuracy_weighted": 0.6111493461803166,
     "rejected": 0,
     "rules_accuracy": 1.0,
     "rules_accuracy_weighted": 1.0,
     "unsafe_risk_block_actions": 1
   },
   "provider": "gemini",
+  "rail_scope": "card",
   "repeats": 1,
   "stability": {
     "accuracy": 0.0,
-    "episodes": 757,
+    "episodes": 612,
     "error_reason": "payment_failed",
     "error_source": "gateway",
     "note": "Stability is not correctness. One cell, at depth; generalises to nothing.",

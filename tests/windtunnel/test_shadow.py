@@ -85,9 +85,15 @@ class TestTheCorpusIsExhaustive:
         cell's answer would be reported as the other's."""
         assert len({c.prompt for c in corpus}) == len(corpus)
 
-    def test_the_corpus_covers_every_episode_in_the_seed_range(self, corpus):
-        """No episode may fall outside a cell — a cell list that misses one is
-        a table that quietly excludes part of the universe."""
+    def test_the_corpus_covers_every_card_episode_in_the_seed_range(self, corpus):
+        """No card episode may fall outside a cell — a cell list that misses
+        one is a table that quietly excludes part of the universe.
+
+        Scoped to the card rail on 2026-09-16, when UPI Autopay entered the
+        universe (EVALUATION.md §10). The scope is asserted in both directions
+        below rather than left as an absence, because "every episode" silently
+        becoming "most episodes" is exactly what this test exists to catch.
+        """
         from windtunnel.outcome import OutcomeModel
         from windtunnel.parameters import OUTCOME_PARAMETERS
         from windtunnel.universe import build_universe
@@ -97,7 +103,30 @@ class TestTheCorpusIsExhaustive:
             outcome = OutcomeModel(parameters=OUTCOME_PARAMETERS, seed=seed)
             universe = build_universe(seed, pepper=PEPPER, outcome=outcome)
             for episode in universe.episodes:
+                if episode.is_upi:
+                    continue
                 assert (episode.reason, episode.source) in covered
+
+    def test_no_upi_cell_is_in_the_corpus(self, corpus):
+        """The other direction: a UPI cell here would be a question with no
+        recording behind it, reported as coverage.
+
+        Keyed on the source rather than the reason, because five reason
+        strings are on both of Razorpay's lists — `payment_failed`,
+        `payment_timed_out`, `payment_risk_check_failed`,
+        `gateway_technical_error` and the plural `insufficient_funds` — and a
+        reason-only check would call the card corpus a UPI one. Razorpay
+        documents no `error_source` for a UPI subsequent payment, so a cell
+        without one is a cell from that rail.
+        """
+        sourceless = [c.label for c in corpus if not c.source]
+        assert not sourceless, sourceless
+
+    def test_the_artifact_and_the_table_both_state_the_scope(self, corpus):
+        """A limit a reader can only find in the source is not disclosed."""
+        from windtunnel.shadow import HEADER_CAVEATS
+
+        assert any("Card rail only" in caveat for caveat in HEADER_CAVEATS)
 
     def test_all_five_classes_are_represented(self, corpus):
         assert {c.truth for c in corpus} == set(FailureClass)

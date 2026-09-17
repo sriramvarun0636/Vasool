@@ -259,6 +259,39 @@ OUTCOME_PARAMETERS: dict[str, Parameter] = {
             "commitment forbids."
         ),
     ),
+    "upi_in_flight_debited_rate": Parameter(
+        name="upi_in_flight_debited_rate",
+        value=0.10,
+        provenance=Provenance.GUESS,
+        registered_in="§10",
+        bounds=UNIT_INTERVAL,
+        note=(
+            "Of the UPI Autopay failures whose reason says money may already "
+            "have moved, the share where the rail did in fact debit. Nobody "
+            "publishes this: NPCI reports approved, business-declined and "
+            "technically-declined attempts, and a debit whose response was "
+            "lost is not a fourth bucket in that table. Set low, because a "
+            "higher rate would hand the status check recoveries it has not "
+            "earned — the path exists to stop a second debit, not to find "
+            "money (docs/EVALUATION.md §10, 2026-09-16)."
+        ),
+    ),
+    "status_answer_pending_rate": Parameter(
+        name="status_answer_pending_rate",
+        value=0.50,
+        provenance=Provenance.GUESS,
+        registered_in="§10",
+        bounds=UNIT_INTERVAL,
+        note=(
+            "The chance the rail still cannot say, at any one status check. "
+            "NPCI OC-215 fixes the schedule — first check at 90 seconds, at "
+            "most three within two hours — and says nothing about how often "
+            "an answer is ready, so this is the shape of the wait rather "
+            "than a rate anyone reports. A half every time leaves a third "
+            "check necessary about a quarter of the time, which is what the "
+            "three-check ceiling is for."
+        ),
+    ),
 }
 
 
@@ -408,6 +441,24 @@ WORLD_PARAMETERS: dict[str, Parameter] = {
             "is unanchored in a way most of the others are not."
         ),
     ),
+    "upi_mandate_share": Parameter(
+        name="upi_mandate_share",
+        value=0.50,
+        provenance=Provenance.GUESS,
+        registered_in="§10",
+        bounds=UNIT_INTERVAL,
+        note=(
+            "Of the customers who hold a mandate, the share whose mandate is "
+            "UPI Autopay rather than a card e-mandate. Decides which "
+            "failure-reason mix their debits fail with, which taxonomy table "
+            "classifies them, and whether AutopayPeakHoursGuard and the UPI "
+            "retry cap are in jurisdiction at all. A half because no source "
+            "gives a merchant's split between the two rails — NPCI publishes "
+            "UPI Autopay volumes and nobody publishes card e-mandate ones — "
+            "so neither rail is made the default, and §7's sweep covers "
+            "0.25 to 0.75 (docs/EVALUATION.md §10, 2026-09-16)."
+        ),
+    ),
     "promise_to_pay_rate": Parameter(
         name="promise_to_pay_rate",
         value=0.05,
@@ -478,4 +529,51 @@ taxonomy §4 routes payment_failed/gateway to TRANSIENT, /bank to
 INSTRUMENT_DEAD and /business to RISK_BLOCK. Only the first two have ever been
 observed live — see windtunnel/payloads.py for how the third is assembled
 without typing either string.
+"""
+UPI_REASON_MIX: tuple[tuple[str, float], ...] = (
+    ("insufficient_funds", 0.460),
+    ("mandate_not_active", 0.090),
+    ("adequate_funds_not_available_blocked", 0.060),
+    ("per_transaction_limit_exceeded", 0.050),
+    ("mandate_expired", 0.050),
+    ("debit_declined", 0.040),
+    ("transaction_limit_exceeded", 0.040),
+    ("mandate_paused", 0.030),
+    ("limit_exceeded_remitting_bank", 0.030),
+    ("remitter_account_dormant", 0.030),
+    ("transaction_frequency_limit_exceeded", 0.020),
+    ("number_of_pin_tries_exceeded", 0.020),
+    ("mpin_not_set_by_customer", 0.020),
+    ("transaction_not_allowed", 0.020),
+    ("invalid_token", 0.010),
+    ("payment_risk_check_failed", 0.010),
+    ("vpa_resolution_failed", 0.010),
+    ("psp_bank_not_available", 0.003),
+    ("payment_timed_out", 0.003),
+    ("banks_hsm_is_down_remitter", 0.002),
+    ("response_not_received_within_tat", 0.002),
+)
+"""How a UPI Autopay debit fails, registered in §10 on 2026-09-16.
+
+§3d registers one mix and it is a card mix: its reasons are card decline
+strings, and taxonomy §4 is the table that classifies them. A UPI Autopay
+debit fails with one of the 61 reasons Razorpay documents for a subsequent
+payment (docs/taxonomy.md §12), so it needs its own, and the two never blend —
+a customer's mandate rail decides which table their episodes are drawn from.
+
+**One half of this is sourced and the other is not, and the halves are worth
+separating.** The split between buckets is NPCI's: across all 44 monthly
+tables of its AutoPay ecosystem statistics, a declined execution is a
+*business* decline rather than a *technical* one in roughly 113 cases out of
+114 — August 2025, the most recent month captured, reports 68.85% business
+against 0.61% technical over 927.11 M execution attempts. So 0.990 of this
+mass sits on reasons NPCI would count business and 0.010 on reasons it would
+count technical. **Which reasons carry how much inside each bucket is a
+guess**, like §3d's, and for the same reason: nobody publishes a reason
+histogram, and a uniform mix over 61 documented strings is a world no merchant
+has ever seen.
+
+The 40 reasons not named here are registered at zero rather than omitted: a
+reason with no share is a claim that it does not happen in this universe, and
+that claim belongs in the table rather than in its absence.
 """

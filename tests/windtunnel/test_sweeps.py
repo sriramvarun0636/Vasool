@@ -70,8 +70,10 @@ class TestTheGrid:
         assert value == 0.0
         assert all(value * f == 0.0 for f in FACTORS)
 
-    def test_the_grid_carries_the_three_mix_composites(self, grid):
-        assert len([c for c in grid if c.kind is SweepKind.MIX]) == 3
+    def test_the_grid_carries_the_six_mix_composites(self, grid):
+        """Three for §3d's card mix, three for the UPI mix registered beside
+        it on 2026-09-16."""
+        assert len([c for c in grid if c.kind is SweepKind.MIX]) == 6
 
     def test_the_grid_includes_an_unswept_reference(self, grid):
         """§10's mitigation: survival is judged against a reference computed on
@@ -81,9 +83,20 @@ class TestTheGrid:
         assert len(references) == 1 and references[0] == REFERENCE
 
     def test_the_grid_is_the_size_the_cost_estimate_assumed(self, grid):
-        """20 scalars × 4 points, 3 mix composites, 1 reference. A grid that
-        grew silently would blow the registered overnight budget."""
-        assert len(grid) == 20 * len(FACTORS) + 3 + 1
+        """23 scalars × 4 points, 6 mix composites, 1 reference — 98
+        serialised configurations. A grid that grew silently would blow the
+        registered overnight budget; a grid that grew on purpose is a §10 row
+        (2026-08-24 registered 20 and 83, 2026-09-16 registers 23 and 98)."""
+        assert len(grid) == 23 * len(FACTORS) + 6 + 1
+        assert len(grid) - 1 == 98
+
+    def test_both_rails_mixes_are_swept(self, grid):
+        """Three composites each. The UPI mix is the larger guess of the two
+        — 21 registered shares against §3d's ten — so leaving it unswept
+        would put the biggest unanchored table in the protocol outside §7."""
+        shifts = {c.name for c in grid if c.kind is SweepKind.MIX}
+        assert sum(1 for name in shifts if name.startswith("mix:")) == 3
+        assert sum(1 for name in shifts if name.startswith("upi_mix:")) == 3
 
     def test_config_names_are_unique(self, grid):
         """They become directory names under out/, so a collision would have

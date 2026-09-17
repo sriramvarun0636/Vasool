@@ -1285,6 +1285,7 @@
                 <strong>The rules column is 1.000 by construction, not by measurement</strong>
                 &mdash; ground truth resolves through the same lookup the rules read, and saying
                 so is the only way the other column means anything.
+                <span id="llm-scope"></span>
             </p>
             <div class="tiles" id="llm-tiles"></div>
             <div class="viz-scroll">
@@ -2368,6 +2369,17 @@
                         `<td>${nf(c.episodes)}</td>`;
                     llmBody.appendChild(tr);
                 });
+
+            const llmScope = document.getElementById("llm-scope");
+            if (llmScope && typeof SHADOW.rail_scope === "string") {
+                compose(llmScope, [
+                    " The comparison covers the ",
+                    traceIn("shadow", mk("b"), "rail_scope", `${SHADOW.rail_scope} rail`),
+                    " only. Every recording behind it is keyed to a cell and the free tier ",
+                    "allows twenty requests a day, so no UPI Autopay reason has ever been put ",
+                    "to the model &mdash; and a dash is not reported here as coverage."
+                ]);
+            }
 
                 const worst = (SHADOW.by_cell || [])
                     .filter(c => c.absent < c.repeats && c.llm_accuracy === 0 && c.llm_consistency === 1)

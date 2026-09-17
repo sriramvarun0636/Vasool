@@ -48,18 +48,20 @@ from vasool.actions.comms import CommsSender
 from vasool.actions.debit import DebitAttempt
 from vasool.actions.executor import RazorpayExecutor
 from vasool.actions.notice import NoticeRequest
+from vasool.actions.status import StatusReading
 from vasool.clock import VirtualClock
+from vasool.diagnosis import upi
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.taxonomy import RULES, Rule, lookup
 from vasool.events.settlement import settle_from_webhook
 from vasool.ledger.receipts import CallJournal, Receipt, build_from_transitions
 from vasool.ledger.tracing import trace_id_for
 from vasool.policy.episode import State
-from vasool.policy.machine import ExecutionResult, PolicyMachine
+from vasool.policy.machine import ExecutionResult, PolicyMachine, RailStatus
 from vasool.policy.transitions import Transition
 from windtunnel import payloads
 from windtunnel.outcome import Attempt, OutcomeModel, Ruling, SettlementChannel
-from windtunnel.universe import PlannedEpisode, Universe
+from windtunnel.universe import PlannedEpisode, Universe, failure_event_for
 from windtunnel.world import WorldFactStore
 
 if TYPE_CHECKING:
@@ -121,7 +123,7 @@ class ExecutedAction:
     is_contact: bool
     is_retry: bool
     ok: bool
-    true_failure_class: str = ""
+    true_failure_class: str | None = ""
     """What the episode's registered (reason, source) actually is, per the
     registered §4 table — not what this arm believed it to be.
 
@@ -321,6 +323,49 @@ class SimulatedRail:
 
 
 @dataclass
+class SimulatedStatusCheck:
+    """The rail answering "did you take this debit?".
+
+    What it answers was decided before any arm ran: `debited_in_flight` is a
+    fact about the world, drawn per episode by the outcome model, identical
+    across all nine arms including the eight that never ask. What this class
+    adds is only *when* the answer becomes available — NPCI OC-215 fixes when
+    the agent may ask and says nothing about when the rail can say.
+
+    The check number is counted here rather than parsed out of the proposal:
+    the id carries it (`vasool/diagnosis/proposal.py`), but reading a number
+    back out of an identifier is the kind of thing that works until it does
+    not, and the run is single-threaded and deterministic, so counting is
+    exact.
+    """
+
+    world: WorldFactStore
+    outcome: OutcomeModel
+    asked: dict[str, int] = field(default_factory=dict)
+
+    def check(self, proposal: Proposal) -> StatusReading:
+        count = self.asked.get(proposal.entity_id, 0) + 1
+        self.asked[proposal.entity_id] = count
+        if self.outcome.status_answer_pending(proposal.entity_id, check=count):
+            return StatusReading(
+                answer=RailStatus.PENDING,
+                detail=f"the rail has not resolved this debit either way (check {count})",
+            )
+        plan = self.world.episode_for(proposal.entity_id)
+        if plan.debited_in_flight:
+            return StatusReading(
+                answer=RailStatus.DEBITED,
+                detail="the rail reports the debit made",
+                amount_paise=plan.amount_paise,
+                reference=SimulatedRazorpay._id("pay_", proposal.idempotency_key),
+            )
+        return StatusReading(
+            answer=RailStatus.NOT_DEBITED,
+            detail="the rail reports no debit against this mandate",
+        )
+
+
+@dataclass
 class ObservingExecutor:
     """The real RazorpayExecutor, with the world watching.
 
@@ -366,7 +411,14 @@ class ObservingExecutor:
                 is_contact=proposal.is_contact,
                 is_retry=proposal.is_retry,
                 ok=result.ok,
-                true_failure_class=plan.failure_class.value,
+                # `None` where the world has no class among the five, which on
+                # UPI is every reason taxonomy §12 leaves unmapped. The
+                # world-keyed counters compare against a class's value and so
+                # skip those episodes by construction, which is what §10's
+                # 2026-09-16 row registers.
+                true_failure_class=(
+                    plan.failure_class.value if plan.failure_class is not None else None
+                ),
             )
         )
 
@@ -402,9 +454,18 @@ class ObservingExecutor:
                     # the intervention would leave A2 unable to express
                     # itself — which is why `Attempt` carries it as a field
                     # (windtunnel/outcome.py).
-                    salary_timed=lookup(plan.reason, plan.source, rules=self.rules)[
-                        1
-                    ].salary_aware,
+                    # Read off the table the episode's *rail* is classified
+                    # against, not always §4's. A UPI liquidity failure is
+                    # scheduled for payday by docs/taxonomy.md §12's rule —
+                    # which is §4's `insufficient_fund` row, whole — so
+                    # pricing it through §4's lookup priced an aimed retry at
+                    # the missed-window rate, and logged every UPI reason as
+                    # unmapped on the way past.
+                    salary_timed=(
+                        upi.rule_for_reason(plan.reason)[1].salary_aware
+                        if plan.is_upi
+                        else lookup(plan.reason, plan.source, rules=self.rules)[1].salary_aware
+                    ),
                 )
             )
             self.rulings.append(ruling)
@@ -458,6 +519,7 @@ class Runner:
             registered_templates=template_ids(),
             notifier=SimulatedRail(),
             debiter=SimulatedDebiter(),
+            status=SimulatedStatusCheck(world=self.world, outcome=outcome),
         )
         self.executor = ObservingExecutor(
             inner=self._inner,
@@ -697,7 +759,8 @@ class Runner:
                 # is the second half of the gap the VERIFY note above names.
                 continue
             plan = self.world.episode_for(proposal.entity_id)
-            failure = payloads.failure_event(
+            failure = failure_event_for(
+                upi=plan.is_upi,
                 reason=plan.reason,
                 source=plan.source,
                 entity_id=record.razorpay_request_id,

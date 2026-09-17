@@ -1264,9 +1264,15 @@ entity (`created`, `attempted`, `paid`) and is not the default.
 3. **Source and step are unknown for every UPI reason.** A reason that needs
    them to be read correctly — as §3 needed `error_source` for `payment_failed`
    — will be misread until a UPI failure is captured.
-4. **The universe draws no UPI Autopay debit yet.** Everything here is
-   exercised in the adversary's arena and in tests; the registered universe is
-   unchanged, and moving UPI into its mix is §2.5's next row.
+4. **The universe draws twenty-one of these sixty-one reasons, and forty at
+   zero.** Registered in `docs/EVALUATION.md` §10 on 2026-09-16: half of the
+   simulated mandates run on UPI Autopay (`upi_mandate_share`), their debits
+   fail with `UPI_REASON_MIX`, and that table's business-to-technical split is
+   NPCI's published ratio while the allocation inside each bucket is a guess.
+   So the classification in this section is now exercised by the evaluation and
+   not only by tests — but only for the reasons that carry a share. The other
+   forty are registered at zero, which is a claim that they do not happen in
+   this universe rather than a claim about the rail.
 
 ### Every reason
 

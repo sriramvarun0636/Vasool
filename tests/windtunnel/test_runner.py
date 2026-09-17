@@ -73,7 +73,24 @@ class TestTheUniverseIsExercised:
         is exercised". If one is missing, a whole branch of the taxonomy is
         being reported on without ever having run."""
         reached = {e.failure_class for e in run.universe.episodes}
-        assert reached == set(FailureClass)
+        assert reached >= set(FailureClass)
+
+    def test_both_rails_are_exercised_and_one_of_them_has_no_class(self, run):
+        """Since 2026-09-16 the mix is two mixes, and the second one reaches
+        past the five classes.
+
+        `None` is not a gap here: it is every UPI reason Razorpay documents
+        and docs/taxonomy.md §12 leaves unmapped — the cap declines and the
+        money-may-be-in-flight ones — for which the world registers no class
+        among the five, on purpose (EVALUATION.md §10, 2026-09-16). An
+        assertion that every episode has one of the five would be asserting
+        the taxonomy maps something it says it does not.
+        """
+        rails = {e.is_upi for e in run.universe.episodes}
+        assert rails == {True, False}
+        upi_classes = {e.failure_class for e in run.universe.episodes if e.is_upi}
+        assert None in upi_classes
+        assert all(e.failure_class is not None for e in run.universe.episodes if not e.is_upi)
 
     def test_customers_have_a_real_multi_episode_tail(self, run):
         """§3a's randomisation argument is that customers share a

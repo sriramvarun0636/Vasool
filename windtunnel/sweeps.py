@@ -48,6 +48,7 @@ from windtunnel.parameters import (
     OUTCOME_PARAMETERS,
     PAYMENT_FAILED_SOURCE_MIX,
     REASON_MIX,
+    UPI_REASON_MIX,
     WORLD_PARAMETERS,
     Parameter,
     swept,
@@ -103,6 +104,7 @@ class WorldSpec:
     world_parameters: dict[str, Parameter]
     reason_mix: Mix
     source_mix: Mix
+    upi_mix: Mix = UPI_REASON_MIX
 
     def outcome_model(self, seed: int) -> OutcomeModel:
         """This configuration's outcome model, seeded for one run.
@@ -129,6 +131,7 @@ class WorldSpec:
             "parameters": self.world_parameters,
             "reason_mix": self.reason_mix,
             "source_mix": self.source_mix,
+            "upi_mix": self.upi_mix,
         }
 
 
@@ -175,6 +178,7 @@ class MixShift:
     rationale: str
     reason_factors: tuple[tuple[str, float], ...] = ()
     source_factors: tuple[tuple[str, float], ...] = ()
+    upi_factors: tuple[tuple[str, float], ...] = ()
 
     @property
     def kind(self) -> SweepKind:
@@ -203,6 +207,11 @@ class MixShift:
                 rescale(PAYMENT_FAILED_SOURCE_MIX, dict(self.source_factors))
                 if self.source_factors
                 else PAYMENT_FAILED_SOURCE_MIX
+            ),
+            upi_mix=(
+                rescale(UPI_REASON_MIX, dict(self.upi_factors))
+                if self.upi_factors
+                else UPI_REASON_MIX
             ),
         )
 
@@ -239,8 +248,58 @@ MIX_SHIFTS: tuple[MixShift, ...] = (
         ),
         source_factors=(("bank", 1.5),),
     ),
+    MixShift(
+        name="upi_mix:recoverable_heavy",
+        rationale=(
+            "§3d's question asked of the other rail: weight the liquidity end "
+            "up and the mandate-state end down, and every arm should improve. "
+            "The two reasons NPCI's business-decline bucket is mostly made of "
+            "up 50%, the three that say the mandate itself is not live down "
+            "50%, remainder renormalised (EVALUATION.md §10, 2026-09-16)."
+        ),
+        upi_factors=(
+            ("insufficient_funds", 1.5),
+            ("adequate_funds_not_available_blocked", 1.5),
+            ("mandate_not_active", 0.5),
+            ("mandate_expired", 0.5),
+            ("mandate_paused", 0.5),
+        ),
+    ),
+    MixShift(
+        name="upi_mix:recoverable_light",
+        rationale=(
+            "The mirror. A UPI book where more of the failure mass is a "
+            "mandate that is no longer live — which is where Vasool refuses "
+            "most and the baselines retry into a wall."
+        ),
+        upi_factors=(
+            ("insufficient_funds", 0.5),
+            ("adequate_funds_not_available_blocked", 0.5),
+            ("mandate_not_active", 1.5),
+            ("mandate_expired", 1.5),
+            ("mandate_paused", 1.5),
+        ),
+    ),
+    MixShift(
+        name="upi_mix:unmapped_heavy",
+        rationale=(
+            "The one that tests the cost of refusing. Taxonomy §12 leaves "
+            "Razorpay's cap declines unmapped, so Vasool takes no automated "
+            "action on them at all and the baselines retry them at §4's "
+            "unpriced rate; weighting them up 50% asks how much of the "
+            "recovery gap that single reading accounts for."
+        ),
+        upi_factors=(
+            ("per_transaction_limit_exceeded", 1.5),
+            ("transaction_limit_exceeded", 1.5),
+            ("limit_exceeded_remitting_bank", 1.5),
+            ("transaction_frequency_limit_exceeded", 1.5),
+        ),
+    ),
 )
-"""§10, registered 2026-08-23. Three, not thirteen — see the module docstring."""
+"""§10: three registered 2026-08-23 for §3d's card mix, three more on
+2026-09-16 for the UPI mix that joined it. Six, not thirty-four — see the
+module docstring."""
 
 
 @dataclass(frozen=True, slots=True)
