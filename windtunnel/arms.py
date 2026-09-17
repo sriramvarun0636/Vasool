@@ -51,6 +51,7 @@ from vasool.diagnosis.taxonomy import (
     InterventionType,
     Rule,
 )
+from vasool.diagnosis.rules import unchanged
 from vasool.policy.facts import GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.registry import GUARD_CHAIN, evaluate_all
@@ -80,6 +81,17 @@ class Arm:
     rules: RuleTable
     chain: tuple[Guard, ...] = GUARD_CHAIN
     resolve: Resolver = evaluate_all
+    upi_rule: Callable[[Rule], Rule] = unchanged
+    """What this arm does to docs/taxonomy.md §12's rule for a UPI failure.
+
+    An arm is an edit to §4's table, and §4's table never classifies a UPI
+    payment — §12's does. Until 2026-09-17 that meant every arm classified a
+    UPI failure exactly as Vasool does, so on `upi_mandate_share` ×
+    `mandate_share` = 0.175 of episodes the comparison compared nothing
+    (EVALUATION.md §10, re-run #4). Each arm now says what it is on that rail
+    in the same terms §5 and §8 already use; the identity is Vasool's, and the
+    arms whose definition is about guards or chain resolution keep it.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +165,34 @@ world's class, resolved through the registered table. An arm cannot earn a
 recovery by being wrong about what failed."""
 
 
+def _always(rule: Rule) -> Callable[[Rule], Rule]:
+    """Every UPI reason takes one rule, whatever §12 says it is.
+
+    The other rail's `_uniform`. An arm defined as "regardless of reason"
+    (§5.1) or "no taxonomy" (§8's A1) means it on both rails or it does not
+    mean it.
+    """
+
+    def apply(_: Rule) -> Rule:
+        return rule
+
+    return apply
+
+
+def _when(failure_class: FailureClass, amend: Callable[[Rule], Rule]) -> Callable[[Rule], Rule]:
+    """Amend §12's rule for one class and leave the rest of the table alone.
+
+    The other rail's `_amended`. Keyed on the class rather than on the reason
+    because §12 is a class table: one rule serves every reason that maps to
+    it, where §4 registers a row per reason.
+    """
+
+    def apply(rule: Rule) -> Rule:
+        return amend(rule) if rule.failure_class is failure_class else rule
+
+    return apply
+
+
 UNINFORMATIVE_ROW = RULES[("payment_failed", "gateway")]
 """§10, 2026-08-23: A1's row. The generic reason's single probe, not
 `gateway_technical_error`'s three — an agent with no classification has no
@@ -183,6 +223,7 @@ BASELINES: tuple[Arm, ...] = (
             "that makes the cost of futile retries visible."
         ),
         rules=_uniform(NAIVE_RULE),
+        upi_rule=_always(NAIVE_RULE),
         chain=(),
     ),
     Arm(
@@ -197,6 +238,7 @@ BASELINES: tuple[Arm, ...] = (
             "rather than a recovery improvement."
         ),
         rules=_uniform(replace(NAIVE_RULE, post_retry=InterventionType.REATTEMPT_LINK)),
+        upi_rule=_always(replace(NAIVE_RULE, post_retry=InterventionType.REATTEMPT_LINK)),
         chain=(),
     ),
     Arm(
@@ -229,6 +271,7 @@ ABLATIONS: tuple[Arm, ...] = (
             "as overlapping with this one."
         ),
         rules=_uniform(UNINFORMATIVE_ROW),
+        upi_rule=_always(UNINFORMATIVE_ROW),
     ),
     Arm(
         name="A2",
@@ -247,6 +290,12 @@ ABLATIONS: tuple[Arm, ...] = (
                 salary_aware=False,
                 retry_delays=TRANSIENT_BACKOFF,
             )
+        ),
+        # §12's LIQUIDITY rule *is* §4's insufficient_fund row, so the ablation
+        # transfers without a second judgement about what it means.
+        upi_rule=_when(
+            FailureClass.LIQUIDITY,
+            lambda rule: replace(rule, salary_aware=False, retry_delays=TRANSIENT_BACKOFF),
         ),
     ),
     Arm(
@@ -268,6 +317,18 @@ ABLATIONS: tuple[Arm, ...] = (
             ),
             card_disabled_for_online_payments=replace(
                 RULES[("card_disabled_for_online_payments", SOURCE_ANY)],
+                retry_budget=1,
+                retry_intervention=InterventionType.SILENT_RETRY,
+                retry_delays=(timedelta(minutes=15),),
+            ),
+        ),
+        # The same probe on the other rail's zero-retry rule. INSTRUMENT_DEAD is
+        # 0.27 of the registered UPI mix against card_expired's 0.05 of §3d's,
+        # so the flagship claim is tested at a weight that can move it.
+        upi_rule=_when(
+            FailureClass.INSTRUMENT_DEAD,
+            lambda rule: replace(
+                rule,
                 retry_budget=1,
                 retry_intervention=InterventionType.SILENT_RETRY,
                 retry_delays=(timedelta(minutes=15),),
@@ -302,6 +363,7 @@ ABLATIONS: tuple[Arm, ...] = (
             "classifier and its zero means 'cannot happen'."
         ),
         rules={key: replace(rule, post_retry=None) for key, rule in RULES.items()},
+        upi_rule=lambda rule: replace(rule, post_retry=None),
     ),
 )
 

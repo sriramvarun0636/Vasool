@@ -1,11 +1,11 @@
-SPLIT CHECK   docs/EVALUATION.md §10, 2026-09-14   agent 0899e2032fc4…   seeds 0..999
+SPLIT CHECK   docs/EVALUATION.md §10, 2026-09-14   agent f25ec5c6a0fe…   seeds 0..999
 
   split                       Vasool   Vasool − incumbent   95% interval
-  registered (published)      0.4670      -16.61pp   [-16.79, -16.43]pp
-  split-check-1               0.4646      -16.70pp   [-16.88, -16.52]pp
-  split-check-2               0.4667      -16.56pp   [-16.74, -16.39]pp
-  split-check-3               0.4641      -16.75pp   [-16.92, -16.57]pp
-  split-check-4               0.4642      -16.64pp   [-16.82, -16.46]pp
-  split-check-5               0.4660      -16.68pp   [-16.85, -16.50]pp
+  registered (published)      0.4670      -18.18pp   [-18.38, -17.98]pp
+  split-check-1               0.4646      -18.30pp   [-18.50, -18.11]pp
+  split-check-2               0.4667      -18.15pp   [-18.34, -17.97]pp
+  split-check-3               0.4641      -18.38pp   [-18.57, -18.19]pp
+  split-check-4               0.4642      -18.22pp   [-18.42, -18.03]pp
+  split-check-5               0.4660      -18.27pp   [-18.46, -18.07]pp
 
   ROBUST — robust to the split if all five paired 95% intervals exclude zero with the published sign.

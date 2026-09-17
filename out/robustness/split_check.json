@@ -1,14 +1,14 @@
 {
-  "agent_fingerprint": "0899e2032fc4bd3b3256f303a5bbc00517b10bdc03bd9a50ceb17283b79450a0",
+  "agent_fingerprint": "f25ec5c6a0feeed13043dd3d16fd9da2986464f0e5a4d7513687ef8e774862ae",
   "baseline": "retry_plus_contact",
   "checks": [
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.1651686724571167,
-        "low": -0.16880815875281024,
+        "high": -0.1811493003117368,
+        "low": -0.18498702485519852,
         "n_seeds": 1000,
-        "point": -0.16696408424362663,
+        "point": -0.18304343069744627,
         "superior": false
       },
       "pepper": "split-check-1",
@@ -18,10 +18,10 @@
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.16393528484468642,
-        "low": -0.16737188387992213,
+        "high": -0.17966235930309665,
+        "low": -0.18339598248237537,
         "n_seeds": 1000,
-        "point": -0.16564138349071972,
+        "point": -0.18153316128961236,
         "superior": false
       },
       "pepper": "split-check-2",
@@ -31,10 +31,10 @@
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.16572353914283747,
-        "low": -0.16917590757173898,
+        "high": -0.18192271199272117,
+        "low": -0.18569251787395222,
         "n_seeds": 1000,
-        "point": -0.16745166573314826,
+        "point": -0.18383996226148674,
         "superior": false
       },
       "pepper": "split-check-3",
@@ -44,10 +44,10 @@
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.16458935814067363,
-        "low": -0.1681971041016629,
+        "high": -0.18028097956764133,
+        "low": -0.1841849560747916,
         "n_seeds": 1000,
-        "point": -0.16636109271783886,
+        "point": -0.18221711833045906,
         "superior": false
       },
       "pepper": "split-check-4",
@@ -57,10 +57,10 @@
     {
       "paired": {
         "excludes_zero": true,
-        "high": -0.1650300228510972,
-        "low": -0.16850325117752957,
+        "high": -0.18073767214384803,
+        "low": -0.18457325046499592,
         "n_seeds": 1000,
-        "point": -0.1667561404784682,
+        "point": -0.18265762868593258,
         "superior": false
       },
       "pepper": "split-check-5",
@@ -72,13 +72,13 @@
   "criterion": "robust to the split if all five paired 95% intervals exclude zero with the published sign",
   "metric": "recovery_rate",
   "published": {
-    "agent_fingerprint": "0899e2032fc4bd3b3256f303a5bbc00517b10bdc03bd9a50ceb17283b79450a0",
+    "agent_fingerprint": "f25ec5c6a0feeed13043dd3d16fd9da2986464f0e5a4d7513687ef8e774862ae",
     "paired": {
       "excludes_zero": true,
-      "high": -0.16429693383870167,
-      "low": -0.1679486895133777,
+      "high": -0.17983212160979192,
+      "low": -0.1838267662032757,
       "n_seeds": 1000,
-      "point": -0.1661090987944769,
+      "point": -0.18182832381361874,
       "superior": false
     },
     "pepper_sha256": "f207e647748022631e8f527ab5a8dcb5756132c83ac68ec1586acba6ab56a232",
@@ -93,9 +93,9 @@
   },
   "spread": {
     "detail": "descriptive only: \u00a710 registers no threshold on the spread",
-    "point_max": -0.16564138349071972,
-    "point_min": -0.16745166573314826,
-    "published_point": -0.1661090987944769
+    "point_max": -0.18153316128961236,
+    "point_min": -0.18383996226148674,
+    "published_point": -0.18182832381361874
   },
   "treatment": "vasool"
 }

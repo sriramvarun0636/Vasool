@@ -24,6 +24,7 @@ moment we are deciding, not from the moment it happened.
 from __future__ import annotations
 
 import calendar
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
@@ -337,7 +338,16 @@ UPI_METHOD = "upi"
 `netbanking` were captured); the value `upi` is the one Razorpay documents."""
 
 
-def _rule_for(event: FailureEvent, rules: dict[tuple[str, str], Rule]) -> tuple[str, Rule]:
+def unchanged(rule: Rule) -> Rule:
+    """The registered UPI rule, as taxonomy §12 wrote it. What Vasool uses."""
+    return rule
+
+
+def _rule_for(
+    event: FailureEvent,
+    rules: dict[tuple[str, str], Rule],
+    upi_rule: Callable[[Rule], Rule] = unchanged,
+) -> tuple[str, Rule]:
     """Which table a failure is classified against: its rail decides.
 
     A rail code, where a provider passed NPCI's own on, is the most specific
@@ -345,14 +355,26 @@ def _rule_for(event: FailureEvent, rules: dict[tuple[str, str], Rule]) -> tuple[
     Razorpay's documented UPI reasons, never §4: five strings appear in both,
     and on UPI three of them can mean money moved (docs/taxonomy.md §12).
     Everything else — every card and netbanking failure there has ever been —
-    goes through §4 exactly as before, `rules` and all, so the wind tunnel's
-    arms are untouched by the existence of a second rail.
+    goes through §4 exactly as before, `rules` and all.
+
+    **`upi_rule` is how a policy reaches this rail.** A caller that changes
+    what the agent does — EVALUATION.md §5's baselines and §8's ablations, each
+    of which is an edit to §4's table — had no way to say what it means on a
+    table it does not own, so for one re-run every arm classified a UPI failure
+    exactly as Vasool does and the comparison measured nothing on that share
+    (§10, 2026-09-17). An arm now carries a transformation of the registered
+    rule as well as a table, and Vasool's is the identity above.
     """
     if event.rail_code is not None:
-        return upi.rule_for_rail_code(*event.rail_code)
+        return _transformed(upi.rule_for_rail_code(*event.rail_code), upi_rule)
     if event.method == UPI_METHOD:
-        return upi.rule_for_reason(event.error_reason)
+        return _transformed(upi.rule_for_reason(event.error_reason), upi_rule)
     return lookup(event.error_reason, event.error_source, rules=rules)
+
+
+def _transformed(found: tuple[str, Rule], upi_rule: Callable[[Rule], Rule]) -> tuple[str, Rule]:
+    reason, rule = found
+    return reason, upi_rule(rule)
 
 
 def classify(
@@ -361,6 +383,7 @@ def classify(
     clock: Clock,
     attempt: int = 1,
     rules: dict[tuple[str, str], Rule] = RULES,
+    upi_rule: Callable[[Rule], Rule] = unchanged,
 ) -> Diagnosis:
     """Classify a failed payment and say what to do about it, and when.
 
@@ -385,7 +408,7 @@ def classify(
         raise ValueError(f"attempt must be >= 1, got {attempt}")
 
     now = clock.now()
-    reason, rule = _rule_for(event, rules)
+    reason, rule = _rule_for(event, rules, upi_rule)
 
     if attempt <= rule.retry_budget:
         intervention = rule.retry_intervention

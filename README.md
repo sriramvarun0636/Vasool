@@ -63,7 +63,7 @@ A recovery agent is worth running only if it can show the money it recovered, th
 | :--- | :--- |
 | **Measured money recovered** | **₹44.36 Cr** from the development cohort of 1,000 seeded universes of 500 customers, summed from hash-chained receipts rather than the simulator's own bookkeeping. [The result](#the-result) |
 | **Compliant escalation** | **19,998** episodes handed to a human, every deciding clause on the receipt. A risk-declined payment gets nothing automated, ever. [Watch one](#what-the-agent-actually-does) |
-| **Stopping rules** | Five bounds in [`machine.py`](vasool/policy/machine.py): `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget, a daily spend cap, and a kill switch that **holds** queued work rather than dropping it. Measured: Vasool exhausts a budget **0 times**; `naive_retry` does it **156,334** times. [The partition](#what-didnt-recover-actually-means) |
+| **Stopping rules** | Five bounds in [`machine.py`](vasool/policy/machine.py): `MAX_DEFERRALS = 5`, `DEFER_HORIZON = 7 days`, a per-class attempt budget, a daily spend cap, and a kill switch that **holds** queued work rather than dropping it. Measured: Vasool exhausts a budget **0 times**; `naive_retry` does it **192,299** times. [The partition](#what-didnt-recover-actually-means) |
 | **An audit trail** | Every action **and every refusal** writes a SHA-256 hash-chained receipt. Twelve ship in the manifest with the exact bytes each hash covers. [Verify one](#check-the-cryptography-without-trusting-us) |
 
 ---
@@ -91,27 +91,27 @@ Every rupee there is summed from hash-chained receipts, not from the simulator's
 
 ### And now the uncomfortable part
 
-**A dumber agent recovers more.** The realistic incumbent — retry everything, then send a link — recovers **63.3%** to Vasool's 46.7%: a paired difference of **−16.61 percentage points**, interval [−16.79, −16.43], nowhere near zero.
+**A dumber agent recovers more.** The realistic incumbent — retry everything, then send a link — recovers **64.9%** to Vasool's 46.7%: a paired difference of **−18.18 percentage points**, interval [−18.38, −17.98], nowhere near zero.
 
 That was registered as falsification criterion **F1** in [`docs/EVALUATION.md`](docs/EVALUATION.md) before the first run, along with the rule that a criterion which fires gets said out loud. So here it is, second paragraph, not an appendix.
 
 **For one re-run it was worse, and part of that was our own error.** When DND started to count on 2026-09-15, Vasool fell 3.03 points, the gap to the incumbent widened from 16.35 to 19.38, and even `naive_retry` — retry until the cap, no classification, no guards, no contact — moved ahead of Vasool by 0.55 points. Then the sources for the mandate work showed a modelling error inside that cost: RBI's e-mandate Framework makes the 24-hour pre-debit notice the *issuer's*, requested through the rail, and Vasool had been building it as its own SMS, so the DND registry and the contact rules held debits waiting on a notice they refused. With the notice where the sources put it, 1.35 points came back. What remains is one decision: Vasool no longer assumes a merchant registered its message templates as transactional on DLT, and blocks a DND-listed customer rather than guess. The universe puts 8% of customers on the registry; both moves were registered before [the re-runs](docs/EVALUATION.md) measured them. A merchant that declares its templates gets those points back, and owns the declaration.
 
-**And `naive_retry` is ahead again — by 1.08 points [0.91, 1.26] — for a reason worth reading.** When UPI Autopay entered the universe on 2026-09-16, it brought a second taxonomy with it, and classification is keyed on the rail: a UPI failure is read against Razorpay's documented UPI reasons and never against §4's card table, which is what an *arm* is. So on the `upi_mandate_share` × `mandate_share` = 0.175 of episodes that run on that rail, every arm classifies exactly as Vasool does — measured on seed 0, `naive_retry` makes 1,843 retries to Vasool's 834 on card episodes and 154 to 132 on UPI ones. What is left between them there is the guard chain, and `naive_retry` does not carry it. The comparison on that share is therefore no longer taxonomy against no-taxonomy; it is Vasool against Vasool-without-guards, and the price of the guards is what it measures. Registered as a limit in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) with the re-run that found it, and the fix — arms that express their policy on both rails — is its own row and its own re-run, not a correction slipped into this one.
+**For one re-run `naive_retry` was ahead, and the reason was worth more than the number.** When UPI Autopay entered the universe, classification came with it keyed on the rail: a UPI failure is read against Razorpay's documented reasons and never against §4's card table — which is what an *arm* is. So every baseline and every ablation classified a seventh of all episodes exactly as Vasool does, and `naive_retry`'s apparent overtake was measuring the guard chain rather than the taxonomy. That was registered as a limit the day it was measured, with its size and its direction, and closed in the next re-run rather than lived with: an arm is now its §4 table *and* what it does to taxonomy §12's rule, so "retry everything regardless of reason" means it on both rails. Vasool, `vasool_ungated` and A4 are identities there and their 3,000 rows came back byte for byte; the six that had to move moved, `naive_retry` fell back behind Vasool by 0.91 points [0.72, 1.10], and the incumbent's lead grew to 18.18. One registered expectation broke and is recorded in §10 as broken: `naive_retry`'s recovery was predicted to rise and it fell, because giving it the retries §12 refused also took away the escalation §12 gave it, and an arm with no contact of its own has nothing to replace a re-auth link with.
 
-Here is what the incumbent does to earn those extra 17 points:
+Here is what the incumbent does to earn those extra 18 points:
 
 | | `retry_plus_contact` (incumbent) | ⚖️ **Vasool** |
 | :--- | ---: | ---: |
-| Recovery rate | **63.31%** | 46.70% |
+| Recovery rate | **64.88%** | 46.70% |
 | Seeds where the §2a safety predicate held | **0 / 1,000** | **1,000 / 1,000** |
 | Automated actions on risk-declined payments | 20,988 | **0** |
-| Retries burned on a dead instrument | 241,388 | 53,617 |
+| Retries burned on a dead instrument | 290,906 | 53,617 |
 | Retries on a class the taxonomy prices at zero attempts | 66,040 | **0** |
 
 The incumbent is not a worse agent that happens to score higher. It is an agent that **cannot legally be deployed**, scoring higher *because* of the actions that make it undeployable. Every one of those columns is a ledger scan, reproducible from a seed — not a self-report.
 
-**The honest one-line summary:** the taxonomy did not buy recovery. It bought a deployable system, and the 17 points are what that cost in this simulator.
+**The honest one-line summary:** the taxonomy did not buy recovery. It bought a deployable system, and the 18 points are what that cost in this simulator.
 
 ### What "didn't recover" actually means
 
@@ -125,7 +125,7 @@ A recovery rate reports one bucket and leaves everything else as a single undiff
 | `escalated` — handed to a human | 19,998 | 10.6% |
 | `exhausted` — attempt budget burned to nothing | **0** | 0% |
 
-Three things a reader should take from that. **`awaiting` is right-censored, not failed** — the horizon ended mid-episode, and folding it into "failure" is the blur this table removes; terminal non-recoveries are **64,888**, not 189,103. **44,890 refusals are an outcome, not a shortfall** — they are the behaviour [`docs/EVALUATION.md` §2a](docs/EVALUATION.md) scans for, and they grow with every rule that gains jurisdiction: the DND registry in §2.4, and now a UPI Autopay rail whose taxonomy leaves a seventh of its documented reasons unmapped and therefore unretried. And the last row is the taxonomy, measured: **Vasool exhausts an attempt budget 0 times; `naive_retry` does it 156,334 times** — 44% of every episode it sees.
+Three things a reader should take from that. **`awaiting` is right-censored, not failed** — the horizon ended mid-episode, and folding it into "failure" is the blur this table removes; terminal non-recoveries are **64,888**, not 189,103. **44,890 refusals are an outcome, not a shortfall** — they are the behaviour [`docs/EVALUATION.md` §2a](docs/EVALUATION.md) scans for, and they grow with every rule that gains jurisdiction: the DND registry in §2.4, and now a UPI Autopay rail whose taxonomy leaves a seventh of its documented reasons unmapped and therefore unretried. And the last row is the taxonomy, measured: **Vasool exhausts an attempt budget 0 times; `naive_retry` does it 192,299 times** — 54% of every episode it sees.
 
 Added 2026-08-29 and logged in §10. It is a subtraction over fields the shards already carried, not a re-run: `awaiting = episodes − recovered − blocked − escalated − exhausted`, valid because the three receipt-derived counters are disjoint — checked over 25 seeds, zero overlap in all three pairs.
 
@@ -161,7 +161,7 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 ### Robust to the split
 
-§3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between -16.75 and -16.56 points, every 95% interval excluding zero. It has been re-run against every agent published since it was registered, with the same result each time. Two things about where the registered split falls are worth stating rather than leaving to the table: by the size of the gap it is second-smallest of the six, and on Vasool's own recovery rate it is the highest of the six — 0.4670 against a low of 0.4641. Both readings run in the flattering direction, by margins far smaller than the gap itself, and the check exists precisely so that they are visible instead of assumed away. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
+§3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between -18.38 and -18.15 points, every 95% interval excluding zero. It has been re-run against every agent published since it was registered, with the same result each time. Two things about where the registered split falls are worth stating rather than leaving to the table: by the size of the gap it is second-smallest of the six, and on Vasool's own recovery rate it is the highest of the six — 0.4670 against a low of 0.4641. Both readings run in the flattering direction, by margins far smaller than the gap itself, and the check exists precisely so that they are visible instead of assumed away. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
 
 ### What the gap bought
 
@@ -199,7 +199,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,154 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,183 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -246,9 +246,9 @@ No figure in this README is typed by hand. Each one is a key in [`out/developmen
 | Claim in this README | Manifest key | Value |
 | :--- | :--- | ---: |
 | Vasool recovers 46.70% | `per_arm.vasool.recovery_rate_mean` | `0.466959…` |
-| Incumbent recovers 63.31% | `per_arm.retry_plus_contact.recovery_rate_mean` | `0.633068…` |
+| Incumbent recovers 64.88% | `per_arm.retry_plus_contact.recovery_rate_mean` | `0.648787…` |
 | Ungated recovers 53.75% | `per_arm.vasool_ungated.recovery_rate_mean` | `0.537507…` |
-| −16.61pp, interval excludes zero | `paired_vs_vasool.retry_plus_contact.recovery_rate` | `point: -0.166109…` |
+| −18.18pp, interval excludes zero | `paired_vs_vasool.retry_plus_contact.recovery_rate` | `point: -0.181830…` |
 | Safety predicate on 1,000/1,000 | `per_arm.vasool.safety_holds_on` | `1000` |
 | pass^100 = 1.0 | `pass_k.100` | `1.0` |
 | 20,988 actions on risk-declined | `per_arm.retry_plus_contact.risk_block_actions_world` | `20988` |
@@ -468,7 +468,7 @@ Registered in [`docs/EVALUATION.md` §9](docs/EVALUATION.md) before any run, wit
 
 | | Criterion | Threshold | Result |
 | :--- | :--- | :--- | :--- |
-| **F1** | The taxonomy adds nothing | interval vs `retry_plus_contact` includes zero | did not fire — but **excludes zero on the wrong side**, −16.61pp. Read as *worse* than F1 firing. |
+| **F1** | The taxonomy adds nothing | interval vs `retry_plus_contact` includes zero | did not fire — but **excludes zero on the wrong side**, −18.18pp. Read as *worse* than F1 firing. |
 | **F2** | The flagship `card_expired` claim is inert | A3 inert on recovery **and** attempts | did not fire, on attempts alone — −0.157 per recovery. On recovery rate A3 and Vasool can no longer be told apart (+0.015pp, interval spanning zero); Vasool led it by 0.06 before the notice moved to the issuer. |
 | **F3** | Salary-aware timing is noise | A2 interval includes zero | did not fire — +3.94pp |
 | **F4** | The guards are unreliable | pass^100 < 1.0 | did not fire — pass^100 = 1.0 |
@@ -545,7 +545,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — fifty-five of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — fifty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 

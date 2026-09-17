@@ -534,6 +534,7 @@ class Runner:
             executor=self.executor,
             chain=self.arm.chain,
             rules=self.arm.rules,
+            upi_rule=self.arm.upi_rule,
             resolve=self.arm.resolve,
         )
         self._out_of_band: list[OutOfBandOccurrence] = []

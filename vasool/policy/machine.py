@@ -47,7 +47,7 @@ from vasool.diagnosis.proposal import (
     proposals_from,
     status_check_proposal_from,
 )
-from vasool.diagnosis.rules import classify
+from vasool.diagnosis.rules import classify, unchanged
 from vasool.diagnosis.taxonomy import RULES, InterventionType, Rule
 from vasool.events.schemas import FailureEvent
 from vasool.policy.episode import (
@@ -212,10 +212,11 @@ class PolicyMachine:
         transitions: TransitionLog | None = None,
         chain: tuple[Guard, ...] = GUARD_CHAIN,
         rules: dict[tuple[str, str], Rule] = RULES,
+        upi_rule: Callable[[Rule], Rule] = unchanged,
         resolve: Callable[[GuardContext, tuple[Guard, ...]], ChainResult] = evaluate_all,
     ) -> None:
-        """`rules` and `resolve` exist for one caller: the wind tunnel's
-        evaluator (EVALUATION.md §5 and §8).
+        """`rules`, `upi_rule` and `resolve` exist for one caller: the wind
+        tunnel's evaluator (EVALUATION.md §5 and §8).
 
         Both default to what production runs, so nothing about the agent
         changes by their existence. What they buy is that an arm can be a
@@ -227,6 +228,14 @@ class PolicyMachine:
         clock-skew closure, which §2a scans for — inside windtunnel/, and full
         Vasool would then be measured through that copy rather than through
         production's own path.
+
+        `upi_rule` is the same lever on the other rail. An arm is an edit to
+        §4's table, and §4's table does not classify a UPI failure — taxonomy
+        §12's does — so for one re-run every arm behaved as Vasool on the UPI
+        share and the comparison measured nothing there (§10, 2026-09-17). An
+        arm now carries a transformation of §12's registered rule too; it
+        defaults to the identity, so production and full Vasool are unchanged
+        by its existence.
 
         `resolve` is what ablation A4 needs: the design spec short-circuits the
         chain on the first refusal and `registry.py` argues at length for
@@ -243,6 +252,7 @@ class PolicyMachine:
         self.transitions = transitions if transitions is not None else InMemoryTransitionLog()
         self._chain = chain
         self._rules = rules
+        self._upi_rule = upi_rule
         self._resolve = resolve
         self._queue: list[ScheduledItem] = []
 
@@ -296,7 +306,13 @@ class PolicyMachine:
         self._supersede_queued(episode, event)
 
         attempt = episode.attempts_used + 1
-        diagnosis = classify(event, clock=self._clock, attempt=attempt, rules=self._rules)
+        diagnosis = classify(
+            event,
+            clock=self._clock,
+            attempt=attempt,
+            rules=self._rules,
+            upi_rule=self._upi_rule,
+        )
         episode = self._to(episode, State.DIAGNOSED, diagnosis.rationale)
 
         proposals = proposals_from(diagnosis, event, now=now)
