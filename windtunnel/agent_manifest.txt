@@ -110,6 +110,8 @@ vasool/events/receiver.py
 vasool/events/schemas.py
 vasool/events/settlement.py
 vasool/events/store.py
+vasool/identity/__init__.py
+vasool/identity/resolver.py
 vasool/ledger/__init__.py
 vasool/ledger/receipts.py
 vasool/ledger/replay.py
@@ -142,6 +144,7 @@ vasool/policy/guards/retry_cap.py
 vasool/policy/guards/risk_block.py
 vasool/policy/guards/spend_cap.py
 vasool/policy/machine.py
+vasool/policy/partition.py
 vasool/policy/registry.py
 vasool/policy/transitions.py
 vasool/policy/verdict.py

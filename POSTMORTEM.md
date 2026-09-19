@@ -1,6 +1,6 @@
 # POSTMORTEM — what broke, and how I got out
 
-Eleven incidents. Each one is recorded somewhere else in this repository as well —
+Twelve incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
@@ -561,7 +561,52 @@ guards", "four open" — are precisely the ones nobody revisits.
 
 ---
 
-## The pattern across all eleven
+### INC-012 — The registered negative that the split quietly invalidated
+
+**Symptom.** Re-run #6, 2026-09-19. Three arms run with no guard chain, consult
+no cap, and were registered — before the code existed — to reproduce the
+previous run's 3,000 rows byte for byte. All three moved. Nothing failed: the
+run completed, §2a held on 1,000 of 1,000 seeds, the red team came back 22 of
+23, and the only sign anything was wrong was an expectation written down in
+advance.
+
+**Investigation.** The registering row argued it in one line: *a split identity
+changes only which customer ids two records carry; no outcome draw reads a
+customer id.* Both halves are true. The conclusion is still wrong, because
+something else reads a customer id — §3c's development/holdout split is dealt
+on the peppered `customer_id`, stratified and sized, so changing a customer's
+contact changes their id and can move them to the other side. The development
+cohort went from 354,739 episodes to 354,788: the same protocol, measured on a
+slightly different population. Over five seeds, 245 of 2,500 ids change and the
+cohort keeps 199 or 200 of 500 customers — but not the same ones.
+
+Two runs separated the mechanism from the world. The same new agent with
+`split_identity_rate` forced to 0 reproduces the previous run exactly — 4,000
+rows, 100,000 field comparisons, zero differences, Vasool included — so the
+resolver and the re-keyed fact store change nothing that is measured. Holding
+the population fixed instead, and changing only the unit the cap counts, gives
+the effect the change was for: 20 suppressed contacts across 1,000 universes,
+and a recovery cost indistinguishable from zero.
+
+**Root cause.** A world parameter was treated as independent of the split it
+perturbs. Anything that edits a customer's contact or email edits the key §3c
+deals on, so a parameter introduced to exercise a fix also re-deals the cohorts
+that fix is measured in — and a negative of the form "these arms cannot move"
+is then false for a reason that has nothing to do with the change under test.
+
+**Fix.** The expectation is recorded as broken rather than reinterpreted, and
+the isolating runs are recorded as post-hoc diagnostics rather than results.
+What carries forward is the rule the row should have used: a registered
+negative of that kind must be stated against a *fixed* split — the same
+customers on both sides — or not stated at all. `docs/EVALUATION.md` §10,
+2026-09-19 carries both the broken expectations and the runs that explain them.
+
+**What it cost.** Nothing measured, and about forty minutes of compute to find
+out. The value runs the other way: an expectation written in advance is what
+turned a 0.065pp movement that would have been read as the compliance cost of
+counting humans into a population shift that is not a cost at all.
+
+## The pattern across all twelve
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -580,6 +625,12 @@ was not silent — eight tests failed loudly — it was simply never run anywher
 it could fail. An apparatus that runs only on the machine that built it
 measures that machine. So the clean clone is part of the apparatus now: CI runs
 the suite from one on every push, with nothing configured.
+
+INC-012 is the newest exception, and it is the apparatus working rather than
+failing: nothing was wrong with the code, and the only thing that caught the
+flaw in the reasoning was a prediction made before the run. An expectation
+written in advance is the one instrument that can be wrong in a useful
+direction.
 
 INC-009 is the other exception, and the harder one. Nothing in the apparatus
 could have caught it, because the apparatus implemented the wrong rule
@@ -600,7 +651,7 @@ existed only at the rail, so an attack now counts there — the survival
 criterion's first check that does not ask the agent what it did.
 
 That is the argument this project is actually making. Not that the agent is
-correct — I have eleven incidents here that say otherwise, and two known
+correct — I have twelve incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

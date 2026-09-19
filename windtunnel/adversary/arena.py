@@ -57,6 +57,7 @@ from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.rules import IST
 from vasool.events.receiver import create_app
 from vasool.events.schemas import derive_customer_id
+from vasool.identity.resolver import UnionFindResolver
 from vasool.events.store import EventStore
 from vasool.mandate.evidence import Observation, apply_rail_evidence
 from vasool.mandate.machine import MandateMachine, Trigger
@@ -167,6 +168,14 @@ class ArenaFacts:
     promises: dict[str, date] = field(default_factory=dict)
     notices: dict[str, datetime] = field(default_factory=dict)
     contacts: dict[str, list[datetime]] = field(default_factory=dict)
+    """Keyed by identity, not by customer id — the cap counts humans
+    (docs/EVALUATION.md §10, 2026-09-17). A07 is the attack that made the
+    difference visible and A11 is the control that says the fix did not simply
+    move the failure."""
+
+    identities: UnionFindResolver = field(
+        default_factory=lambda: UnionFindResolver(ADVERSARY_PEPPER)
+    )
     spent: dict[tuple[str, date], int] = field(default_factory=dict)
     registered_templates: frozenset[str] = field(default_factory=template_ids)
     mandate_log: list[Observation] = field(default_factory=list)
@@ -193,7 +202,8 @@ class ArenaFacts:
             # the episode already holds (windtunnel/world.py says the same).
             executed_keys=frozenset(),
             spent_today_paise=self.spent.get((self.merchant.merchant_id, _ist_day(now)), 0),
-            contact_history=tuple(sorted(self.contacts.get(person.customer_id, ()))),
+            contact_history=tuple(sorted(self.contacts.get(self.identity_of(person), ()))),
+            identity_id=self.identity_of(person),
             consent=self.consent.get(person.customer_id),
             dnd_listed=person.dnd_listed,
             dnd_checked_at=now,
@@ -207,6 +217,14 @@ class ArenaFacts:
             customer_zone=person.zone,
         )
 
+    def identity_of(self, person: Person) -> str:
+        """Which human this record belongs to, as the resolver answers now.
+
+        Asked rather than cached: an arena builds its people one call at a
+        time, and a second record can merge two sets that were separate when
+        the first was added."""
+        return self.identities.identity_for(person.contact, person.email)
+
     def record(self, proposal: Proposal, *, at: datetime) -> None:
         """Fold one executed action back into the world, synchronously.
 
@@ -215,7 +233,8 @@ class ArenaFacts:
         on a snapshot neither of them appears in.
         """
         if proposal.is_contact:
-            self.contacts.setdefault(proposal.customer_id, []).append(at)
+            who = self.identity_of(self.people[proposal.customer_id])
+            self.contacts.setdefault(who, []).append(at)
         if proposal.role.value == "PRE_DEBIT_NOTICE":
             self.notices[proposal.entity_id] = at
         if proposal.is_retry:
@@ -591,6 +610,7 @@ class Arena:
         contact = contact or self._contact_for(human_id)
         email = email or f"{human_id}@example.invalid"
         customer_id = derive_customer_id(contact, email, pepper=ADVERSARY_PEPPER)
+        self.facts.identities.add(contact, email)
         record = (
             ConsentRecord(
                 granted_at=self.EPOCH - timedelta(days=365),

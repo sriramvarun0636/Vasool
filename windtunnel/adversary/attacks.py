@@ -663,8 +663,10 @@ ATTACKS: tuple[Attack, ...] = (
         id="A07",
         title="one human, two customer ids",
         targets="the per-customer frequency cap, counted against the wrong unit",
-        source="vasool/events/schemas.py::derive_customer_id KNOWN LIMITATION; spec A13",
-        expectation=FAILS,
+        source="vasool/events/schemas.py::derive_customer_id KNOWN LIMITATION; spec A13. "
+               "Registered FAILS; fixed and re-registered 2026-09-17 when the cap "
+               "began counting humans (docs/EVALUATION.md §10)",
+        expectation=SURVIVES,
         evidence=(ContactsPerHumanWithin(cap=3, window=timedelta(days=7)),),
         run=a07_identity_split,
     ),

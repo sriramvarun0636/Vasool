@@ -83,12 +83,13 @@ class TestTheGrid:
         assert len(references) == 1 and references[0] == REFERENCE
 
     def test_the_grid_is_the_size_the_cost_estimate_assumed(self, grid):
-        """23 scalars × 4 points, 6 mix composites, 1 reference — 98
+        """24 scalars × 4 points, 6 mix composites, 1 reference — 102
         serialised configurations. A grid that grew silently would blow the
         registered overnight budget; a grid that grew on purpose is a §10 row
-        (2026-08-24 registered 20 and 83, 2026-09-16 registers 23 and 98)."""
-        assert len(grid) == 23 * len(FACTORS) + 6 + 1
-        assert len(grid) - 1 == 98
+        (2026-08-24 registered 20 and 83, 2026-09-16 registers 23 and 98,
+        2026-09-17 registers 24 and 102 with `split_identity_rate`)."""
+        assert len(grid) == 24 * len(FACTORS) + 6 + 1
+        assert len(grid) - 1 == 102
 
     def test_both_rails_mixes_are_swept(self, grid):
         """Three composites each. The UPI mix is the larger guess of the two

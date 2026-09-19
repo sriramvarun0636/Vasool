@@ -118,8 +118,22 @@ class PolicyFacts:
     """Messages already sent in this recovery episode."""
 
     contact_history: tuple[datetime, ...] = ()
-    """Every contact to this customer inside the frequency window, ascending.
-    Known-absent when empty: a customer we have never messaged."""
+    """Every contact to this *human* inside the frequency window, ascending.
+    Known-absent when empty: someone we have never messaged.
+
+    Whose contacts these are is the store's decision, not the guard's. Until
+    2026-09-17 it was one payment identifier's — contact and email hashed
+    together — so one person writing from two addresses had two histories and
+    the cap counted each separately (attack A07). The store resolves an
+    identity now and hands over that human's contacts; `FrequencyCapGuard` is
+    unchanged, because counting was never its problem."""
+
+    identity_id: str | None = None
+    """Which human the history above belongs to, as the resolver answered.
+
+    Recorded so that a reader can see the unit the cap counted rather than
+    infer it. None where no resolver is wired, which is what production does
+    until one is (vasool/identity/resolver.py)."""
 
     # -- customer
     consent: ConsentRecord | None = None

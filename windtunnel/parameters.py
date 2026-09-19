@@ -459,6 +459,23 @@ WORLD_PARAMETERS: dict[str, Parameter] = {
             "0.25 to 0.75 (docs/EVALUATION.md §10, 2026-09-16)."
         ),
     ),
+    "split_identity_rate": Parameter(
+        name="split_identity_rate",
+        value=0.10,
+        provenance=Provenance.GUESS,
+        registered_in="§10",
+        bounds=UNIT_INTERVAL,
+        note=(
+            "Share of customers who are a second record of a human the "
+            "universe already has: the same phone, a different email, which "
+            "is attack A07's shape exactly. Without it identity resolution "
+            "would resolve nothing in the run that reports the numbers, and "
+            "the fix for A07 would be registered with an effect of zero by "
+            "construction. Unanchored, like every other share here and more "
+            "so — nobody publishes how often one payer appears twice in a "
+            "merchant's book (docs/EVALUATION.md §10, 2026-09-17)."
+        ),
+    ),
     "promise_to_pay_rate": Parameter(
         name="promise_to_pay_rate",
         value=0.05,

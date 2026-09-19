@@ -11,7 +11,7 @@
     "A4",
     "A5"
   ],
-  "agent_fingerprint": "f25ec5c6a0feeed13043dd3d16fd9da2986464f0e5a4d7513687ef8e774862ae",
+  "agent_fingerprint": "0b660edc37e130b5effda8b6f25cf7016aae72deff10a175bf6eb4323393c3d8",
   "pepper_sha256": "f207e647748022631e8f527ab5a8dcb5756132c83ac68ec1586acba6ab56a232",
   "seeds": {
     "first": 0,
@@ -20,154 +20,154 @@
   },
   "per_arm": {
     "vasool": {
-      "recovery_rate_mean": 0.46695902534515366,
-      "recovered_paise_total": 44360012100,
+      "recovery_rate_mean": 0.4663097798313496,
+      "recovered_paise_total": 44246110300,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 53617,
+      "instrument_dead_retries_world": 53686,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 165636,
-        "blocked": 44890,
-        "escalated": 19998,
+        "episodes": 354788,
+        "recovered": 165428,
+        "blocked": 44974,
+        "escalated": 19990,
         "exhausted": 0,
-        "awaiting": 124215
+        "awaiting": 124396
       },
       "seeds": 1000
     },
     "naive_retry": {
-      "recovery_rate_mean": 0.4578464961766982,
-      "recovered_paise_total": 52146481500,
-      "safety_holds_on": 993,
-      "instrument_dead_retries_world": 290906,
-      "risk_block_actions_world": 16646,
-      "customer_action_retries_world": 60926,
+      "recovery_rate_mean": 0.45728510595141464,
+      "recovered_paise_total": 51866240000,
+      "safety_holds_on": 994,
+      "instrument_dead_retries_world": 291246,
+      "risk_block_actions_world": 16631,
+      "customer_action_retries_world": 60972,
       "closure": {
-        "episodes": 354739,
-        "recovered": 162425,
-        "blocked": 15,
+        "episodes": 354788,
+        "recovered": 162249,
+        "blocked": 13,
         "escalated": 0,
-        "exhausted": 192299,
+        "exhausted": 192526,
         "awaiting": 0
       },
       "seeds": 1000
     },
     "retry_plus_contact": {
-      "recovery_rate_mean": 0.6487873491587723,
-      "recovered_paise_total": 73483555300,
+      "recovery_rate_mean": 0.6480362934013393,
+      "recovered_paise_total": 73192805100,
       "safety_holds_on": 0,
-      "instrument_dead_retries_world": 290906,
-      "risk_block_actions_world": 18836,
-      "customer_action_retries_world": 60926,
+      "instrument_dead_retries_world": 291246,
+      "risk_block_actions_world": 18803,
+      "customer_action_retries_world": 60972,
       "closure": {
-        "episodes": 354739,
-        "recovered": 230150,
-        "blocked": 1644,
+        "episodes": 354788,
+        "recovered": 229913,
+        "blocked": 1652,
         "escalated": 0,
         "exhausted": 0,
-        "awaiting": 122945
+        "awaiting": 123223
       },
       "seeds": 1000
     },
     "vasool_ungated": {
-      "recovery_rate_mean": 0.5375070379215409,
-      "recovered_paise_total": 61448141000,
+      "recovery_rate_mean": 0.5370274863589415,
+      "recovered_paise_total": 61184262100,
       "safety_holds_on": 0,
-      "instrument_dead_retries_world": 57277,
+      "instrument_dead_retries_world": 57346,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 190666,
-        "blocked": 2065,
-        "escalated": 16959,
+        "episodes": 354788,
+        "recovered": 190526,
+        "blocked": 2083,
+        "escalated": 16916,
         "exhausted": 0,
-        "awaiting": 145049
+        "awaiting": 145263
       },
       "seeds": 1000
     },
     "A1": {
-      "recovery_rate_mean": 0.4257053502914645,
-      "recovered_paise_total": 40016118300,
+      "recovery_rate_mean": 0.4248321516426521,
+      "recovered_paise_total": 39845967000,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 86733,
-      "risk_block_actions_world": 13861,
-      "customer_action_retries_world": 25709,
+      "instrument_dead_retries_world": 86789,
+      "risk_block_actions_world": 13810,
+      "customer_action_retries_world": 25679,
       "closure": {
-        "episodes": 354739,
-        "recovered": 150997,
-        "blocked": 49728,
-        "escalated": 4953,
+        "episodes": 354788,
+        "recovered": 150711,
+        "blocked": 49786,
+        "escalated": 5009,
         "exhausted": 0,
-        "awaiting": 149061
+        "awaiting": 149282
       },
       "seeds": 1000
     },
     "A2": {
-      "recovery_rate_mean": 0.4231552556606884,
-      "recovered_paise_total": 40330509100,
+      "recovery_rate_mean": 0.4225512694508085,
+      "recovered_paise_total": 40208439500,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 53617,
+      "instrument_dead_retries_world": 53686,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 150099,
-        "blocked": 44474,
-        "escalated": 20001,
+        "episodes": 354788,
+        "recovered": 149908,
+        "blocked": 44550,
+        "escalated": 19994,
         "exhausted": 0,
-        "awaiting": 140165
+        "awaiting": 140336
       },
       "seeds": 1000
     },
     "A3": {
-      "recovery_rate_mean": 0.4641259429759416,
-      "recovered_paise_total": 43814214200,
+      "recovery_rate_mean": 0.46346305103490265,
+      "recovered_paise_total": 43683830300,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 86801,
+      "instrument_dead_retries_world": 86860,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 164632,
-        "blocked": 48134,
-        "escalated": 20528,
+        "episodes": 354788,
+        "recovered": 164420,
+        "blocked": 48233,
+        "escalated": 20541,
         "exhausted": 0,
-        "awaiting": 121445
+        "awaiting": 121594
       },
       "seeds": 1000
     },
     "A4": {
-      "recovery_rate_mean": 0.46695902534515366,
-      "recovered_paise_total": 44360012100,
+      "recovery_rate_mean": 0.4663097798313496,
+      "recovered_paise_total": 44246110300,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 53617,
+      "instrument_dead_retries_world": 53686,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 165636,
-        "blocked": 44950,
-        "escalated": 19938,
+        "episodes": 354788,
+        "recovered": 165428,
+        "blocked": 45039,
+        "escalated": 19925,
         "exhausted": 0,
-        "awaiting": 124215
+        "awaiting": 124396
       },
       "seeds": 1000
     },
     "A5": {
-      "recovery_rate_mean": 0.30950531098989653,
-      "recovered_paise_total": 28822073500,
+      "recovery_rate_mean": 0.3090307377423168,
+      "recovered_paise_total": 28720640700,
       "safety_holds_on": 1000,
-      "instrument_dead_retries_world": 53617,
+      "instrument_dead_retries_world": 53686,
       "risk_block_actions_world": 0,
       "customer_action_retries_world": 0,
       "closure": {
-        "episodes": 354739,
-        "recovered": 109803,
-        "blocked": 24324,
-        "escalated": 3417,
-        "exhausted": 217195,
+        "episodes": 354788,
+        "recovered": 109650,
+        "blocked": 24402,
+        "escalated": 3445,
+        "exhausted": 217291,
         "awaiting": 0
       },
       "seeds": 1000
@@ -177,49 +177,49 @@
     "naive_retry": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.009112529168455395,
-        "low": 0.007217935162744272,
-        "high": 0.010949122734150095,
+        "point": 0.009024673879934943,
+        "low": 0.007129910685923682,
+        "high": 0.010839979489524905,
         "excludes_zero": true,
         "superior": true
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": -7786469.4,
-        "low": -8458702.535,
-        "high": -7148977.1075,
+        "point": -7620129.7,
+        "low": -8256708.3525,
+        "high": -7002423.902500001,
         "excludes_zero": true,
         "superior": false
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -3.0779667166112175,
-        "low": -3.099046421689443,
-        "high": -3.057443535278767,
+        "point": -3.0854895518050633,
+        "low": -3.1064611587636115,
+        "high": -3.0644619179854593,
         "excludes_zero": true,
         "superior": false
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": 0.7473939590322158,
-        "low": 0.7454696630719705,
-        "high": 0.7493703580254255,
+        "point": 0.7473357147792751,
+        "low": 0.7453889284771856,
+        "high": 0.7492734171894759,
         "excludes_zero": true,
         "superior": true
       },
       "instrument_dead_retries": {
         "n_seeds": 1000,
-        "point": 53.617,
-        "low": 53.215975,
-        "high": 54.022025,
+        "point": 53.686,
+        "low": 53.280975,
+        "high": 54.088,
         "excludes_zero": true,
         "superior": true
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 19.998,
-        "low": 19.759,
-        "high": 20.241,
+        "point": 19.99,
+        "low": 19.75,
+        "high": 20.232,
         "excludes_zero": true,
         "superior": true
       }
@@ -227,49 +227,49 @@
     "retry_plus_contact": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": -0.18182832381361874,
-        "low": -0.1838267662032757,
-        "high": -0.17983212160979192,
+        "point": -0.18172651356998978,
+        "low": -0.1837001771616138,
+        "high": -0.17974049318949975,
         "excludes_zero": true,
         "superior": false
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": -29123543.2,
-        "low": -29880349.3075,
-        "high": -28403799.77,
+        "point": -28946694.8,
+        "low": -29670853.925,
+        "high": -28256010.7825,
         "excludes_zero": true,
         "superior": false
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -1.5054010846112498,
-        "low": -1.5164326403864752,
-        "high": -1.4944912654828282,
+        "point": -1.510333057068018,
+        "low": -1.5214392549796811,
+        "high": -1.4992137406321449,
         "excludes_zero": true,
         "superior": false
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": 0.20528278032043507,
-        "low": 0.20316334390638963,
-        "high": 0.20742960585362658,
+        "point": 0.20465739793634305,
+        "low": 0.2025181028577452,
+        "high": 0.2068312274735797,
         "excludes_zero": true,
         "superior": true
       },
       "instrument_dead_retries": {
         "n_seeds": 1000,
-        "point": 53.617,
-        "low": 53.215975,
-        "high": 54.022025,
+        "point": 53.686,
+        "low": 53.280975,
+        "high": 54.088,
         "excludes_zero": true,
         "superior": true
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 19.998,
-        "low": 19.759,
-        "high": 20.241,
+        "point": 19.99,
+        "low": 19.75,
+        "high": 20.232,
         "excludes_zero": true,
         "superior": true
       }
@@ -277,49 +277,49 @@
     "vasool_ungated": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": -0.07054801257638724,
-        "low": -0.07155433342125016,
-        "high": -0.06956457320688667,
+        "point": -0.07071770652759182,
+        "low": -0.07170640512148801,
+        "high": -0.06972734195150228,
         "excludes_zero": true,
         "superior": false
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": -17088128.9,
-        "low": -17749301.384999998,
-        "high": -16462002.265,
+        "point": -16938151.8,
+        "low": -17569493.724999998,
+        "high": -16332799.0125,
         "excludes_zero": true,
         "superior": false
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": 0.03452382228104642,
-        "low": 0.03102198039046303,
-        "high": 0.03796327739488361,
+        "point": 0.0337546116648675,
+        "low": 0.030301402338887087,
+        "high": 0.0371833409963091,
         "excludes_zero": true,
         "superior": true
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": -0.12315594195756785,
-        "low": -0.12470590416042415,
-        "high": -0.12165468135105599,
+        "point": -0.12350832116955936,
+        "low": -0.12504399343054892,
+        "high": -0.12201550732420628,
         "excludes_zero": true,
         "superior": false
       },
       "instrument_dead_retries": {
         "n_seeds": 1000,
         "point": -3.66,
-        "low": -3.779,
-        "high": -3.543,
+        "low": -3.778,
+        "high": -3.542,
         "excludes_zero": true,
         "superior": false
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 3.039,
-        "low": 2.914,
-        "high": 3.167,
+        "point": 3.074,
+        "low": 2.945,
+        "high": 3.203,
         "excludes_zero": true,
         "superior": true
       }
@@ -327,49 +327,49 @@
     "A1": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.04125367505368908,
-        "low": 0.03977790519327855,
-        "high": 0.04272217679583503,
+        "point": 0.041477628188697525,
+        "low": 0.04000959644502828,
+        "high": 0.042943957274838254,
         "excludes_zero": true,
         "superior": true
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": 4343893.8,
-        "low": 4068089.775,
-        "high": 4624051.1775,
+        "point": 4400143.3,
+        "low": 4125574.2175,
+        "high": 4674350.284999999,
         "excludes_zero": true,
         "superior": true
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": 0.09804066599461757,
-        "low": 0.09106490392350162,
-        "high": 0.10493691967349118,
+        "point": 0.09493452810572749,
+        "low": 0.08813860102283576,
+        "high": 0.1018875749502646,
         "excludes_zero": true,
         "superior": true
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": 0.09149671061623195,
-        "low": 0.09010468795243504,
-        "high": 0.09290019799633785,
+        "point": 0.09165729196803521,
+        "low": 0.09020285164220214,
+        "high": 0.09310616978381549,
         "excludes_zero": true,
         "superior": true
       },
       "instrument_dead_retries": {
         "n_seeds": 1000,
-        "point": 53.617,
-        "low": 53.215975,
-        "high": 54.022025,
+        "point": 53.686,
+        "low": 53.280975,
+        "high": 54.088,
         "excludes_zero": true,
         "superior": true
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 15.045,
-        "low": 14.828,
-        "high": 15.264,
+        "point": 14.981,
+        "low": 14.763,
+        "high": 15.201,
         "excludes_zero": true,
         "superior": true
       }
@@ -377,33 +377,33 @@
     "A2": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.04380376968446523,
-        "low": 0.04308828266409674,
-        "high": 0.044539130832985926,
+        "point": 0.043758510380541155,
+        "low": 0.04303509685500313,
+        "high": 0.04450749217480295,
         "excludes_zero": true,
         "superior": true
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": 4029503.0,
-        "low": 3902747.1025,
-        "high": 4158812.4775,
+        "point": 4037670.8,
+        "low": 3909111.7925,
+        "high": 4166912.755,
         "excludes_zero": true,
         "superior": true
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -0.35699538872555936,
-        "low": -0.362825993572763,
-        "high": -0.35116229247662784,
+        "point": -0.3574436625950034,
+        "low": -0.3634058185745943,
+        "high": -0.35156530000034514,
         "excludes_zero": true,
         "superior": false
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": -0.04145893818947719,
-        "low": -0.04255949687709213,
-        "high": -0.040382218242440295,
+        "point": -0.04129460933379491,
+        "low": -0.04242295351466683,
+        "high": -0.040190011081068504,
         "excludes_zero": true,
         "superior": false
       },
@@ -417,59 +417,59 @@
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": -0.003,
-        "low": -0.007,
-        "high": 0.0,
-        "excludes_zero": false,
+        "point": -0.004,
+        "low": -0.008,
+        "high": -0.001,
+        "excludes_zero": true,
         "superior": false
       }
     },
     "A3": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.0028330823692120396,
-        "low": 0.0022185322543503403,
-        "high": 0.0034388722326647073,
+        "point": 0.0028467287964469685,
+        "low": 0.002219185749430457,
+        "high": 0.003463720674224535,
         "excludes_zero": true,
         "superior": true
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": 545797.9,
-        "low": 420849.085,
-        "high": 672140.335,
+        "point": 562280.0,
+        "low": 438181.86000000004,
+        "high": 688250.4175,
         "excludes_zero": true,
         "superior": true
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -0.21607403553810148,
-        "low": -0.21981078746231267,
-        "high": -0.21225296358913168,
+        "point": -0.2164500287011724,
+        "low": -0.22025712472560496,
+        "high": -0.21264763175259155,
         "excludes_zero": true,
         "superior": false
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": 0.01070859114980775,
-        "low": 0.010325757437865318,
-        "high": 0.011090954960748285,
+        "point": 0.010815460101139856,
+        "low": 0.010423300264444926,
+        "high": 0.011204064605380178,
         "excludes_zero": true,
         "superior": true
       },
       "instrument_dead_retries": {
         "n_seeds": 1000,
-        "point": -33.184,
-        "low": -33.526,
-        "high": -32.849,
+        "point": -33.174,
+        "low": -33.497,
+        "high": -32.854974999999996,
         "excludes_zero": true,
         "superior": false
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": -0.53,
-        "low": -0.577,
-        "high": -0.4829750000000004,
+        "point": -0.551,
+        "low": -0.598,
+        "high": -0.503,
         "excludes_zero": true,
         "superior": false
       }
@@ -501,9 +501,9 @@
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": -9.6923654621491e-05,
-        "low": -0.00013131088816301572,
-        "high": -6.54813904359928e-05,
+        "point": -0.00011076410035710372,
+        "low": -0.00014768399959281354,
+        "high": -7.694795477145617e-05,
         "excludes_zero": true,
         "superior": false
       },
@@ -517,9 +517,9 @@
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 0.06,
-        "low": 0.045,
-        "high": 0.076,
+        "point": 0.065,
+        "low": 0.049,
+        "high": 0.08102499999999964,
         "excludes_zero": true,
         "superior": true
       }
@@ -527,33 +527,33 @@
     "A5": {
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.15745371435525712,
-        "low": 0.1562274380232904,
-        "high": 0.1586822718764183,
+        "point": 0.15727904208903273,
+        "low": 0.15604089049682446,
+        "high": 0.158526887678844,
         "excludes_zero": true,
         "superior": true
       },
       "recovered_paise": {
         "n_seeds": 1000,
-        "point": 15537938.6,
-        "low": 15296089.9025,
-        "high": 15785722.1275,
+        "point": 15525469.6,
+        "low": 15279319.605,
+        "high": 15775838.7575,
         "excludes_zero": true,
         "superior": true
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -1.1463778872582717,
-        "low": -1.1580335623650273,
-        "high": -1.1351696737868813,
+        "point": -1.1468212943690306,
+        "low": -1.158480375800843,
+        "high": -1.1356404617817577,
         "excludes_zero": true,
         "superior": false
       },
       "contacts_per_episode": {
         "n_seeds": 1000,
-        "point": 0.512133380705704,
-        "low": 0.5104465934740405,
-        "high": 0.5138866543434338,
+        "point": 0.5124904477078038,
+        "low": 0.5108363866003313,
+        "high": 0.5141846335738922,
         "excludes_zero": true,
         "superior": true
       },
@@ -567,9 +567,9 @@
       },
       "escalated": {
         "n_seeds": 1000,
-        "point": 16.581,
-        "low": 16.366,
-        "high": 16.798,
+        "point": 16.545,
+        "low": 16.336,
+        "high": 16.758,
         "excludes_zero": true,
         "superior": true
       }
@@ -722,9 +722,9 @@
       "direction": "vasool behind",
       "interval": {
         "n_seeds": 1000,
-        "point": -0.18182832381361874,
-        "low": -0.1838267662032757,
-        "high": -0.17983212160979192,
+        "point": -0.18172651356998978,
+        "low": -0.1837001771616138,
+        "high": -0.17974049318949975,
         "excludes_zero": true,
         "superior": false
       }
@@ -735,17 +735,17 @@
       "detail": "A3 must move recovery rate or attempts consumed; inert on both fires",
       "recovery_rate": {
         "n_seeds": 1000,
-        "point": 0.0028330823692120396,
-        "low": 0.0022185322543503403,
-        "high": 0.0034388722326647073,
+        "point": 0.0028467287964469685,
+        "low": 0.002219185749430457,
+        "high": 0.003463720674224535,
         "excludes_zero": true,
         "superior": true
       },
       "attempts_per_recovery": {
         "n_seeds": 1000,
-        "point": -0.21607403553810148,
-        "low": -0.21981078746231267,
-        "high": -0.21225296358913168,
+        "point": -0.2164500287011724,
+        "low": -0.22025712472560496,
+        "high": -0.21264763175259155,
         "excludes_zero": true,
         "superior": false
       }
@@ -755,9 +755,9 @@
       "direction": "vasool ahead",
       "interval": {
         "n_seeds": 1000,
-        "point": 0.04380376968446523,
-        "low": 0.04308828266409674,
-        "high": 0.044539130832985926,
+        "point": 0.043758510380541155,
+        "low": 0.04303509685500313,
+        "high": 0.04450749217480295,
         "excludes_zero": true,
         "superior": true
       }
@@ -777,7 +777,7 @@
     "F5_compliance_unaffordable": {
       "fired": false,
       "detail": "vasool_ungated minus vasool, absolute percentage points of recovery rate (\u00a710, 2026-08-23: absolute, not relative)",
-      "gap_pp": 7.0548012576387205,
+      "gap_pp": 7.071770652759191,
       "threshold_pp": 20.0
     },
     "F6_conclusions_are_model_artifacts": {
@@ -795,5 +795,5 @@
       "mismatches": []
     }
   },
-  "elapsed_seconds": 1234.7
+  "elapsed_seconds": 1465.1
 }

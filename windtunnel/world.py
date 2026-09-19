@@ -32,6 +32,7 @@ from datetime import date, datetime, timedelta
 
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.events.schemas import FailureEvent
+from vasool.identity.resolver import UnionFindResolver
 from vasool.mandate.evidence import Observation, apply_rail_evidence
 from vasool.mandate.record import MandateCategory, MandateRail, MandateRecord
 from vasool.mandate.states import MandateState
@@ -109,6 +110,12 @@ class WorldFactStore:
     _by_entity_id: dict[str, PlannedEpisode] = field(default_factory=dict, init=False)
     _mandates: dict[str, MandateRecord] = field(default_factory=dict, init=False)
     _contacts: dict[str, list[datetime]] = field(default_factory=dict, init=False)
+    """Contacts keyed by *identity*, not by customer id. The cap counts humans
+    (docs/EVALUATION.md §10, 2026-09-17), so what goes in and what comes out
+    are both the resolver's answer."""
+
+    _identities: UnionFindResolver | None = field(default=None, init=False)
+    _identity_of: dict[str, str] = field(default_factory=dict, init=False)
     _spent: dict[tuple[str, date], int] = field(default_factory=dict, init=False)
     _notices: dict[str, datetime] = field(default_factory=dict, init=False)
     mandate_log: list[Observation] = field(default_factory=list, init=False)
@@ -119,6 +126,19 @@ class WorldFactStore:
     def __post_init__(self) -> None:
         self._by_customer_id = {c.customer_id: c for c in self.universe.customers}
         self._by_entity_id = {e.entity_id: e for e in self.universe.episodes}
+        # Every customer is added first and resolved second, in two passes.
+        # One pass would be wrong: `add` answers with the identity as it stands
+        # at that moment, and a later record can union two sets that were
+        # separate when the earlier one was added — so an early customer would
+        # keep a root that is no longer the set's. Asked after every add, the
+        # answer is the same whatever order the population arrived in.
+        self._identities = UnionFindResolver(self.universe.pepper)
+        for c in self.universe.customers:
+            self._identities.add(c.contact, c.email)
+        self._identity_of = {
+            c.customer_id: self._identities.identity_for(c.contact, c.email)
+            for c in self.universe.customers
+        }
         self._mandates = {
             c.customer_id: mandate
             for c in self.universe.customers
@@ -144,7 +164,8 @@ class WorldFactStore:
             # attempts_used and episode_contacts are overwritten by
             # PolicyMachine._context from the episode itself. Left at their
             # defaults rather than guessed at here.
-            contact_history=self._contact_history(customer.customer_id, now),
+            contact_history=self._contact_history(self.identity_of(customer), now),
+            identity_id=self.identity_of(customer),
             consent=customer.consent,
             dnd_listed=customer.dnd_listed,
             dnd_checked_at=now,
@@ -181,14 +202,18 @@ class WorldFactStore:
         appeared in.
         """
         if proposal.is_contact:
-            self._contacts.setdefault(proposal.customer_id, []).append(at)
+            self._contacts.setdefault(self._identity_of[proposal.customer_id], []).append(at)
         if proposal.role.value == "PRE_DEBIT_NOTICE":
             self._notices[proposal.entity_id] = at
         if proposal.is_retry:
             key = (proposal.merchant_id, _ist_day(at))
             self._spent[key] = self._spent.get(key, 0) + proposal.amount_paise
 
-    def _contact_history(self, customer_id: str, now: datetime) -> tuple[datetime, ...]:
+    def identity_of(self, customer: Customer) -> str:
+        """Which human this customer record belongs to."""
+        return self._identity_of[customer.customer_id]
+
+    def _contact_history(self, identity_id: str, now: datetime) -> tuple[datetime, ...]:
         """Contacts inside FrequencyCapGuard's window, ascending.
 
         Filtered to the window here because that is what PolicyFacts documents
@@ -197,7 +222,7 @@ class WorldFactStore:
         field's contract, not about saving the guard the work.
         """
         opens = now - FREQUENCY_CAP_WINDOW
-        return tuple(sorted(t for t in self._contacts.get(customer_id, ()) if t >= opens))
+        return tuple(sorted(t for t in self._contacts.get(identity_id, ()) if t >= opens))
 
     def episode_for(self, entity_id: str) -> PlannedEpisode:
         """The plan behind a live episode. The runner needs it to build the
@@ -206,6 +231,10 @@ class WorldFactStore:
         return self._by_entity_id[entity_id]
 
     def contacts_to(self, customer_id: str) -> tuple[datetime, ...]:
-        """Every contact ever sent to this customer. For the ledger scan §2a
-        needs, which is about the whole run rather than a rolling window."""
-        return tuple(self._contacts.get(customer_id, ()))
+        """Every contact ever sent to the human behind this customer record.
+
+        For the ledger scan §2a needs, which is about the whole run rather
+        than a rolling window — and which asks about a person, so a customer
+        id is resolved to its identity here exactly as the snapshot resolves
+        it."""
+        return tuple(self._contacts.get(self._identity_of.get(customer_id, customer_id), ()))

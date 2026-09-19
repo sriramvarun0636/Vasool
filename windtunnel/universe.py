@@ -182,6 +182,14 @@ class Universe:
     seed: int
     epoch: datetime
     horizon: datetime
+    pepper: str
+    """The key every customer id in this universe was derived under.
+
+    Carried so that a store can derive an *identity* under the same key rather
+    than inventing a second one: identity_id is pseudonymous in exactly the way
+    customer_id is, and a store that keyed it differently would be a second
+    place where the mapping lives (vasool/identity/resolver.py)."""
+
     customers: tuple[Customer, ...]
     episodes: tuple[PlannedEpisode, ...]
     """Every episode in the universe, ascending by arrival. Sorted here so
@@ -297,6 +305,17 @@ def _customer(
 
     contact = "+91" + _digits(seed, "customer", index, "contact")
     email = f"customer{index}@simulated.invalid"
+
+    # A07's shape, in the universe that reports the numbers: some share of
+    # customers are a second record of a human already here — the same phone,
+    # a different address — so `derive_customer_id` gives them their own id
+    # and only an identity resolver puts them back together. Registered as
+    # `split_identity_rate` (docs/EVALUATION.md §10, 2026-09-17); drawn under
+    # its own coordinate, so a universe at 0.0 is bit-for-bit the one before
+    # this parameter existed.
+    if index > 0 and bernoulli(value("split_identity_rate"), seed, "customer", index, "split"):
+        twin = integer(0, index - 1, seed, "customer", index, "twin_of")
+        contact = "+91" + _digits(seed, "customer", twin, "contact")
 
     has_consent = bernoulli(value("consent_on_file_rate"), seed, "customer", index, "consent")
     withdraws = has_consent and bernoulli(
@@ -492,6 +511,7 @@ def build_universe(
         seed=seed,
         epoch=EPOCH,
         horizon=horizon,
+        pepper=pepper,
         customers=tuple(customers),
         episodes=tuple(episodes),
     )

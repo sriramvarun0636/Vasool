@@ -130,15 +130,22 @@ class TestOutcomes:
         proves the harness can detect a real failure at all — if they ever pass,
         either the gap was closed or the harness went blind.
 
-        A08 was on this list until 2026-08-30. It came off because the gap was
-        closed, not because the harness stopped seeing it: `ContactWindowGuard`
-        now evaluates the window in the customer's own timezone. The removal is
-        deliberate and the attack still runs — it is asserted to *survive* by
+        A08 was on this list until 2026-08-30 and A07 until 2026-09-17. Both
+        came off because the gap was closed, not because the harness stopped
+        seeing it: `ContactWindowGuard` now evaluates the window in the
+        customer's own timezone, and the frequency cap now counts the human
+        rather than the payment identifier (docs/EVALUATION.md §10,
+        2026-09-17). Each removal is deliberate and the attack still runs — it
+        is asserted to *survive* by
         `test_each_attack_matches_its_registered_expectation`, so a regression
         turns this suite red from the other direction.
+
+        A01 is what is left: an out-of-band payment carries neither join key,
+        so `settle_from_webhook` declines to attribute it and the agent goes on
+        chasing money the merchant already has (docs/taxonomy.md §9.10).
         """
         by_id = {r.attack.id: r for r in results}
-        for attack_id in ("A01", "A07"):
+        for attack_id in ("A01",):
             assert not by_id[attack_id].survival.survived, attack_id
 
     def test_every_failure_names_the_clause_it_failed(self, results):
