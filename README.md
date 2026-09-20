@@ -136,9 +136,31 @@ Added 2026-08-29 and logged in §10. It is a subtraction over fields the shards 
 
 Every arm runs the **same seeded universe** — same customers, same arrivals, same outcome draws — so the comparison is the per-seed difference, bootstrapped over 1,000 seeds. At this sample size every interval is narrower than its own marker (the widest spans 0.38pp), so the dots *are* the intervals. Regenerate the plot with `python3 tools/make_forest_svg.py`; it reads the same manifest the dashboard does, so the two cannot disagree.
 
-### The holdout agrees
+### The holdout agrees — on worlds this agent had never seen
 
-60% of customers were sealed before any tuning began, and §3c registers that they are evaluated **exactly once**. That once happened on 2026-08-29, against the agent of that day:
+§3c seals 60% of customers and evaluates them **exactly once**. That once was spent on 2026-08-29, against an agent three re-runs old, which is why this README spent three weeks refusing to add the two cohorts together. On 2026-09-20 a **fresh-seed holdout** — seeds `1000..1999`, disjoint from §6a's `0..999` by construction, the same split procedure and the same pepper — was registered with its bands and then run once against the agent published here ([§10, 2026-09-19 and 2026-09-20](docs/EVALUATION.md)).
+
+**Every registered expectation held.**
+
+| Fresh holdout (60%) · seeds 1000–1999 · this agent | Development | Holdout |
+| :--- | ---: | ---: |
+| Vasool recovery | 46.631% | **46.421%** |
+| Money recovered | ₹44.25 Cr | **₹66.68 Cr** |
+| Episodes | 354,788 | **533,060** |
+| Paired difference to the incumbent | −18.173pp | **−18.269pp** [−18.430, −18.107] |
+| A3 — the flagship claim | +0.285pp | **+0.278pp** [+0.225, +0.333] |
+| F5 gap (threshold 20pp) | 7.072pp | **7.167pp** |
+| §2a predicate, Vasool | 1,000 / 1,000 | **1,000 / 1,000** |
+| pass^100 | 1.0 | **1.0** |
+| F1–F5, F7 | none fired | **none fired** |
+
+Vasool's own rate moved **0.210pp**, inside the ±0.5pp band registered beforehand and close to the ±0.22pp that sampling error alone predicts. **Six paired differences excluded zero on development and all six exclude it again with the same sign** — including A3 at 0.28 of a percentage point, the smallest effect in the manifest and the one the flagship `card_expired` claim rests on. That is the difference between a conclusion about this agent and a conclusion about one thousand particular worlds.
+
+**The total is back, and only in the words the registration row fixed:** **₹110.92 Cr across 2,000 seeded universes** — ₹44.25 Cr from the 40% development side of one thousand, ₹66.68 Cr from the 60% holdout side of another. It is a sum over two disjoint runs of one agent, not one population. It is **not** added to, or compared with, the August figure below.
+
+**The spent holdout, kept as it was.** The 2026-08-29 run stands unchanged, and the fresh run writes beside it rather than over it — a test asserts as much, because it is the only record of an execution §3c does not allow anyone to repeat.
+
+#### The holdout of 2026-08-29, which confirms a different agent
 
 | Holdout (sealed 60%) · the agent of 2026-08-29 | |
 | :--- | ---: |
@@ -199,7 +221,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,206 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,211 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -550,7 +572,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — fifty-nine of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — sixty of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 

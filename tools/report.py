@@ -98,13 +98,22 @@ def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     # the whole population, and the hero quotes it — reporting only the
     # development cohort's share there while README.md quotes the total is how
     # two correct numbers turn into one apparent contradiction.
-    holdout_path = json_path.parent.parent / "holdout" / "evaluation.json"
+    # The fresh range first (§10, 2026-09-19): out/holdout/evaluation.json is
+    # the 2026-08-29 run, which describes an agent three re-runs old, while
+    # out/holdout/fresh/ is the cohort this agent was evaluated on. Both are
+    # kept — the spent one is the only record of an execution §3c forbids
+    # repeating — and the newer one is what the page reports.
+    holdout_root = json_path.parent.parent / "holdout"
     holdout_data = {}
-    if holdout_path.exists():
+    for candidate in (holdout_root / "fresh" / "evaluation.json", holdout_root / "evaluation.json"):
+        if not candidate.exists():
+            continue
         try:
-            holdout_data = json.loads(holdout_path.read_text(encoding="utf-8"))
+            holdout_data = json.loads(candidate.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             holdout_data = {}
+        if holdout_data:
+            break
 
     # §2a's adversary. Optional the same way the shadow artifact is.
     redteam_path = json_path.parent.parent / "adversary" / "redteam.json"
@@ -291,7 +300,14 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
     _paise = (_v.get("recovered_paise_total") or 0) + (
         (_hold.get("recovered_paise_total") or 0) if _same_agent else 0
     )
-    hero_scope = "recovered across both cohorts" if _same_agent else "recovered in the development cohort"
+    # "Across both cohorts" would say one population; the two are disjoint seed
+    # ranges of one agent, and §10's 2026-09-19 row fixes the wording the sum
+    # may use.
+    hero_scope = (
+        "recovered across 2,000 seeded universes"
+        if _same_agent
+        else "recovered in the development cohort"
+    )
     _closure = _v.get("closure", {})
     _rt = redteam_data or {}
     _sh = (shadow_data or {}).get("overall", {})

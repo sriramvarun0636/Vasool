@@ -24,6 +24,10 @@ TEMPLATE = REPO_ROOT / "tools" / "templates" / "report.html.j2"
 """The page itself. Until 2026-09-16 it lived inside REPORT as one f-string."""
 MANIFEST = REPO_ROOT / "out" / "development" / "evaluation.json"
 HOLDOUT = REPO_ROOT / "out" / "holdout" / "evaluation.json"
+"""The 2026-08-29 run, kept because §3c forbids repeating it."""
+
+HOLDOUT_FRESH = REPO_ROOT / "out" / "holdout" / "fresh" / "evaluation.json"
+"""The fresh range (§10, 2026-09-19), which this agent was evaluated on."""
 def _shadow_path() -> pathlib.Path:
     """Complete beats partial, always.
 
@@ -338,8 +342,10 @@ class TestReadmeDoesNotDrift:
         allowed = set()
         dev = report["per_arm"]["vasool"]["recovered_paise_total"]
         allowed.add(f"{dev / 100 / 1e7:.2f}")
-        if HOLDOUT.exists():
-            holdout = json.loads(HOLDOUT.read_text())
+        for path in (HOLDOUT, HOLDOUT_FRESH):
+            if not path.exists():
+                continue
+            holdout = json.loads(path.read_text())
             hold = holdout["per_arm"]["vasool"]["recovered_paise_total"]
             allowed.add(f"{hold / 100 / 1e7:.2f}")
             # A total only when one agent produced both cohorts, the rule the

@@ -28,6 +28,12 @@ out/development/*
 !out/development/evaluation.json
 out/holdout/*
 !out/holdout/evaluation.json
+# The fresh range (EVALUATION.md 10, 2026-09-19) ships for the same reason and
+# under the same rule: one run, already spent, and the drift guards read it to
+# decide whether the two cohorts may be added. Its shards stay out.
+!out/holdout/fresh/
+out/holdout/fresh/*
+!out/holdout/fresh/evaluation.json
 out/adversary/*
 !out/adversary/redteam.json
 out/shadow/*

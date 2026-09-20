@@ -76,6 +76,19 @@ from windtunnel.sweeps import REFERENCE, sweep_configurations
 REGISTERED_SEEDS = range(0, 1000)
 """§6a: "bootstrap over 1000 seeds, seed range fixed now at 0..999"."""
 
+HOLDOUT_SEEDS = range(1000, 2000)
+"""§10, 2026-09-19: the fresh holdout's universes, disjoint from §6a's by
+construction.
+
+The sealed 60% of `REGISTERED_SEEDS` was evaluated once, on 2026-08-29, against
+the agent at `99d7b89` — three re-runs ago — and §3c allows no second
+execution. So the holdout this agent is confirmed against has to be worlds
+nobody has looked at, and a range that cannot overlap the one development is
+measured on is the cheapest way to guarantee that. Everything else about the
+cohort is unchanged: the same `split_customers`, the same pepper, the same
+stratification, the same 60% side.
+"""
+
 SWEEP_SEEDS = range(0, 200)
 """§10, 2026-08-23: §7's grid runs on 200 seeds, with survival judged against
 an unswept reference recomputed on the same 200 — without which a conclusion
@@ -868,6 +881,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                         choices=[c.value for c in Cohort])
     parser.add_argument("--unseal", default=None,
                         help="the §3c phrase; required for --cohort holdout")
+    parser.add_argument(
+        "--fresh", action="store_true",
+        help=f"evaluate §10's registered fresh holdout range "
+             f"({HOLDOUT_SEEDS.start}..{HOLDOUT_SEEDS.stop - 1}, 2026-09-19) rather "
+             f"than the seeds whose single execution was spent on 2026-08-29. "
+             f"Required for --cohort holdout; meaningless without it.",
+    )
 
     # Mutually exclusive because they are opposite answers to the same
     # question, and a run that was handed both would have to pick one
@@ -899,15 +919,43 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.sweeps = True
     if args.skip_base and not args.sweeps:
         parser.error("--skip-base needs --sweeps: it would otherwise run nothing")
+    if args.fresh and args.cohort != Cohort.HOLDOUT.value:
+        parser.error(
+            "--fresh is the holdout's registered seed range and means nothing on "
+            "the development cohort, which §6a fixes at 0..999"
+        )
 
     if args.cohort == Cohort.HOLDOUT.value and args.unseal != UNSEAL_PHRASE:
         raise HoldoutSealed(
             "EVALUATION.md §3c evaluates the holdout once. Pass --unseal with the "
             "registered phrase, and write the §10 row before you do, not after."
         )
+    if args.cohort == Cohort.HOLDOUT.value and not args.fresh:
+        # The seal above asks whether you meant it. This asks something the
+        # phrase cannot: whether the execution is still there to spend. §3c's
+        # one run on seeds 0..999 was spent on 2026-08-29, so a holdout run on
+        # that range today is not a second look at an unseen cohort -- it is a
+        # second look at the same one, which is the failure §3c exists to
+        # prevent and the one a tired author is most likely to reach for.
+        raise HoldoutSealed(
+            "EVALUATION.md §3c's single execution on seeds 0..999 was spent on "
+            "2026-08-29, against the agent at 99d7b89 (§10, that date). Re-running "
+            "it is the second look §3c forbids, whatever the phrase says. Pass "
+            "--fresh to evaluate §10's registered fresh range "
+            f"({HOLDOUT_SEEDS.start}..{HOLDOUT_SEEDS.stop - 1}, 2026-09-19) instead."
+        )
 
-    out = args.out / args.cohort
-    seeds = list(REGISTERED_SEEDS)[: args.seeds]
+    # The spent run's artifact stays where it is. out/holdout/evaluation.json
+    # is the 2026-08-29 result the README cites, produced by an agent three
+    # re-runs old; writing the fresh cohort over it would destroy the only
+    # record of an execution §3c does not allow anyone to repeat. So the fresh
+    # range gets its own directory beside it (§10, 2026-09-19).
+    out = args.out / args.cohort / "fresh" if args.fresh else args.out / args.cohort
+    # --fresh is only reachable with --cohort holdout (the parser refuses the
+    # pair otherwise), so this reads as: the fresh cohort gets the fresh
+    # universes and nothing else changes.
+    registered = HOLDOUT_SEEDS if args.fresh else REGISTERED_SEEDS
+    seeds = list(registered)[: args.seeds]
     started = time.perf_counter()
 
     stale = (

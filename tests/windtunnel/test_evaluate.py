@@ -26,6 +26,7 @@ from windtunnel.evaluate import (
     F6_DENOMINATOR,
     F6_PARTIAL_GRID,
     F6_THRESHOLD,
+    HOLDOUT_SEEDS,
     REGISTERED_SEEDS,
     SWEEP_SEEDS,
     ZERO_DIFFERENCE_DETAIL,
@@ -43,7 +44,7 @@ from windtunnel.evaluate import (
     sweep_verdicts,
 )
 from windtunnel.pepper import REGISTERED_PEPPER
-from windtunnel.split import Cohort, HoldoutSealed
+from windtunnel.split import Cohort, HoldoutSealed, UNSEAL_PHRASE
 from windtunnel.sweeps import REFERENCE, sweep_configurations
 
 PEPPER = "test-pepper-do-not-use-in-prod"
@@ -139,6 +140,54 @@ class TestTheHoldoutStaysSealed:
 
     def test_development_and_holdout_write_to_different_trees(self, tmp_path):
         assert Cohort.DEVELOPMENT.directory != Cohort.HOLDOUT.directory
+
+    def test_the_phrase_alone_no_longer_buys_the_spent_range(self, tmp_path):
+        """§10, 2026-09-19. The phrase asks whether you meant it; it cannot ask
+        whether the execution is still there to spend. Seeds 0..999 were spent
+        on 2026-08-29, so the right phrase on that range is still the second
+        look §3c forbids."""
+        with pytest.raises(HoldoutSealed, match="spent"):
+            main([
+                "--cohort", "holdout", "--unseal", UNSEAL_PHRASE,
+                "--seeds", "1", "--out", str(tmp_path),
+            ])
+
+    def test_the_fresh_range_is_disjoint_from_the_one_development_uses(self):
+        """The guarantee is structural rather than remembered: if these ever
+        overlapped, a 'holdout' would contain worlds the development cohort had
+        already shown me."""
+        assert not set(HOLDOUT_SEEDS) & set(REGISTERED_SEEDS)
+        assert len(HOLDOUT_SEEDS) == len(REGISTERED_SEEDS) == 1000
+
+    def test_fresh_seeds_reach_the_rows(self, tmp_path):
+        """The flag has to change which universes run, not only which directory
+        they land in — a fresh holdout that re-ran seed 0 would be the spent
+        one wearing a new name."""
+        main([
+            "--cohort", "holdout", "--unseal", UNSEAL_PHRASE, "--fresh",
+            "--seeds", "2", "--out", str(tmp_path), "--workers", "1",
+        ])
+        shard = tmp_path / "holdout" / "fresh" / BASE_CONFIG / "vasool.jsonl"
+        seeds = [json.loads(line)["seed"] for line in shard.read_text().splitlines()]
+        assert seeds == [HOLDOUT_SEEDS.start, HOLDOUT_SEEDS.start + 1]
+
+    def test_the_fresh_run_cannot_overwrite_the_spent_run(self, tmp_path):
+        """out/holdout/evaluation.json is the 2026-08-29 result, produced by an
+        agent three re-runs old and impossible to reproduce under §3c. The
+        fresh cohort writes beside it, never over it."""
+        spent = tmp_path / "holdout" / "evaluation.json"
+        spent.parent.mkdir(parents=True)
+        spent.write_text('{"cohort": "the spent run"}')
+        main([
+            "--cohort", "holdout", "--unseal", UNSEAL_PHRASE, "--fresh",
+            "--seeds", "1", "--out", str(tmp_path), "--workers", "1",
+        ])
+        assert json.loads(spent.read_text()) == {"cohort": "the spent run"}
+        assert (tmp_path / "holdout" / "fresh" / "evaluation.json").exists()
+
+    def test_fresh_is_meaningless_on_the_development_cohort(self, tmp_path):
+        with pytest.raises(SystemExit):
+            main(["--fresh", "--seeds", "1", "--out", str(tmp_path)])
 
 
 class TestTheReport:

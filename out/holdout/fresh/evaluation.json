@@ -1,0 +1,799 @@
+{
+  "cohort": "holdout",
+  "arms": [
+    "vasool",
+    "naive_retry",
+    "retry_plus_contact",
+    "vasool_ungated",
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "A5"
+  ],
+  "agent_fingerprint": "fb76d42ea20b96a23aad1aa9433a7490772eed5fba37418e8e21e2a96d515b3e",
+  "pepper_sha256": "f207e647748022631e8f527ab5a8dcb5756132c83ac68ec1586acba6ab56a232",
+  "seeds": {
+    "first": 1000,
+    "last": 1999,
+    "count": 1000
+  },
+  "per_arm": {
+    "vasool": {
+      "recovery_rate_mean": 0.46420788695649456,
+      "recovered_paise_total": 66675622300,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 79844,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 247444,
+        "blocked": 68463,
+        "escalated": 29888,
+        "exhausted": 0,
+        "awaiting": 187265
+      },
+      "seeds": 1000
+    },
+    "naive_retry": {
+      "recovery_rate_mean": 0.4573817756703121,
+      "recovered_paise_total": 78203934700,
+      "safety_holds_on": 988,
+      "instrument_dead_retries_world": 437914,
+      "risk_block_actions_world": 24920,
+      "customer_action_retries_world": 92223,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 243800,
+        "blocked": 23,
+        "escalated": 0,
+        "exhausted": 289237,
+        "awaiting": 0
+      },
+      "seeds": 1000
+    },
+    "retry_plus_contact": {
+      "recovery_rate_mean": 0.6469025457544727,
+      "recovered_paise_total": 110715514200,
+      "safety_holds_on": 0,
+      "instrument_dead_retries_world": 437914,
+      "risk_block_actions_world": 28230,
+      "customer_action_retries_world": 92223,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 344831,
+        "blocked": 2460,
+        "escalated": 0,
+        "exhausted": 0,
+        "awaiting": 185769
+      },
+      "seeds": 1000
+    },
+    "vasool_ungated": {
+      "recovery_rate_mean": 0.5358793083907606,
+      "recovered_paise_total": 91808779800,
+      "safety_holds_on": 0,
+      "instrument_dead_retries_world": 85530,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 285650,
+        "blocked": 3212,
+        "escalated": 25430,
+        "exhausted": 0,
+        "awaiting": 218768
+      },
+      "seeds": 1000
+    },
+    "A1": {
+      "recovery_rate_mean": 0.4250233371524737,
+      "recovered_paise_total": 60344338200,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 130288,
+      "risk_block_actions_world": 20675,
+      "customer_action_retries_world": 38743,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 226544,
+        "blocked": 75516,
+        "escalated": 7329,
+        "exhausted": 0,
+        "awaiting": 223671
+      },
+      "seeds": 1000
+    },
+    "A2": {
+      "recovery_rate_mean": 0.4211197501800985,
+      "recovered_paise_total": 60631155000,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 79844,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 224475,
+        "blocked": 67725,
+        "escalated": 29899,
+        "exhausted": 0,
+        "awaiting": 210961
+      },
+      "seeds": 1000
+    },
+    "A3": {
+      "recovery_rate_mean": 0.4614259581576045,
+      "recovered_paise_total": 65895608000,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 130381,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 245958,
+        "blocked": 73336,
+        "escalated": 30671,
+        "exhausted": 0,
+        "awaiting": 183095
+      },
+      "seeds": 1000
+    },
+    "A4": {
+      "recovery_rate_mean": 0.46420788695649456,
+      "recovered_paise_total": 66675622300,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 79844,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 247444,
+        "blocked": 68558,
+        "escalated": 29793,
+        "exhausted": 0,
+        "awaiting": 187265
+      },
+      "seeds": 1000
+    },
+    "A5": {
+      "recovery_rate_mean": 0.30753426349926194,
+      "recovered_paise_total": 43508940400,
+      "safety_holds_on": 1000,
+      "instrument_dead_retries_world": 79844,
+      "risk_block_actions_world": 0,
+      "customer_action_retries_world": 0,
+      "closure": {
+        "episodes": 533060,
+        "recovered": 163935,
+        "blocked": 37450,
+        "escalated": 5013,
+        "exhausted": 326662,
+        "awaiting": 0
+      },
+      "seeds": 1000
+    }
+  },
+  "paired_vs_vasool": {
+    "naive_retry": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.006826111286182465,
+        "low": 0.005249502911462307,
+        "high": 0.008399371362406196,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": -11528312.4,
+        "low": -12313868.227500001,
+        "high": -10734119.1075,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -3.0793756331082625,
+        "low": -3.0960742741932368,
+        "high": -3.0623974237227887,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": 0.7467802660839418,
+        "low": 0.7451805161315221,
+        "high": 0.7483963208890528,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 79.844,
+        "low": 79.292,
+        "high": 80.393025,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 29.888,
+        "low": 29.561,
+        "high": 30.203025,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "retry_plus_contact": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": -0.1826946587979782,
+        "low": -0.18429659917995492,
+        "high": -0.18107173636292087,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": -44039891.9,
+        "low": -44943970.95,
+        "high": -43150574.83,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -1.5168903239611178,
+        "low": -1.5260392500502322,
+        "high": -1.507865894292694,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": 0.20420503027503265,
+        "low": 0.20247678072379052,
+        "high": 0.20597587993394598,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 79.844,
+        "low": 79.292,
+        "high": 80.393025,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 29.888,
+        "low": 29.561,
+        "high": 30.203025,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "vasool_ungated": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": -0.071671421434266,
+        "low": -0.07247606256732782,
+        "high": -0.07085863703308448,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": -25133157.5,
+        "low": -25835779.322499998,
+        "high": -24434620.54,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": 0.0343179150286672,
+        "low": 0.031555596434488103,
+        "high": 0.03707548908397272,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": -0.12424822607200946,
+        "low": -0.1254822133106388,
+        "high": -0.12296547315629244,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": -5.686,
+        "low": -5.84,
+        "high": -5.533,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 4.458,
+        "low": 4.3,
+        "high": 4.619025,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "A1": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.03918454980402085,
+        "low": 0.037910979319220606,
+        "high": 0.04042646137993274,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": 6331284.1,
+        "low": 5999326.4975000005,
+        "high": 6662969.1325,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": 0.09759656508597613,
+        "low": 0.0915576755382617,
+        "high": 0.10352073823090084,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": 0.09166043296318367,
+        "low": 0.09048279813540448,
+        "high": 0.09285114494073768,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 79.844,
+        "low": 79.292,
+        "high": 80.393025,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 22.559,
+        "low": 22.274974999999998,
+        "high": 22.842025,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "A2": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.043088136776396065,
+        "low": 0.04246641220797486,
+        "high": 0.043695593936762304,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": 6044467.3,
+        "low": 5886271.9875,
+        "high": 6204381.54,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -0.3526306718869207,
+        "low": -0.35742937294219396,
+        "high": -0.34774773426801975,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": -0.04048805071489381,
+        "low": -0.041337042208678725,
+        "high": -0.03959688024964421,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": -0.011,
+        "low": -0.018,
+        "high": -0.005,
+        "excludes_zero": true,
+        "superior": false
+      }
+    },
+    "A3": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.0027819287988900465,
+        "low": 0.0022477363915233113,
+        "high": 0.003330044504415626,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": 780014.3,
+        "low": 635094.1725,
+        "high": 925295.715,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -0.21943948337945085,
+        "low": -0.22280808979576197,
+        "high": -0.2161089272354851,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": 0.010712507703387428,
+        "low": 0.010417797396336498,
+        "high": 0.011013811161967386,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": -50.537,
+        "low": -50.965,
+        "high": -50.099,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": -0.783,
+        "low": -0.841,
+        "high": -0.7259750000000004,
+        "excludes_zero": true,
+        "superior": false
+      }
+    },
+    "A4": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": -9.751453449935687e-05,
+        "low": -0.0001245194005536807,
+        "high": -7.16509804637803e-05,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 0.095,
+        "low": 0.077,
+        "high": 0.114,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "A5": {
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.15667362345723257,
+        "low": 0.15568054229547557,
+        "high": 0.157704528731736,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "recovered_paise": {
+        "n_seeds": 1000,
+        "point": 23166681.9,
+        "low": 22873764.82,
+        "high": 23465927.4025,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -1.1449074607240968,
+        "low": -1.1542893674025505,
+        "high": -1.1356137135069992,
+        "excludes_zero": true,
+        "superior": false
+      },
+      "contacts_per_episode": {
+        "n_seeds": 1000,
+        "point": 0.5126591802968895,
+        "low": 0.5113095667313488,
+        "high": 0.5140395514979332,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "instrument_dead_retries": {
+        "n_seeds": 1000,
+        "point": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "excludes_zero": false,
+        "superior": false
+      },
+      "escalated": {
+        "n_seeds": 1000,
+        "point": 24.875,
+        "low": 24.593975,
+        "high": 25.151025,
+        "excludes_zero": true,
+        "superior": true
+      }
+    }
+  },
+  "pass_k": {
+    "1": 1.0,
+    "5": 1.0,
+    "10": 1.0,
+    "25": 1.0,
+    "50": 1.0,
+    "100": 1.0
+  },
+  "determinism": {
+    "seeds_checked": [
+      1000,
+      1001,
+      1002
+    ],
+    "identical": true,
+    "mismatches": [],
+    "sample_seed": 1000,
+    "sample_receipts": [
+      {
+        "receipt_id": "rcpt_3e667789baef4d07",
+        "entity_id": "pay_9237bd383671ac",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T00:30:00+00:00",
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "3b22e34f72e5fe01d3db091cc29dd86eafeabeaa417b516ff8a438422dd0429f",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T00:30:00+00:00\",\"customer_id\":\"9880b26d053ecbbe224900df67ce9a9bc42632537facd4b3a4d8a885f5e6e843\",\"entity_id\":\"pay_9237bd383671ac\",\"event_id\":\"evt_9789f4bf92b60f\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"proposal\":{\"amount_paise\":25100,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"9880b26d053ecbbe224900df67ce9a9bc42632537facd4b3a4d8a885f5e6e843\",\"entity_id\":\"pay_9237bd383671ac\",\"event_id\":\"evt_9789f4bf92b60f\",\"execute_at\":\"2026-09-01T00:30:00Z\",\"explain\":false,\"failure_class\":\"TRANSIENT\",\"intervention\":\"SILENT_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_93fe436b832b1c3b\",\"proposed_by\":\"rules\",\"rationale\":\"A timeout means we don't know what happened \\u2014 the authorisation may have succeeded and the response been lost. Retry exactly once; repeatedly retrying a transaction whose outcome is unknown is how double-charges happen. Out-of-band success cancels this (A07).\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":\"pay_39e09495118eee\",\"razorpay_response\":{\"id\":\"pay_39e09495118eee\"},\"receipt_id\":\"rcpt_3e667789baef4d07\",\"trace_id\":\"15d57a7e965f190b38948b1f4328666f\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_03cd34c571937fa3",
+        "entity_id": "pay_a3b483995e520e",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T00:30:00+00:00",
+        "prev_hash": "3b22e34f72e5fe01d3db091cc29dd86eafeabeaa417b516ff8a438422dd0429f",
+        "hash": "e53fcbd2876dd3a5f394aca5f00db449d680cfb41ddda9d1862c46042e4d7c2a",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T00:30:00+00:00\",\"customer_id\":\"353c695594c3c7f4d79bc4d05f421b5ed4ae34a383cd38635bacc5a6fba033d9\",\"entity_id\":\"pay_a3b483995e520e\",\"event_id\":\"evt_711d84d08eebf6\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"3b22e34f72e5fe01d3db091cc29dd86eafeabeaa417b516ff8a438422dd0429f\",\"proposal\":{\"amount_paise\":16100,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"353c695594c3c7f4d79bc4d05f421b5ed4ae34a383cd38635bacc5a6fba033d9\",\"entity_id\":\"pay_a3b483995e520e\",\"event_id\":\"evt_711d84d08eebf6\",\"execute_at\":\"2026-09-01T00:30:00Z\",\"explain\":false,\"failure_class\":\"TRANSIENT\",\"intervention\":\"SILENT_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_8e8c02e4f180a29c\",\"proposed_by\":\"rules\",\"rationale\":\"A timeout means we don't know what happened \\u2014 the authorisation may have succeeded and the response been lost. Retry exactly once; repeatedly retrying a transaction whose outcome is unknown is how double-charges happen. Out-of-band success cancels this (A07).\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":\"pay_3fe59834a42430\",\"razorpay_response\":{\"id\":\"pay_3fe59834a42430\"},\"receipt_id\":\"rcpt_03cd34c571937fa3\",\"trace_id\":\"1a95162bfee1fa5b5bb1883dfddf7ef0\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_277ee8766e586085",
+        "entity_id": "pay_9237bd383671ac",
+        "outcome": "recovered",
+        "executed": false,
+        "at": "2026-09-01T00:30:00+00:00",
+        "prev_hash": "e53fcbd2876dd3a5f394aca5f00db449d680cfb41ddda9d1862c46042e4d7c2a",
+        "hash": "19b3c78a47af734b12f249f0faaf1e13c0e0ac61a593813c148c08ea6bb95cc1",
+        "canonical_payload": "{\"amount_recovered_paise\":25100,\"at\":\"2026-09-01T00:30:00+00:00\",\"customer_id\":\"9880b26d053ecbbe224900df67ce9a9bc42632537facd4b3a4d8a885f5e6e843\",\"entity_id\":\"pay_9237bd383671ac\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"e53fcbd2876dd3a5f394aca5f00db449d680cfb41ddda9d1862c46042e4d7c2a\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_277ee8766e586085\",\"trace_id\":\"15d57a7e965f190b38948b1f4328666f\",\"verdicts\":[]}"
+      },
+      {
+        "receipt_id": "rcpt_eb01499ad1b386b2",
+        "entity_id": "pay_a3b483995e520e",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T08:01:14+05:30",
+        "prev_hash": "19b3c78a47af734b12f249f0faaf1e13c0e0ac61a593813c148c08ea6bb95cc1",
+        "hash": "b48523b88b2a35c46a9cfa61dffe69030b42abb44317b0076caa2157d1363edf",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T08:01:14+05:30\",\"customer_id\":\"353c695594c3c7f4d79bc4d05f421b5ed4ae34a383cd38635bacc5a6fba033d9\",\"entity_id\":\"pay_a3b483995e520e\",\"event_id\":\"evt_e94e78b947c71a\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"19b3c78a47af734b12f249f0faaf1e13c0e0ac61a593813c148c08ea6bb95cc1\",\"proposal\":{\"amount_paise\":16100,\"attempt\":2,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"353c695594c3c7f4d79bc4d05f421b5ed4ae34a383cd38635bacc5a6fba033d9\",\"entity_id\":\"pay_a3b483995e520e\",\"event_id\":\"evt_e94e78b947c71a\",\"execute_at\":\"2026-09-01T08:01:14+05:30\",\"explain\":false,\"failure_class\":\"TRANSIENT\",\"intervention\":\"REATTEMPT_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_d671b93fc7864c19\",\"proposed_by\":\"rules\",\"rationale\":\"A timeout means we don't know what happened \\u2014 the authorisation may have succeeded and the response been lost. Retry exactly once; repeatedly retrying a transaction whose outcome is unknown is how double-charges happen. Out-of-band success cancels this (A07).\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":\"prop_d671b93fc7864c19\",\"template_id\":\"VASOOL_REATTEMPT\"},\"razorpay_request_id\":\"plink_4034524e74fa73\",\"razorpay_response\":{\"id\":\"plink_4034524e74fa73\",\"short_url\":\"https://rzp.io/l/4e74fa73\"},\"receipt_id\":\"rcpt_eb01499ad1b386b2\",\"trace_id\":\"1a95162bfee1fa5b5bb1883dfddf7ef0\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_c114cbe14c917cb4",
+        "entity_id": "pay_5d78a24d45aeb0",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T04:18:27.941389+00:00",
+        "prev_hash": "b48523b88b2a35c46a9cfa61dffe69030b42abb44317b0076caa2157d1363edf",
+        "hash": "646e2ea92422b4bc462ceb8a3f6a21ecbf1d9436d6b26e9632118efc412bba07",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T04:18:27.941389+00:00\",\"customer_id\":\"9b9c67673e30761ab5ec9628e84768d1c2ee823c5ebec69e46988e8a2be09771\",\"entity_id\":\"pay_5d78a24d45aeb0\",\"event_id\":\"evt_b3e98bf508d871\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"b48523b88b2a35c46a9cfa61dffe69030b42abb44317b0076caa2157d1363edf\",\"proposal\":{\"amount_paise\":219100,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"9b9c67673e30761ab5ec9628e84768d1c2ee823c5ebec69e46988e8a2be09771\",\"entity_id\":\"pay_5d78a24d45aeb0\",\"event_id\":\"evt_b3e98bf508d871\",\"execute_at\":\"2026-09-01T04:18:27.941389Z\",\"explain\":false,\"failure_class\":\"CUSTOMER_ACTION\",\"intervention\":\"REATTEMPT_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_3fd54846ef7375c8\",\"proposed_by\":\"rules\",\"rationale\":\"'paused by user': it works again once the customer resumes it. Something only the customer can do \\u2014 set a PIN, resume a paused mandate. Presenting the debit again cannot do it for them; they are asked to.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":\"VASOOL_REATTEMPT\"},\"razorpay_request_id\":\"plink_81cc1e5d9aab33\",\"razorpay_response\":{\"id\":\"plink_81cc1e5d9aab33\",\"short_url\":\"https://rzp.io/l/5d9aab33\"},\"receipt_id\":\"rcpt_c114cbe14c917cb4\",\"trace_id\":\"d53e3778ad3c5961577d548a6214ee4f\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_353ab69ce9b222d3",
+        "entity_id": "pay_5d78a24d45aeb0",
+        "outcome": "recovered",
+        "executed": false,
+        "at": "2026-09-01T04:18:27.941389+00:00",
+        "prev_hash": "646e2ea92422b4bc462ceb8a3f6a21ecbf1d9436d6b26e9632118efc412bba07",
+        "hash": "3c5ccfb16767d9044ed4db42b3b7f674f8edd750eabb968502050c6811ac0865",
+        "canonical_payload": "{\"amount_recovered_paise\":219100,\"at\":\"2026-09-01T04:18:27.941389+00:00\",\"customer_id\":\"9b9c67673e30761ab5ec9628e84768d1c2ee823c5ebec69e46988e8a2be09771\",\"entity_id\":\"pay_5d78a24d45aeb0\",\"event_id\":null,\"executed\":false,\"outcome\":\"recovered\",\"prev_hash\":\"646e2ea92422b4bc462ceb8a3f6a21ecbf1d9436d6b26e9632118efc412bba07\",\"proposal\":null,\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_353ab69ce9b222d3\",\"trace_id\":\"d53e3778ad3c5961577d548a6214ee4f\",\"verdicts\":[]}"
+      },
+      {
+        "receipt_id": "rcpt_44de9434ed7a23fc",
+        "entity_id": "pay_720a979eb403fa",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T07:20:43.636642+00:00",
+        "prev_hash": "3c5ccfb16767d9044ed4db42b3b7f674f8edd750eabb968502050c6811ac0865",
+        "hash": "ef7cc9599d99359c92d65240aa8fffa6a2f9accdc9632f3bfa1953f56b90b8fe",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T07:20:43.636642+00:00\",\"customer_id\":\"c82d0985d91ca625a89c2e6bc0a7d6bcbdd7776856f84beeb8ad6ba1bbc3843b\",\"entity_id\":\"pay_720a979eb403fa\",\"event_id\":\"evt_80c06563671dd0\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"3c5ccfb16767d9044ed4db42b3b7f674f8edd750eabb968502050c6811ac0865\",\"proposal\":{\"amount_paise\":88900,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"c82d0985d91ca625a89c2e6bc0a7d6bcbdd7776856f84beeb8ad6ba1bbc3843b\",\"entity_id\":\"pay_720a979eb403fa\",\"event_id\":\"evt_80c06563671dd0\",\"execute_at\":\"2026-09-01T07:20:43.636642Z\",\"explain\":false,\"failure_class\":\"LIQUIDITY\",\"intervention\":\"TIMED_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_76eea83e1a70ecdb\",\"proposed_by\":\"rules\",\"rationale\":\"The instrument works and the customer intends to pay; the money isn't there today. The most recoverable failure in the taxonomy, and timing does the work rather than persistence \\u2014 retry on payday, not on backoff. One soft nudge, because the customer can act. Then a link: three failures spanning two paydays means the timing hypothesis has been tested and lost. Nudge plus link is two contacts, which is exactly \\u00a77's per-episode cap.\",\"role\":\"NUDGE\",\"sibling_id\":\"prop_2267f41b5d25a1ce\",\"supersedes\":null,\"template_id\":\"VASOOL_LIQUIDITY_NUDGE\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_44de9434ed7a23fc\",\"trace_id\":\"fc8043e843a3e59a3c2e7894e5b90be8\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_79265024fcfb5824",
+        "entity_id": "pay_1ec9aa9abfa5ff",
+        "outcome": "escalated",
+        "executed": false,
+        "at": "2026-09-01T09:14:01.496970+00:00",
+        "prev_hash": "ef7cc9599d99359c92d65240aa8fffa6a2f9accdc9632f3bfa1953f56b90b8fe",
+        "hash": "0bd13ab27fc698ec9b6e55d440f55e34e5feb109f37b5be83f08ce41a576ebe9",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T09:14:01.496970+00:00\",\"customer_id\":\"beed602a8a219841fc770abadd258c1f45157ecdeab1ab9fa15164e63cf3d603\",\"entity_id\":\"pay_1ec9aa9abfa5ff\",\"event_id\":\"evt_f14d9c750b0415\",\"executed\":false,\"outcome\":\"escalated\",\"prev_hash\":\"ef7cc9599d99359c92d65240aa8fffa6a2f9accdc9632f3bfa1953f56b90b8fe\",\"proposal\":{\"amount_paise\":4600,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"beed602a8a219841fc770abadd258c1f45157ecdeab1ab9fa15164e63cf3d603\",\"entity_id\":\"pay_1ec9aa9abfa5ff\",\"event_id\":\"evt_f14d9c750b0415\",\"execute_at\":\"2026-09-01T09:14:01.496970Z\",\"explain\":false,\"failure_class\":\"RISK_BLOCK\",\"intervention\":\"HUMAN_QUEUE\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_12afc0b315cdb8ce\",\"proposed_by\":\"rules\",\"rationale\":\"A fraud system declined this. Retrying may breach card-network rules and degrades a decline ratio the merchant cannot repair; if it was fraud, a retry loop is the fraudster's tool; if it was a false positive, an unexpected payment link to a possibly-compromised customer is structurally phishing. Hard stop, human queue, zero outbound.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_79265024fcfb5824\",\"trace_id\":\"3d154c4110fab36546040588dd36ae29\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":\"nothing to refuse -- the proposal is already HUMAN_QUEUE. The handoff is escalated, never executed.\",\"statute\":\"Card network norms on retrying declined authorisations\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_fb147a3922256a8c",
+        "entity_id": "pay_fb4a14a82168cc",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T09:50:22.923900+00:00",
+        "prev_hash": "0bd13ab27fc698ec9b6e55d440f55e34e5feb109f37b5be83f08ce41a576ebe9",
+        "hash": "140a228e8c48dfe99a9ec741a26803f4a2498be0dcc703a4be3b6345bb168387",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T09:50:22.923900+00:00\",\"customer_id\":\"3040b16cbc2c1aff2eab7e955171058dda4b9126f1d8436ad7ff1e62fc96b960\",\"entity_id\":\"pay_fb4a14a82168cc\",\"event_id\":\"evt_214f9422e6c3b3\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"0bd13ab27fc698ec9b6e55d440f55e34e5feb109f37b5be83f08ce41a576ebe9\",\"proposal\":{\"amount_paise\":34700,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"3040b16cbc2c1aff2eab7e955171058dda4b9126f1d8436ad7ff1e62fc96b960\",\"entity_id\":\"pay_fb4a14a82168cc\",\"event_id\":\"evt_214f9422e6c3b3\",\"execute_at\":\"2026-09-01T09:50:22.923900Z\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"SILENT_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_81db328690b993ec\",\"proposed_by\":\"rules\",\"rationale\":\"Issuer-side decline with no stated reason; some issuers use it for soft declines, others for hard ones, and the data does not distinguish them. One probe covers the soft case. Two consecutive issuer declines is strong evidence the instrument is the problem.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":\"pay_997a090086782a\",\"razorpay_response\":{\"id\":\"pay_997a090086782a\"},\"receipt_id\":\"rcpt_fb147a3922256a8c\",\"trace_id\":\"670e8c95eb0febb4529514471132dee1\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_646e5d9d1f7e22f0",
+        "entity_id": "pay_fb4a14a82168cc",
+        "outcome": "blocked",
+        "executed": false,
+        "at": "2026-09-01T09:50:22.923900+00:00",
+        "prev_hash": "140a228e8c48dfe99a9ec741a26803f4a2498be0dcc703a4be3b6345bb168387",
+        "hash": "a546d3bff3d04db925007344974e593ac138df5faec2f929702f374e20372754",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T09:50:22.923900+00:00\",\"customer_id\":\"3040b16cbc2c1aff2eab7e955171058dda4b9126f1d8436ad7ff1e62fc96b960\",\"entity_id\":\"pay_fb4a14a82168cc\",\"event_id\":\"evt_cd27cd28ab2f65\",\"executed\":false,\"outcome\":\"blocked\",\"prev_hash\":\"140a228e8c48dfe99a9ec741a26803f4a2498be0dcc703a4be3b6345bb168387\",\"proposal\":{\"amount_paise\":34700,\"attempt\":2,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"3040b16cbc2c1aff2eab7e955171058dda4b9126f1d8436ad7ff1e62fc96b960\",\"entity_id\":\"pay_fb4a14a82168cc\",\"event_id\":\"evt_cd27cd28ab2f65\",\"execute_at\":\"2026-09-01T09:50:22.923900Z\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_f057203ec5ad8cc9\",\"proposed_by\":\"rules\",\"rationale\":\"Issuer-side decline with no stated reason; some issuers use it for soft declines, others for hard ones, and the data does not distinguish them. One probe covers the soft case. Two consecutive issuer declines is strong evidence the instrument is the problem.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":\"VASOOL_REAUTH\"},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_646e5d9d1f7e22f0\",\"trace_id\":\"670e8c95eb0febb4529514471132dee1\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"BLOCK\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":\"customer is on the DND registry, and this message's category is UNKNOWN\",\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_3b858cf3fd5509ed",
+        "entity_id": "pay_8f897703466762",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T10:54:07.763245+00:00",
+        "prev_hash": "a546d3bff3d04db925007344974e593ac138df5faec2f929702f374e20372754",
+        "hash": "9bf88d93a9c95d8a143d2853ea227fc52d6bb4dc497d2718c206b51c264ef007",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T10:54:07.763245+00:00\",\"customer_id\":\"1cce858a27ca4d2ba2d1d0a4591eb475e714beaa5b1bcb02062ba8ff884f9d36\",\"entity_id\":\"pay_8f897703466762\",\"event_id\":\"evt_083ebe26c58cbf\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"a546d3bff3d04db925007344974e593ac138df5faec2f929702f374e20372754\",\"proposal\":{\"amount_paise\":40900,\"attempt\":1,\"channel\":null,\"confidence\":1.0,\"customer_id\":\"1cce858a27ca4d2ba2d1d0a4591eb475e714beaa5b1bcb02062ba8ff884f9d36\",\"entity_id\":\"pay_8f897703466762\",\"event_id\":\"evt_083ebe26c58cbf\",\"execute_at\":\"2026-09-01T10:54:07.763245Z\",\"explain\":false,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"SILENT_RETRY\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":null,\"proposal_id\":\"prop_1e72ca64b2ed8923\",\"proposed_by\":\"rules\",\"rationale\":\"RBI E-mandate Framework, 2026, \\u00a76(a): the issuer notifies the customer at least 24 hours before a mandate debit; the merchant asks the rail for that notification, and this is the request.\",\"role\":\"PRE_DEBIT_NOTICE\",\"sibling_id\":\"prop_c01e5040ecbe0b43\",\"supersedes\":null,\"template_id\":null},\"razorpay_request_id\":null,\"razorpay_response\":null,\"receipt_id\":\"rcpt_3b858cf3fd5509ed\",\"trace_id\":\"d79c3171e2e994e1bbacba62dca62dfa\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      },
+      {
+        "receipt_id": "rcpt_60e1eca205944acc",
+        "entity_id": "pay_6abfda97571bf7",
+        "outcome": "executed",
+        "executed": true,
+        "at": "2026-09-01T12:30:32.218171+00:00",
+        "prev_hash": "9bf88d93a9c95d8a143d2853ea227fc52d6bb4dc497d2718c206b51c264ef007",
+        "hash": "c7e4f7a78a5aba305c1167066036bd1585575819323598ccaaedf447fdd58296",
+        "canonical_payload": "{\"amount_recovered_paise\":0,\"at\":\"2026-09-01T12:30:32.218171+00:00\",\"customer_id\":\"6e2b7dcecdbae7bf008fbea13ef9b6185e8beb5936e2eca2a2360630873986d4\",\"entity_id\":\"pay_6abfda97571bf7\",\"event_id\":\"evt_a36706fc039742\",\"executed\":true,\"outcome\":\"executed\",\"prev_hash\":\"9bf88d93a9c95d8a143d2853ea227fc52d6bb4dc497d2718c206b51c264ef007\",\"proposal\":{\"amount_paise\":540400,\"attempt\":1,\"channel\":\"SMS\",\"confidence\":1.0,\"customer_id\":\"6e2b7dcecdbae7bf008fbea13ef9b6185e8beb5936e2eca2a2360630873986d4\",\"entity_id\":\"pay_6abfda97571bf7\",\"event_id\":\"evt_a36706fc039742\",\"execute_at\":\"2026-09-01T12:30:32.218171Z\",\"explain\":true,\"failure_class\":\"INSTRUMENT_DEAD\",\"intervention\":\"REAUTH_LINK\",\"merchant_id\":\"acc_TSJqWjzP2eEdM3\",\"message_category\":\"UNKNOWN\",\"proposal_id\":\"prop_876b5d6ee010a508\",\"proposed_by\":\"rules\",\"rationale\":\"Indian banks commonly ship cards with online payments switched off and customers enable it per-card in their banking app. The card declines identically every time until a setting we cannot see is changed, so never retry \\u2014 and the message must name the cause, because 'payment failed, try again' is useless here.\",\"role\":\"PRIMARY\",\"sibling_id\":null,\"supersedes\":null,\"template_id\":\"VASOOL_REAUTH_EXPLAIN\"},\"razorpay_request_id\":\"plink_593673b515a875\",\"razorpay_response\":{\"id\":\"plink_593673b515a875\",\"short_url\":\"https://rzp.io/l/b515a875\"},\"receipt_id\":\"rcpt_60e1eca205944acc\",\"trace_id\":\"c566e352703abfa8621dda2d5ac5787e\",\"verdicts\":[{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"IdempotencyGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RiskBlockGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ConsentGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"DPDP Act 2023 s.6 + DPDP Rules 2025\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"MandateStateGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"RetryCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"PromiseToPayGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (fair dealing)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DNDGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR 2018 (as amended Feb 2025)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"FrequencyCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code (anti-harassment)\"},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"ContactWindowGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"RBI Fair Practices Code \\u00b655\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AutopayPeakHoursGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"PreDebitNoticeGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"AFAThresholdGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"DLTTemplateGuard\",\"obligations\":[],\"reason\":null,\"statute\":\"TRAI TCCCPR \\u2014 DLT template registration (Feb 2025 amendment)\"},{\"decision\":\"NOT_APPLICABLE\",\"defer_until\":null,\"guard\":\"SpendCapGuard\",\"obligations\":[],\"reason\":null,\"statute\":null},{\"decision\":\"ALLOW\",\"defer_until\":null,\"guard\":\"HumanApprovalGuard\",\"obligations\":[],\"reason\":null,\"statute\":null}]}"
+      }
+    ]
+  },
+  "falsification": {
+    "F1_taxonomy_adds_nothing": {
+      "fired": false,
+      "detail": "paired difference vs retry_plus_contact on recovery rate. Registered wording: fires iff the interval INCLUDES zero. Read `direction` too \u2014 an interval excluding zero on the wrong side does not fire F1 as registered and is a worse result than F1, so `fired: false` alone must not be read as 'good'.",
+      "direction": "vasool behind",
+      "interval": {
+        "n_seeds": 1000,
+        "point": -0.1826946587979782,
+        "low": -0.18429659917995492,
+        "high": -0.18107173636292087,
+        "excludes_zero": true,
+        "superior": false
+      }
+    },
+    "F2_flagship_claim_inert": {
+      "direction": "vasool ahead",
+      "fired": false,
+      "detail": "A3 must move recovery rate or attempts consumed; inert on both fires",
+      "recovery_rate": {
+        "n_seeds": 1000,
+        "point": 0.0027819287988900465,
+        "low": 0.0022477363915233113,
+        "high": 0.003330044504415626,
+        "excludes_zero": true,
+        "superior": true
+      },
+      "attempts_per_recovery": {
+        "n_seeds": 1000,
+        "point": -0.21943948337945085,
+        "low": -0.22280808979576197,
+        "high": -0.2161089272354851,
+        "excludes_zero": true,
+        "superior": false
+      }
+    },
+    "F3_salary_timing_is_noise": {
+      "fired": false,
+      "direction": "vasool ahead",
+      "interval": {
+        "n_seeds": 1000,
+        "point": 0.043088136776396065,
+        "low": 0.04246641220797486,
+        "high": 0.043695593936762304,
+        "excludes_zero": true,
+        "superior": true
+      }
+    },
+    "F4_guards_unreliable": {
+      "fired": false,
+      "detail": "pass^100 on the \u00a72a predicate",
+      "pass_k": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0,
+        "25": 1.0,
+        "50": 1.0,
+        "100": 1.0
+      }
+    },
+    "F5_compliance_unaffordable": {
+      "fired": false,
+      "detail": "vasool_ungated minus vasool, absolute percentage points of recovery rate (\u00a710, 2026-08-23: absolute, not relative)",
+      "gap_pp": 7.167142143426602,
+      "threshold_pp": 20.0
+    },
+    "F6_conclusions_are_model_artifacts": {
+      "fired": null,
+      "detail": "needs \u00a77's sweep grid \u2014 run with --sweeps"
+    },
+    "F7_determinism_fails": {
+      "fired": false,
+      "detail": "two runs of one seed must produce byte-identical ledgers (\u00a76b/F7); checked on seeds [1000, 1001, 1002]",
+      "seeds_checked": [
+        1000,
+        1001,
+        1002
+      ],
+      "mismatches": []
+    }
+  },
+  "elapsed_seconds": 1475.6
+}
