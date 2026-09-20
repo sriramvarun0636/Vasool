@@ -416,7 +416,7 @@ So Vasool asks the rail instead. A failure whose money may be in flight gets a *
 
 ## The LLM, measured
 
-The air gap is an architectural claim. This is the empirical one, over **all twelve cells** — every distinct question the registered universe can ask a fields-only classifier *on the card rail*. The LLM gets the **failure class** right **66.7%** of the time (61.1% weighted by episode volume), and picks the **action** §4 names for the row **58.3%** of the time. Since UPI Autopay entered the universe the comparison is scoped to the card rail and says so in its own header: every recording is keyed to a cell, the free tier allows twenty requests a day, and the model has never been asked a UPI question (`docs/EVALUATION.md` §10, 2026-09-16).
+The air gap is an architectural claim. This is the empirical one, over **all twelve cells** — every distinct question the registered universe can ask a fields-only classifier *on the card rail*. The LLM gets the **failure class** right **66.7%** of the time (61.3% weighted by episode volume), and picks the **action** §4 names for the row **58.3%** of the time. Since UPI Autopay entered the universe the comparison is scoped to the card rail and says so in its own header: every recording is keyed to a cell, the free tier allows twenty requests a day, and the model has never been asked a UPI question (`docs/EVALUATION.md` §10, 2026-09-16).
 
 The rules classifier scores 1.000 — **by construction, not by measurement.** Ground truth resolves through the same lookup the rules read, and the rendered artifact says so in its own header rather than letting you assume otherwise.
 
@@ -436,7 +436,7 @@ A component that does that once in two attempts is not one you put in front of a
 
 ### Stable and wrong is worse than unstable
 
-`payment_failed / gateway` is the largest cell in the corpus — 612 episodes, 21.1% by weight, and the one failure reason reproducible against live test mode. Asked fifteen times:
+`payment_failed / gateway` is the largest cell in the corpus — 605 episodes, 20.9% by weight, and the one failure reason reproducible against live test mode. Asked fifteen times:
 
 ```
 accuracy    0.000   (0 of 15 repeats matched the registered truth)

@@ -3,7 +3,7 @@
   "by_cell": [
     {
       "absent": 0,
-      "episodes": 612,
+      "episodes": 605,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "gateway",
@@ -25,7 +25,7 @@
     },
     {
       "absent": 0,
-      "episodes": 593,
+      "episodes": 595,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "insufficient_fund",
       "error_source": "bank",
@@ -47,7 +47,7 @@
     },
     {
       "absent": 0,
-      "episodes": 362,
+      "episodes": 355,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_declined",
       "error_source": "bank",
@@ -69,7 +69,7 @@
     },
     {
       "absent": 0,
-      "episodes": 303,
+      "episodes": 301,
       "error_code": "GATEWAY_ERROR",
       "error_reason": "gateway_technical_error",
       "error_source": "gateway",
@@ -91,7 +91,7 @@
     },
     {
       "absent": 0,
-      "episodes": 250,
+      "episodes": 247,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_timed_out",
       "error_source": "customer",
@@ -113,7 +113,7 @@
     },
     {
       "absent": 0,
-      "episodes": 217,
+      "episodes": 218,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "bank",
@@ -135,7 +135,7 @@
     },
     {
       "absent": 0,
-      "episodes": 211,
+      "episodes": 217,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_cancelled",
       "error_source": "customer",
@@ -157,7 +157,7 @@
     },
     {
       "absent": 0,
-      "episodes": 127,
+      "episodes": 133,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_expired",
       "error_source": "bank",
@@ -179,7 +179,7 @@
     },
     {
       "absent": 0,
-      "episodes": 83,
+      "episodes": 77,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_disabled_for_online_payments",
       "error_source": "bank",
@@ -201,7 +201,7 @@
     },
     {
       "absent": 0,
-      "episodes": 63,
+      "episodes": 64,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "card_number_invalid",
       "error_source": "customer",
@@ -223,7 +223,7 @@
     },
     {
       "absent": 0,
-      "episodes": 51,
+      "episodes": 52,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_failed",
       "error_source": "business",
@@ -245,7 +245,7 @@
     },
     {
       "absent": 0,
-      "episodes": 34,
+      "episodes": 32,
       "error_code": "BAD_REQUEST_ERROR",
       "error_reason": "payment_risk_check_failed",
       "error_source": "business",
@@ -272,10 +272,10 @@
       "cells": 3,
       "consistency": null,
       "covered_cells": 3,
-      "episodes": 1165,
+      "episodes": 1153,
       "failure_class": "TRANSIENT",
       "llm_accuracy": 0.3333333333333333,
-      "llm_accuracy_weighted": 0.26008583690987125,
+      "llm_accuracy_weighted": 0.2610581092801388,
       "rejected": 0,
       "rules_accuracy": 1.0
     },
@@ -284,7 +284,7 @@
       "cells": 1,
       "consistency": null,
       "covered_cells": 1,
-      "episodes": 593,
+      "episodes": 595,
       "failure_class": "LIQUIDITY",
       "llm_accuracy": 1.0,
       "llm_accuracy_weighted": 1.0,
@@ -296,10 +296,10 @@
       "cells": 4,
       "consistency": null,
       "covered_cells": 4,
-      "episodes": 789,
+      "episodes": 783,
       "failure_class": "INSTRUMENT_DEAD",
       "llm_accuracy": 0.75,
-      "llm_accuracy_weighted": 0.7249683143219265,
+      "llm_accuracy_weighted": 0.7215836526181354,
       "rejected": 0,
       "rules_accuracy": 1.0
     },
@@ -308,7 +308,7 @@
       "cells": 2,
       "consistency": null,
       "covered_cells": 2,
-      "episodes": 274,
+      "episodes": 281,
       "failure_class": "CUSTOMER_ACTION",
       "llm_accuracy": 1.0,
       "llm_accuracy_weighted": 1.0,
@@ -320,10 +320,10 @@
       "cells": 2,
       "consistency": null,
       "covered_cells": 2,
-      "episodes": 85,
+      "episodes": 84,
       "failure_class": "RISK_BLOCK",
       "llm_accuracy": 0.5,
-      "llm_accuracy_weighted": 0.4,
+      "llm_accuracy_weighted": 0.38095238095238093,
       "rejected": 0,
       "rules_accuracy": 1.0
     }
@@ -337,15 +337,15 @@
   "cells": 12,
   "complete": true,
   "covered_cells": 12,
-  "covered_episodes": 2906,
-  "episodes": 2906,
+  "covered_episodes": 2896,
+  "episodes": 2896,
   "model": "gemini-3.6-flash",
   "overall": {
     "agreement": 0.6666666666666666,
     "consistency": null,
     "intervention_agreement": 0.5833333333333334,
     "llm_accuracy": 0.6666666666666666,
-    "llm_accuracy_weighted": 0.6111493461803166,
+    "llm_accuracy_weighted": 0.6125690607734806,
     "rejected": 0,
     "rules_accuracy": 1.0,
     "rules_accuracy_weighted": 1.0,
@@ -356,7 +356,7 @@
   "repeats": 1,
   "stability": {
     "accuracy": 0.0,
-    "episodes": 612,
+    "episodes": 605,
     "error_reason": "payment_failed",
     "error_source": "gateway",
     "note": "Stability is not correctness. One cell, at depth; generalises to nothing.",

@@ -1,6 +1,6 @@
 CLASSIFIER COMPARISON — deterministic rules vs LLM, shadow mode
 scope: the card rail only — no UPI Autopay reason is asked here
-provider=gemini  model=gemini-3.6-flash  repeats=1  cells=12  episodes=2906
+provider=gemini  model=gemini-3.6-flash  repeats=1  cells=12  episodes=2896
 
 READ THIS FIRST
   Every cell was asked once (k=1). That is not a judgement about
@@ -33,28 +33,28 @@ READ THIS FIRST
 
                            Rules     LLM   LLM(wt)  consist  cells  covered  episodes  rejected  absent
 -------------------------------------------------------------------------------------------------------
-Overall                    1.000   0.667     0.611        —     12       12      2906         0       0
-  TRANSIENT                1.000   0.333     0.260        —      3        3      1165         0       0
-  LIQUIDITY                1.000   1.000     1.000        —      1        1       593         0       0
-  INSTRUMENT_DEAD          1.000   0.750     0.725        —      4        4       789         0       0
-  CUSTOMER_ACTION          1.000   1.000     1.000        —      2        2       274         0       0
-  RISK_BLOCK               1.000   0.500     0.400        —      2        2        85         0       0
+Overall                    1.000   0.667     0.613        —     12       12      2896         0       0
+  TRANSIENT                1.000   0.333     0.261        —      3        3      1153         0       0
+  LIQUIDITY                1.000   1.000     1.000        —      1        1       595         0       0
+  INSTRUMENT_DEAD          1.000   0.750     0.722        —      4        4       783         0       0
+  CUSTOMER_ACTION          1.000   1.000     1.000        —      2        2       281         0       0
+  RISK_BLOCK               1.000   0.500     0.381        —      2        2        84         0       0
 
 PER CELL — every distinct question the registered universe can ask
 error_reason / source                         provenance  truth                LLM  consist   k  episodes
 ---------------------------------------------------------------------------------------------------------
-payment_failed / gateway                      observed    TRANSIENT          0.000        —   1       612
-insufficient_fund / bank                      simulated   LIQUIDITY          1.000        —   1       593
-card_declined / bank                          simulated   INSTRUMENT_DEAD    1.000        —   1       362
-gateway_technical_error / gateway             simulated   TRANSIENT          1.000        —   1       303
-payment_timed_out / customer                  simulated   TRANSIENT          0.000        —   1       250
-payment_failed / bank                         observed    INSTRUMENT_DEAD    0.000        —   1       217
-payment_cancelled / customer                  simulated   CUSTOMER_ACTION    1.000        —   1       211
-card_expired / bank                           simulated   INSTRUMENT_DEAD    1.000        —   1       127
-card_disabled_for_online_payments / bank      simulated   INSTRUMENT_DEAD    1.000        —   1        83
-card_number_invalid / customer                simulated   CUSTOMER_ACTION    1.000        —   1        63
-payment_failed / business                     assembled   RISK_BLOCK         0.000        —   1        51
-payment_risk_check_failed / business          simulated   RISK_BLOCK         1.000        —   1        34
+payment_failed / gateway                      observed    TRANSIENT          0.000        —   1       605
+insufficient_fund / bank                      simulated   LIQUIDITY          1.000        —   1       595
+card_declined / bank                          simulated   INSTRUMENT_DEAD    1.000        —   1       355
+gateway_technical_error / gateway             simulated   TRANSIENT          1.000        —   1       301
+payment_timed_out / customer                  simulated   TRANSIENT          0.000        —   1       247
+payment_failed / bank                         observed    INSTRUMENT_DEAD    0.000        —   1       218
+payment_cancelled / customer                  simulated   CUSTOMER_ACTION    1.000        —   1       217
+card_expired / bank                           simulated   INSTRUMENT_DEAD    1.000        —   1       133
+card_disabled_for_online_payments / bank      simulated   INSTRUMENT_DEAD    1.000        —   1        77
+card_number_invalid / customer                simulated   CUSTOMER_ACTION    1.000        —   1        64
+payment_failed / business                     assembled   RISK_BLOCK         0.000        —   1        52
+payment_risk_check_failed / business          simulated   RISK_BLOCK         1.000        —   1        32
 
 WHAT THE LLM ACTUALLY SAID, per recorded cell
   payment_failed / gateway  (truth TRANSIENT, rules action SILENT_RETRY, k=1)
@@ -109,7 +109,7 @@ STABILITY AT DEPTH — payment_failed / gateway, k=15
   rejected            0
   said                CUSTOMER_ACTION x15
   proposed            REATTEMPT_LINK x15
-  episodes            612 (21.1% of the corpus by weight)
+  episodes            605 (20.9% of the corpus by weight)
 
   This is one cell. It generalises to nothing — not to the class it belongs
   to, not to the corpus, and not to the model. It is a statement about this
