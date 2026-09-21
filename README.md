@@ -185,6 +185,31 @@ Recorded in [`docs/EVALUATION.md` §10](docs/EVALUATION.md) under 2026-08-29, wi
 
 §3c's split is dealt by a pepper, and that pepper was registered with every result already visible ([§10, 2026-09-14](docs/EVALUATION.md)) — so nothing could show it wasn't picked for a flattering split. A check registered and pushed before it ran answers the question instead: the same thousand universes, dealt five other ways. **The conclusion held in all five** — Vasool minus the incumbent between -18.42 and -18.17 points, every 95% interval excluding zero. It has been re-run against every agent published since it was registered, with the same result each time. Two things about where the registered split falls are worth stating rather than leaving to the table: by the size of the gap it is second-smallest of the six, and on Vasool's own recovery rate it is second-highest of the six — 0.4663 against a high of 0.4670 and a low of 0.4640. Both readings run in the flattering direction, by margins far smaller than the gap itself, and the check exists precisely so that they are visible instead of assumed away. `make split-check` reproduces it, and [`out/robustness/split_check.txt`](out/robustness/split_check.txt) is the table.
 
+### What survives a ±50% move of every guess
+
+Roughly half of the parameters this simulator runs on are guesses, tagged as such. §7 exists to ask which conclusions depend on them, and on 2026-09-21 its grid ran at power for the first time: **102 configurations × 9 arms × 200 seeds, 185,400 runs, 7 hours 57 minutes**. Every swept scalar moves to −50%, −25%, +25% and +50% of its registered value, each mix has three registered shifts, and survival is judged against an unswept reference computed on the same 200 seeds.
+
+The conclusions divide cleanly, and not in a flattering direction everywhere.
+
+| Conclusion | Reference | Configurations where it fails to survive |
+| :--- | ---: | ---: |
+| The incumbent recovers more (**the headline**) | −18.231pp | **0 of 102** |
+| The guards cost recovery (**F5's price**) | −7.164pp | **0 of 102** |
+| A2 — salary-aware timing earns its place | +4.420pp | **0 of 102** |
+| A5 — escalation earns its place | +15.784pp | **0 of 102** |
+| A1 — the taxonomy does something | +4.105pp | 2 of 102 |
+| **A3 — the flagship `card_expired` claim** | +0.285pp | **2 of 102** |
+| Vasool beats `naive_retry` | +1.038pp | **24 of 102** |
+| A4 — resolution order changes recovery | +0.000pp | 102 of 102 |
+
+**The two claims this project leads with survive every move of every guess.** So do the two largest ablations. That is the strongest statement §7 can make, and it is now measured rather than assumed.
+
+**The flagship claim is not robust to how much of the book is mandates.** A3 fails to survive exactly two configurations — `mandate_share@0.5` and `upi_mix:recoverable_heavy` — and both name the same mechanism. The claim became measurable only when UPI Autopay gave INSTRUMENT_DEAD real mass; halve the mandate share, or shift the UPI mix toward recoverable reasons, and the mass goes away with it. It holds at the registered world and it is a limit, stated as one.
+
+**A one-point lead over a strawman is a property of the world, not of the agent.** `naive_retry` fails to survive 24 configurations under fourteen different knobs — retry-success rates, link completion, the arrival window, the amount spread, consent and DND rates, the salary uplift, three mix shifts. §5 says beating `naive_retry` proves very little; the grid puts a number on how little.
+
+**A4 flips everywhere, and it is not a sensitivity finding.** Since every arm became a policy on both rails, A4 is an identity arm on recovery rate: its per-seed difference is exactly [0.000, 0.000], an interval that cannot exclude zero, so it cannot survive any configuration at all. It occupies one of F6's eight slots and can never pass. **F6 did not fire — 4 of 8 against a threshold of 5 — and it reads 3 of 7 under the earlier denominator that excluded A4.** Neither fires, and the rule was not amended after the count was visible ([§10, 2026-09-21](docs/EVALUATION.md)).
+
 ### What the gap bought
 
 - **1,000 / 1,000 seeds** satisfy the [§2a safety predicate](docs/EVALUATION.md) — eight ledger-scanned claims covering contact windows, DLT templates, risk blocks, consent withdrawal, dead-instrument retries, contact caps, hash-chain integrity and receipt uniqueness.
@@ -259,7 +284,7 @@ fails rather than quietly filling the gap. A run that cannot cover every cell
 writes to `classifier_comparison_partial.*` so it can never impersonate a full
 one — this one is complete, so it doesn't.
 
-`make sweeps` runs the full §7 sensitivity grid — 83 configurations × 9 arms × 200 seeds. It takes about nine hours and resumes if interrupted.
+`make sweeps` runs the full §7 sensitivity grid — 102 configurations × 9 arms × 200 seeds, 185,400 runs. It took **7 hours 57 minutes** on the machine this was built on, and resumes if interrupted.
 
 ### Every claim, and where it comes from
 
@@ -491,11 +516,11 @@ Registered in [`docs/EVALUATION.md` §9](docs/EVALUATION.md) before any run, wit
 | | Criterion | Threshold | Result |
 | :--- | :--- | :--- | :--- |
 | **F1** | The taxonomy adds nothing | interval vs `retry_plus_contact` includes zero | did not fire — but **excludes zero on the wrong side**, −18.17pp. Read as *worse* than F1 firing. |
-| **F2** | The flagship `card_expired` claim is inert | A3 inert on recovery **and** attempts | did not fire, on attempts alone — −0.157 per recovery. On recovery rate A3 and Vasool can no longer be told apart (+0.015pp, interval spanning zero); Vasool led it by 0.06 before the notice moved to the issuer. |
-| **F3** | Salary-aware timing is noise | A2 interval includes zero | did not fire — +3.94pp |
+| **F2** | The flagship `card_expired` claim is inert | A3 inert on recovery **and** attempts | did not fire on either — **+0.285pp** [+0.222, +0.346] on recovery and **−0.216** attempts per recovery, both excluding zero. It was inseparable from zero until UPI Autopay gave INSTRUMENT_DEAD real mass; §7's grid shows the recovery half **does not survive** `mandate_share@0.5` or `upi_mix:recoverable_heavy`. |
+| **F3** | Salary-aware timing is noise | A2 interval includes zero | did not fire — **+4.376pp**, and it survives all 102 sweep configurations |
 | **F4** | The guards are unreliable | pass^100 < 1.0 | did not fire — pass^100 = 1.0 |
 | **F5** | Compliance is unaffordable | ungated beats gated by >20pp | did not fire — 7.07pp |
-| **F6** | The conclusions are model artifacts | ≥5 of 8 comparisons flip across the 83-config grid | **not evaluated for this agent** — it needs §7's nine-hour grid, re-run once at the end of the programme. It did not fire on the agent before §2.4. |
+| **F6** | The conclusions are model artifacts | ≥5 of 8 comparisons flip across the 102-config grid | **did not fire — 4 of 8**, and the margin is one comparison. A4 flips in **all 102** because it is an identity arm whose difference is exactly [0, 0] and so can never survive; `naive_retry` flips in **24**, A1 and A3 in **2** each. `retry_plus_contact`, `vasool_ungated`, A2 and A5 flip in **none**. [What the sweep found](#what-survives-a-50-move-of-every-guess) |
 | **F7** | Determinism fails | two runs of one seed differ | did not fire — ledgers identical |
 
 **F1's `fired: false` is not good news and the artifact says so in its own `detail` field.** F1 as registered fires when the interval *includes* zero. Ours excludes zero — in the baseline's favour. The criterion is silent on that case, which is exactly why the manifest carries a `direction` field beside it.
@@ -572,7 +597,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
 
-Every amendment to the protocol after registration — sixty-one of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — sixty-two of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
