@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
@@ -132,6 +133,22 @@ def _respond_recording(store: CassetteStore, client, clock):
     return respond
 
 
+_KEY_SHAPED = re.compile(r"AIza[0-9A-Za-z_\-]{20,}")
+
+
+def reason_for(problem: Exception) -> str:
+    """Why a live request failed, in words an operator can act on.
+
+    The first version reported only the exception's type, and a refusal that
+    could have been a retired model name, a safety block or a server outage
+    all read "GeminiUnavailable". The message is kept; anything shaped like a
+    Google API key is removed first, and it is cut short, because an SDK error
+    can echo a request back and this line is printed to a terminal."""
+    text = _KEY_SHAPED.sub("[redacted]", str(problem))
+    text = " ".join(text.split())
+    return f"{type(problem).__name__}: {text[:400]}{'…' if len(text) > 400 else ''}"
+
+
 def run(respond, *, model: str) -> dict:
     prompt = the_prompt()
     known = known_signatures(ATTACKS)
@@ -144,7 +161,7 @@ def run(respond, *, model: str) -> dict:
             stopped = f"no cassette for proposal {n}; run with --record to request it"
             break
         except Exception as problem:  # a live request refused — quota, network
-            stopped = f"proposal {n} not obtained: {type(problem).__name__}"
+            stopped = f"proposal {n} not obtained: {reason_for(problem)}"
             break
         records.append(score(n, text, doc, known))
     counts = {

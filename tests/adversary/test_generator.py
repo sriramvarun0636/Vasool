@@ -371,3 +371,16 @@ def test_readme_quotes_the_real_number_of_signatures(known):
     match = re.search(r"have \*\*(\d+)\*\* distinct behavioural signatures", readme)
     assert match, "README no longer quotes the signature count"
     assert int(match.group(1)) == len(known)
+
+
+def test_a_failed_request_says_why_without_echoing_a_key():
+    """A live refusal is reported with its message — the type alone said
+    nothing when proposal 0 first failed — and never with a key in it."""
+    import sys
+    sys.path.insert(0, str(REPO_ROOT))
+    from tools.generate import reason_for
+
+    fake_key = "AIza" + "x" * 35
+    reason = reason_for(RuntimeError(f"404 NOT_FOUND models/gemini-9 for key={fake_key}"))
+    assert "404 NOT_FOUND" in reason and fake_key not in reason and "[redacted]" in reason
+    assert len(reason_for(RuntimeError("y" * 5000))) < 500

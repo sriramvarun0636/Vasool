@@ -234,7 +234,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,343 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,348 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | every registered adversarial attack scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `make generate` | §2.6's adversary generator: replays the recorded proposals, compiles, runs and scores them, and writes `out/adversary/generated.json`. `RECORD=1` spends the free tier toward the registered hundred |

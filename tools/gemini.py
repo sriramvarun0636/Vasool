@@ -174,7 +174,7 @@ class GeminiClient:
                         "disk; re-run with --record to resume at the first "
                         "missing cell."
                     ) from exc
-                if not _is_rate_limit(exc) or attempt == MAX_ATTEMPTS - 1:
+                if not (_is_rate_limit(exc) or _is_transient(exc)) or attempt == MAX_ATTEMPTS - 1:
                     break
                 time.sleep(_wait_for(exc, attempt))
                 continue
@@ -187,7 +187,10 @@ class GeminiClient:
                 )
             return text
 
-        raise GeminiUnavailable(f"{self._model} failed after {MAX_ATTEMPTS} attempts: {last}")
+        # The attempt count is the one actually made. This message used to say
+        # "after 5 attempts" whenever it was raised, including after a single
+        # request that was not retried at all.
+        raise GeminiUnavailable(f"{self._model} failed after {attempt + 1} attempt(s): {last}")
 
 
 def _is_daily_quota(exc: Exception) -> bool:
@@ -215,6 +218,23 @@ def _wait_for(exc: Exception, attempt: int) -> float:
     if not match:
         return ladder
     return min(max(float(match.group(1)) + 1.0, ladder), MAX_SERVER_RETRY_DELAY)
+
+
+def _is_transient(exc: Exception) -> bool:
+    """Whether the server said it is overloaded rather than that we are.
+
+    A 503 UNAVAILABLE — "this model is currently experiencing high demand" —
+    is the provider's capacity, not this project's quota, and the refusal
+    itself says to try again. Until 2026-09-22 it was not retried at all: the
+    adversary generator's first proposal was lost to one on its first request,
+    and the message claimed five attempts. It waits on the local ladder,
+    because a 503 carries no retryDelay of its own.
+    """
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if code == 503:
+        return True
+    text = str(exc).upper()
+    return "503" in text and "UNAVAILABLE" in text
 
 
 def _is_rate_limit(exc: Exception) -> bool:

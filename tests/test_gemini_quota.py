@@ -25,6 +25,7 @@ from tools.gemini import (
     MAX_SERVER_RETRY_DELAY,
     _is_daily_quota,
     _is_rate_limit,
+    _is_transient,
     _wait_for,
 )
 
@@ -109,3 +110,30 @@ class TestTheWait:
         bare = Exception("429")
         waits = [_wait_for(bare, attempt) for attempt in range(len(BACKOFF_SECONDS))]
         assert waits == sorted(waits)
+
+
+OBSERVED_OVERLOAD = (
+    "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing "
+    "high demand. Spikes in demand are usually temporary. Please try again later.', "
+    "'status': 'UNAVAILABLE'}}"
+)
+"""What the API returned on 2026-09-22 to the adversary generator's first
+proposal, copied verbatim from the run that lost it."""
+
+
+class TestAnOverloadedServer:
+    def test_the_observed_overload_is_transient(self):
+        assert _is_transient(Exception(OBSERVED_OVERLOAD))
+
+    def test_it_is_neither_our_rate_limit_nor_our_daily_cap(self):
+        """The provider's capacity, not this project's quota: it must not be
+        mistaken for the daily cap, which is never retried."""
+        assert not _is_rate_limit(Exception(OBSERVED_OVERLOAD))
+        assert not _is_daily_quota(Exception(OBSERVED_OVERLOAD))
+
+    def test_it_waits_on_the_ladder_because_it_names_no_delay(self):
+        assert _wait_for(Exception(OBSERVED_OVERLOAD), 1) == BACKOFF_SECONDS[1]
+
+    def test_a_bad_request_and_a_dropped_connection_are_still_not_retried(self):
+        assert not _is_transient(Exception("400 INVALID_ARGUMENT: unknown field response_format"))
+        assert not _is_transient(Exception("Connection reset by peer"))
