@@ -180,6 +180,18 @@ check-then-act — the weaker of the two idempotency layers, since
 rather than guarded against, and moving to Postgres is a row lock plus a
 connection string, not a redesign.
 
+**Closed 2026-09-22 — the retry index a restart lost.** `RetryIndex` was
+process-local, so a restart between a retry firing and its `payment.captured`
+arriving lost which payment ids this agent made: the capture was not recognised
+as ours, and reconciliation read the agent's own successful retry as someone
+else's payment. `vasool/actions/retry_store.py::SqlRetryIndex` persists it in
+the action plane, in a database of its own — not the fact store, because
+`vasool/ledger/receipts.py` keeps Razorpay-shaped ids out of the policy plane —
+with WAL and `synchronous=FULL` read back as the event store does.
+`vasool/runtime/composition.py::build` refuses to start if the executor and the
+runtime hold different indexes. The simulator keeps the in-memory one: nothing
+in windtunnel restarts a process.
+
 **Closed 2026-09-16 — the dashboard in an f-string.** `tools/report.py` held
 2,341 lines of HTML, CSS and JavaScript inside one Python f-string, with 503
 escaped brace pairs — 1,581 lines and 590 pairs when INC-006 first named it —

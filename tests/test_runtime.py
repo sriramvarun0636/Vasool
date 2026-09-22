@@ -348,3 +348,84 @@ class _Fake:
 
     def __init__(self, **fields) -> None:
         self.__dict__.update(fields)
+
+
+class TestTheMandateIsThreeValued:
+    """docs/EVALUATION.md §10, 2026-09-22. `mandate = None` used to be the
+    answer both for "a one-time payment" and for "the store could not find one",
+    and the second read as the first — every mandate guard lost jurisdiction on
+    exactly the payments nobody could vouch for."""
+
+    def test_a_customer_with_no_mandate_row_reads_unknown(self):
+        facts = _snapshot(_store())
+        assert facts.mandate is None and facts.mandate_unknown is True
+
+    def test_a_recorded_one_time_customer_is_known_absent(self):
+        store = _store()
+        store.record_no_mandate(event_for("card_expired").customer_id)
+        facts = _snapshot(store)
+        assert facts.mandate is None and facts.mandate_unknown is False
+
+    def test_a_recorded_mandate_is_known(self):
+        store = _store()
+        record = MandateRecord(mandate_id="mand_2", rail=MandateRail.CARD, category=MandateCategory.GENERAL,
+                               state=MandateState.ACTIVE, valid_until=NOW + timedelta(days=30))
+        store.upsert_mandate(event_for("card_expired").customer_id, record)
+        facts = _snapshot(store)
+        assert facts.mandate == record and facts.mandate_unknown is False
+
+    def test_an_unknown_mandate_blocks_a_retry_and_nothing_else(self):
+        from vasool.policy.facts import GuardContext
+        from vasool.policy.guards.mandate_state import MandateStateGuard
+        from vasool.policy.verdict import Decision
+        from tests.policy.strategies import proposal_for
+
+        facts = _snapshot(_store())
+        guard = MandateStateGuard()
+        retry = proposal_for("gateway_technical_error", now=NOW)
+        link = proposal_for("card_expired", now=NOW)
+        blocked = guard.evaluate(GuardContext(now=NOW, effective_at=NOW, event=event_for("gateway_technical_error"),
+                                              proposal=retry, facts=facts))
+        assert blocked.decision is Decision.BLOCK and "cannot tell" in blocked.reason
+        untouched = guard.evaluate(GuardContext(now=NOW, effective_at=NOW, event=event_for("card_expired"),
+                                                proposal=link, facts=facts))
+        assert untouched.decision is Decision.NOT_APPLICABLE
+
+
+class TestTheRetryIndexIsShared:
+    """docs/EVALUATION.md §10, 2026-09-22. The executor writes the index, the
+    receiver reads it, reconciliation subtracts it — one object, or the restart
+    gap sits between whichever two disagree."""
+
+    def _build(self, tmp_path, **kwargs):
+        return build(db_path=tmp_path / "f.db", events_path=tmp_path / "e.db", merchant=MERCHANT,
+                     environ={PEPPER_VAR: GOOD_PEPPER}, **kwargs)
+
+    def test_an_executor_without_a_durable_index_refuses(self, tmp_path):
+        from types import SimpleNamespace
+        from vasool.actions.executor import RetryIndex
+        with pytest.raises(StartupRefused, match="without a durable retry index"):
+            self._build(tmp_path, executor=SimpleNamespace(retry_index=RetryIndex()))
+
+    def test_an_executor_holding_a_different_index_refuses(self, tmp_path):
+        from types import SimpleNamespace
+        from vasool.actions.retry_store import SqlRetryIndex
+        mine, theirs = SqlRetryIndex(tmp_path / "r.db"), SqlRetryIndex(tmp_path / "other.db")
+        try:
+            with pytest.raises(StartupRefused, match="different retry indexes"):
+                self._build(tmp_path, executor=SimpleNamespace(retry_index=theirs), retries=mine)
+        finally:
+            mine.close()
+            theirs.close()
+
+    def test_the_shared_index_is_what_reconciliation_subtracts(self, tmp_path):
+        from types import SimpleNamespace
+        from vasool.actions.retry_store import SqlRetryIndex
+        retries = SqlRetryIndex(tmp_path / "r.db")
+        runtime = self._build(tmp_path, executor=SimpleNamespace(retry_index=retries), retries=retries)
+        try:
+            retries.record("pay_ours", "ent_1")
+            assert runtime.retries is retries
+            assert runtime.machine._ours() == frozenset({"pay_ours"})
+        finally:
+            runtime.close()

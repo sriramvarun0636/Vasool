@@ -31,6 +31,7 @@ from vasool.clock import RealClock
 from vasool.events.store import EventStore
 from vasool.policy.facts import MerchantPolicy
 from vasool.policy.machine import PolicyMachine
+from vasool.actions.retry_store import SqlRetryIndex
 from vasool.policy.sql_store import SqlFactStore
 
 PEPPER_VAR = "VASOOL_ID_PEPPER"
@@ -66,9 +67,14 @@ class Runtime:
     events: EventStore
     merchant: MerchantPolicy
     pepper: str
+    retries: SqlRetryIndex | None = None
+    """The durable retry index the executor, the receiver and reconciliation
+    share. None only for a runtime built without an executor — a dry run."""
 
     def close(self) -> None:
         self.facts.close()
+        if self.retries is not None:
+            self.retries.close()
 
 
 def read_pepper(environ: dict[str, str] | None = None) -> str:
@@ -108,6 +114,7 @@ def build(
     merchant: MerchantPolicy,
     environ: dict[str, str] | None = None,
     executor=None,
+    retries: SqlRetryIndex | None = None,
 ) -> Runtime:
     """Wire the system. Reads the environment exactly once, here.
 
@@ -117,6 +124,21 @@ def build(
     execute, which is the safe shape for a dry run.
     """
     pepper = read_pepper(environ)
+    # One retry index, or none. The executor writes it, the receiver reads it
+    # to recognise a capture as ours, and reconciliation subtracts it from what
+    # the rail reports; three components holding two indexes would put the
+    # restart gap back between them (docs/EVALUATION.md §10, 2026-09-22).
+    if executor is not None and retries is None:
+        raise StartupRefused(
+            "an executor was passed without a durable retry index. Build the executor "
+            "with retry_index=SqlRetryIndex(path) and pass the same object as retries, "
+            "or a restart will lose which payments this agent made."
+        )
+    if executor is not None and getattr(executor, "retry_index", None) is not retries:
+        raise StartupRefused(
+            "the executor and the runtime hold different retry indexes; pass the one "
+            "the executor was built with, so that what it writes is what is read."
+        )
     events = EventStore(events_path)
     # No resolver is wired, and that is the registered default: the cap counts
     # one record as one human, which is what it counted before
@@ -126,7 +148,13 @@ def build(
     # deployment's configuration rather than in a default
     # (docs/EVALUATION.md §10, 2026-09-17).
     facts = SqlFactStore(db_path, merchant=merchant)
-    machine = PolicyMachine(clock=RealClock(), facts=facts, executor=executor)
+    machine = PolicyMachine(
+        clock=RealClock(),
+        facts=facts,
+        executor=executor,
+        **({"ours": retries.payment_ids} if retries is not None else {}),
+    )
     return Runtime(
-        machine=machine, facts=facts, events=events, merchant=merchant, pepper=pepper
+        machine=machine, facts=facts, events=events, merchant=merchant, pepper=pepper,
+        retries=retries,
     )

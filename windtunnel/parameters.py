@@ -23,8 +23,8 @@ would be exactly the drift §3c exists to prevent. They are registered under
 **On `[derived]`.** §4 defines it as "computed from a `[cited]` figure by
 stated arithmetic". This project has no cited figures — §4 says so at length —
 so anything computed from a guess is itself a guess, and is tagged that way.
-Letting `[derived]` launder a number would make the 8/9 guess fraction, which
-§4 calls a headline result in its own right, quietly false. The one
+Letting `[derived]` launder a number would make the guess fraction, which §4
+calls a headline result in its own right, quietly false. The one
 `[derived]` below is §4's own registered INSTRUMENT_DEAD zero, kept as the
 document tags it: re-tagging it here would be editing code to make a
 pre-registered document look consistent, which is backwards.

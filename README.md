@@ -234,9 +234,10 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,244 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,343 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
-| `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
+| `make redteam` | every registered adversarial attack scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
+| `make generate` | §2.6's adversary generator: replays the recorded proposals, compiles, runs and scores them, and writes `out/adversary/generated.json`. `RECORD=1` spends the free tier toward the registered hundred |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
 | `make report` | rebuilds the dashboard from the manifest, rewriting `docs/index.html` |
 | `git status --short` | prints nothing: every artifact those commands rewrote came back byte for byte |
@@ -582,6 +583,16 @@ Four attacks — A15, A16, A18, A19 — **were** open and are now closed. A queu
 
 `make redteam` reproduces all of it.
 
+### What twenty-four hand-written attacks did not think of
+
+Every attack above was written by me, so the suite can only test what I thought to test. [§10, 2026-09-22](docs/EVALUATION.md) registered a generator that asks a model instead, with its criterion and its budget fixed before any of it existed: **a finding is a proposal that compiles, is not behaviourally the same as any registered attack, and that the agent fails — and the four numbers (proposed, compiled, novel, findings) are reported at exactly 100 proposals, whatever they are.** A generator that can be run until something breaks is a search whose length nobody reports, which is the thing this whole repository is built against.
+
+The model writes attacks in a closed JSON grammar over the arena's own operations, and a compiler that never evaluates anything turns them into the same `Attack` the suite runs (`windtunnel/adversary/`). **The grammar says what the hand-written attacks say:** seven registered attacks re-expressed in it leave byte-identical ledgers. And before the model was called once, three attacks I wrote in the grammar had to compile, run and be new — a UPI mandate revoked after a retry is queued, a DLT registration lapsing overnight, a UPI failure ten minutes before NPCI's evening peak. All three survive, and **each one fails when the guard it targets is switched off**, which is how I know their evidence can see anything. The first draft of the third could not: it used a predicate that counts card re-presentations only, and with the peak-hours guard disabled it still passed. The DLT one fails only with both the guard *and* the executor's own template check disabled — two independent layers, each enough alone.
+
+One thing the novelty check says about the suite itself: the twenty-four registered attacks have **19** distinct behavioural signatures, not 24. Some attacks that test different things through their evidence make the system do the same thing, so "novel" is harder to earn than the attack count suggests.
+
+The hundred proposals are spent at the free tier's twenty a day. `make generate` replays whatever has been recorded; until all hundred have been, it reports progress and says so rather than a result.
+
 ---
 
 ## What this evaluation will not claim
@@ -595,7 +606,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result**: §4 states it, the dashboard carries it in the record beside the headline, and tests tie both to the tags in the simulator's source.
 
-Every amendment to the protocol after registration — sixty-seven of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — sixty-eight of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 

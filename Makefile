@@ -46,7 +46,7 @@ ifeq ($(strip $(LIVE)),1)
 DEMO_ARGS += --live
 endif
 
-.PHONY: demo golden eval sweeps sweep-one split-check shadow redteam report replay all
+.PHONY: demo golden eval sweeps sweep-one split-check shadow redteam generate report replay all
 
 demo: ## one recovery episode, end to end, replay by default -- LIVE=1 to opt in; RAIL=upi SCENARIO=payment_pending for a UPI Autopay one (see vasool/demo.py --help)
 	$(PYTHON) -m vasool.demo $(DEMO_ARGS)
@@ -69,8 +69,11 @@ split-check: ## §10 2026-09-14's registered check: the headline under five othe
 shadow: ## §4.5's rules-vs-LLM comparison -- replay by default; RECORD=1 calls the provider; REPEATS=N sets depth; PARTIAL=1 replays only recorded cells; CELL=reason/source adds the depth section
 	$(PYTHON) tools/shadow.py $(SHADOW_ARGS)
 
-redteam: ## 23 attacks, scored against the registered survival criterion -- writes out/adversary/
+redteam: ## the registered attacks, scored against the registered survival criterion -- writes out/adversary/
 	$(PYTHON) tools/redteam.py
+
+generate: ## §2.6's adversary generator, 100 proposals as registered -- replay by default; RECORD=1 spends the free tier and resumes where it stopped
+	$(PYTHON) tools/generate.py $(if $(RECORD),--record,)
 
 report: ## builds out/report.html, publishes it to docs/, and rebuilds README's forest plot
 	$(PYTHON) tools/report.py

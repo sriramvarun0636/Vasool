@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS notices (
 );
 CREATE TABLE IF NOT EXISTS mandates (
     customer_id TEXT PRIMARY KEY,
-    record_json TEXT NOT NULL
+    record_json TEXT
 );
 CREATE TABLE IF NOT EXISTS promises (
     entity_id TEXT PRIMARY KEY,
@@ -199,7 +199,12 @@ class SqlFactStore:
             dnd_checked_at=datetime.fromisoformat(dnd_checked_at) if dnd_checked_at else None,
             promise_to_pay=date.fromisoformat(promise[0]) if promise else None,
             customer_zone=ZoneInfo(zone) if zone else None,
-            mandate=_mandate_from_json(mandate[0]) if mandate else None,
+            # Three values, not two: a row carrying a record is a mandate; a row
+            # carrying NULL is a recorded one-time customer; no row at all is a
+            # customer this store cannot speak for, and MandateStateGuard fails
+            # closed on it (docs/EVALUATION.md §10, 2026-09-22).
+            mandate=_mandate_from_json(mandate[0]) if mandate and mandate[0] else None,
+            mandate_unknown=mandate is None,
             pre_debit_notice_sent_at=datetime.fromisoformat(notice[0]) if notice else None,
             registered_templates=frozenset(t for t, _ in categories),
             template_categories=categories,
@@ -283,6 +288,15 @@ class SqlFactStore:
             conn.execute(
                 "INSERT OR REPLACE INTO mandates (customer_id, record_json) VALUES (?, ?)",
                 (customer_id, _mandate_to_json(record)),
+            )
+
+    def record_no_mandate(self, customer_id: str) -> None:
+        """Record that this customer's payments are one-time — known, and absent.
+        Without this or `upsert_mandate`, the store cannot say, and says so."""
+        with self._conn:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO mandates (customer_id, record_json) VALUES (?, NULL)",
+                (customer_id,),
             )
 
     def record_promise(self, entity_id: str, pay_on: date) -> None:

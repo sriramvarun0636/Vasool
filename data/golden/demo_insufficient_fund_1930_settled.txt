@@ -168,12 +168,12 @@
     provenance   : constructed
     note         : never sent by Razorpay -- the one payment.captured envelope
                    this account has ever captured live, with the payment id
-                   retry_payment actually returned this run stamped into
-                   payload.payment.entity.id. Whether createRecurring's
+                   create_recurring_payment actually returned this run stamped
+                   into payload.payment.entity.id. Whether createRecurring's
                    returned id is the id that later appears captured has never
                    been observed live (docs/VERIFIED.md).
     correlation  : RetryIndex -- executor.py's own record of the id
-                   retry_payment returned for this entity_id
+                   create_recurring_payment returned for this entity_id
     amount       : ₹500.00 (50000 paise)
 
 [14] receipt

@@ -35,6 +35,16 @@ LLM_MODULE = "vasool.diagnosis.llm"
 CASSETTE_MODULE = "windtunnel.cassette"
 SHADOW_MODULE = "windtunnel.shadow"
 GEMINI_MODULE = "tools.gemini"
+PROPOSER_MODULE = "windtunnel.adversary.propose"
+"""§2.6's model call (docs/EVALUATION.md §10, 2026-09-22) — the generator's one
+module on the model's side of the gap, held to the same two directions as the
+classifier."""
+GENERATOR_MODULES = (
+    "windtunnel.adversary.grammar",
+    "windtunnel.adversary.compile",
+    "windtunnel.adversary.novelty",
+    PROPOSER_MODULE,
+)
 
 ACTING_MODULES = (
     "vasool.actions.executor",
@@ -123,7 +133,7 @@ class TestTheGraphIsRealBeforeItIsUsed:
     """A boundary test that silently walks an empty graph passes everything."""
 
     def test_the_modules_under_test_exist(self, graph):
-        for module in (LLM_MODULE, CASSETTE_MODULE, SHADOW_MODULE, GEMINI_MODULE):
+        for module in (LLM_MODULE, CASSETTE_MODULE, SHADOW_MODULE, GEMINI_MODULE, *GENERATOR_MODULES):
             assert module in graph, f"{module} is missing from the import graph"
 
     def test_the_acting_modules_exist(self, graph):
@@ -165,6 +175,23 @@ class TestNothingThatActsCanReachTheLLM:
     def test_the_provider_client_is_unreachable(self, graph, module):
         assert GEMINI_MODULE not in _reachable(graph, module)
 
+    @pytest.mark.parametrize("module", ACTING_MODULES)
+    def test_the_attack_proposer_is_unreachable(self, graph, module):
+        assert PROPOSER_MODULE not in _reachable(graph, module)
+
+    def test_nothing_in_the_money_path_can_reach_the_generator(self, graph):
+        """The design doc's §2.6: the generator produces test scenarios and is
+        not in the money path's type graph at all, so invariant 1 holds for it
+        by construction. Every module under vasool/ is checked, not a list."""
+        leaks = {
+            (module, target)
+            for module in graph
+            if module.startswith("vasool.")
+            for target in _reachable(graph, module)
+            if target in GENERATOR_MODULES
+        }
+        assert not leaks, f"reaches the generator: {sorted(leaks)}"
+
 
 class TestTheLLMCanReachNothingThatActs:
     """The other direction, and the one that matters most: even if something
@@ -184,6 +211,18 @@ class TestTheLLMCanReachNothingThatActs:
         """The session's departure from spec §4.5, held in place. A Proposal is
         what the executor consumes; the LLM must not be able to build one."""
         assert "vasool.diagnosis.proposal" not in _reachable(graph, LLM_MODULE)
+
+    def test_the_attack_proposer_reaches_nothing_that_acts(self, graph):
+        """propose.py receives the grammar as rendered text for exactly this
+        reason: the grammar imports enums from the ledger module, so a proposer
+        that imported the grammar would reach the module that writes receipts."""
+        reachable = _reachable(graph, PROPOSER_MODULE)
+        forbidden = {
+            name
+            for name in reachable
+            if name.startswith(("vasool.", "windtunnel.adversary.", "windtunnel.runner", "tools."))
+        }
+        assert not forbidden, f"{PROPOSER_MODULE} reaches {sorted(forbidden)}"
 
     def test_the_shadow_harness_reaches_no_executor(self, graph):
         reachable = _reachable(graph, SHADOW_MODULE)

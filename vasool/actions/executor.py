@@ -111,21 +111,19 @@ class RetryIndex:
     against the entity_id that asked for it. Nothing inferred, nothing
     matched by order_id/amount/customer.
 
-    **In-memory and process-local, deliberately not persisted here.** Nothing
-    in this codebase durably stores the action plane's own call history yet —
-    ExecutionJournal beside this class has exactly the same property, and the
-    only durable store that exists at all (EventStore) is scoped to *received*
-    webhooks, not calls we made ourselves; reusing it for this would distort
-    what it's for. The transition log is the other candidate and it is ruled
-    out on purpose too: vasool/ledger/receipts.py's own docstring establishes
-    that Razorpay-shaped data (a request id, a response body) deliberately
-    never enters the policy plane, so it must not carry this either. So: a
-    process restart between a retry firing and its `payment.captured`
-    arriving loses the mapping. That capture will not be recognised as ours —
-    the episode simply stays in AWAITING rather than reaching RECOVERED
-    through this path. Not silently wrong (nothing gets settled that
-    shouldn't), but a real gap, not a theoretical one, and durability for the
-    whole action/ledger plane is a bigger change than this session's scope.
+    **In memory by default, on disk in a deployment.** This class is the
+    process-local index the simulator and the arena use: nothing in windtunnel
+    restarts a process, so nothing there can lose the mapping. A deployment
+    passes `vasool/actions/retry_store.py::SqlRetryIndex` instead — the same
+    three methods over a file with WAL and `synchronous=FULL` — and
+    `vasool/runtime/composition.py::build` refuses to start if the executor and
+    the runtime hold different indexes (docs/EVALUATION.md §10, 2026-09-22).
+    It is persisted in the action plane, in a database of its own, because
+    vasool/ledger/receipts.py establishes that Razorpay-shaped data never
+    enters the policy plane, and a payment id the rail minted is that data.
+    Before it existed, a restart between a retry firing and its
+    `payment.captured` arriving lost the mapping and the capture was not
+    recognised as ours.
     """
 
     def __init__(self) -> None:

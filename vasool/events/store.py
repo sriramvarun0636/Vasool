@@ -56,7 +56,7 @@ class JournalModeRefused(RuntimeError):
     """SQLite left a file-backed database out of WAL mode."""
 
 
-def _make_durable(conn: sqlite3.Connection) -> str:
+def make_durable(conn: sqlite3.Connection) -> str:
     mode = conn.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower()
     if mode != "wal":
         raise JournalModeRefused(
@@ -75,7 +75,7 @@ class EventStore:
         if str(db_path) == IN_MEMORY:
             self.journal_mode = self._conn.execute("PRAGMA journal_mode").fetchone()[0].lower()
         else:
-            self.journal_mode = _make_durable(self._conn)
+            self.journal_mode = make_durable(self._conn)
         self._conn.execute(_SCHEMA)
         self._conn.commit()
 

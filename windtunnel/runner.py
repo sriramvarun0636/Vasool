@@ -785,15 +785,12 @@ class Runner:
         Same reason and source as the original, because a retry that failed
         for the same underlying cause has not learned anything new.
 
-        # VERIFY: one narrower gap remains and it is not simulated here.
-        # RetryIndex is process-local (vasool/actions/executor.py), so in
-        # production a restart between a retry firing and its failure webhook
-        # arriving loses the mapping, and that webhook opens a fresh episode
-        # at attempt 1 — the ladder fragments exactly as it used to. Nothing
-        # in windtunnel restarts a process, and no restart-rate parameter is
-        # registered in EVALUATION.md §4, so this evaluation measures the
-        # agent as it behaves within one process and is optimistic by
-        # whatever that rate turns out to be.
+        Nothing in windtunnel restarts a process, so the in-memory RetryIndex
+        is exact here. A deployment wires the durable one
+        (vasool/actions/retry_store.py, docs/EVALUATION.md §10, 2026-09-22),
+        which is what keeps a restart from fragmenting the ladder in
+        production; a deployment that does not is optimistic by its own
+        restart rate, which no parameter in EVALUATION.md §4 models.
 
         Zero latency, for the same reason settlement has none: no
         failure-latency parameter is registered in EVALUATION.md §4, and

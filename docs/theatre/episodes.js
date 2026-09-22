@@ -2411,11 +2411,11 @@ window.VASOOL_EPISODES = [
      },
      {
       "label": "note",
-      "value": "never sent by Razorpay -- the one payment.captured envelope this account has ever captured live, with the payment id retry_payment actually returned this run stamped into payload.payment.entity.id. Whether createRecurring's returned id is the id that later appears captured has never been observed live (docs/VERIFIED.md)."
+      "value": "never sent by Razorpay -- the one payment.captured envelope this account has ever captured live, with the payment id create_recurring_payment actually returned this run stamped into payload.payment.entity.id. Whether createRecurring's returned id is the id that later appears captured has never been observed live (docs/VERIFIED.md)."
      },
      {
       "label": "correlation",
-      "value": "RetryIndex -- executor.py's own record of the id retry_payment returned for this entity_id"
+      "value": "RetryIndex -- executor.py's own record of the id create_recurring_payment returned for this entity_id"
      },
      {
       "label": "amount",

@@ -162,14 +162,14 @@ def from_webhook(
     dispatched. This narrows what is treated as a continuation; it never
     widens what a `payment.failed` is trusted to mean.
 
-    # VERIFY: two gaps remain and neither is closeable here. RetryIndex is
-    process-local (vasool/actions/executor.py), so a restart between a retry
-    firing and its failure webhook arriving loses the mapping and that
-    webhook does open a fresh episode at attempt 1 — the exact mirror of the
-    settlement gap already recorded for `payment.captured`. And if
+    A restart no longer loses the mapping where a deployment wires
+    `SqlRetryIndex` (vasool/actions/retry_store.py, docs/EVALUATION.md §10,
+    2026-09-22); with the in-memory default it still would.
+
+    # VERIFY: one gap remains and it is not closeable here. If
     `createRecurring`'s response carries no id, nothing is recorded to
-    correlate against in the first place. Both fail in the same safe
-    direction: an episode is under-counted, never over-counted.
+    correlate against in the first place. It fails in the safe direction: an
+    episode is under-counted, never over-counted.
     """
     payment = body["payload"]["payment"]["entity"]
     payment_id = payment["id"]

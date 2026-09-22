@@ -60,10 +60,18 @@ class MandateStateGuard(Guard):
     statute = "RBI E-mandate Framework 2026 §4 — debit only under a live mandate"
 
     def applies_to(self, ctx: GuardContext) -> bool:
-        return ctx.facts.is_mandate and ctx.proposal.is_retry
+        return (ctx.facts.is_mandate or ctx.facts.mandate_unknown) and ctx.proposal.is_retry
 
     def check(self, ctx: GuardContext) -> Verdict:
-        assert ctx.facts.mandate is not None  # is_mandate reads the record
+        if ctx.facts.mandate is None:
+            # Jurisdiction came from not knowing. A debit whose authority cannot
+            # be established does not run — the refusal is the same shape as
+            # the fail-closed block in Guard.evaluate for a fact we lack.
+            return self.block(
+                "cannot tell whether this payment is presented under a mandate. A "
+                "debit whose authority has not been established is not the same as "
+                "one established to need none, so this fails closed."
+            )
         state = ctx.facts.mandate.state_at(ctx.effective_at)
         if state is MandateState.ACTIVE:
             return self.allow()

@@ -709,9 +709,11 @@ def _stage_settlement_retry(
     Unlike the link path there is no merchant-controlled notes field to
     inject -- the correlation is executor.py's own RetryIndex, keyed on the
     id the debit actually returned during this same run. (Two lines it prints
-    still say "retry_payment", the name the debit had until 2026-09-15: the
-    golden transcripts pin them, and re-run #3 registered that they would not
-    move.) Finds that real
+    said "retry_payment", the name the debit had until 2026-09-15, for a week
+    after it was renamed: the golden transcripts pinned them, and re-run #3
+    registered that they would not move. docs/EVALUATION.md §10, 2026-09-22
+    registered renaming them with the next change to the fingerprint, and
+    this is it.) Finds that real
     record on the executor's own journal (never fabricated) and stamps the
     one real payment.captured envelope this account has ever captured live
     with it. Same item-3 treatment as the link path: says on screen that
@@ -744,14 +746,14 @@ def _stage_settlement_retry(
     _block(
         "note",
         "never sent by Razorpay -- the one payment.captured envelope this "
-        "account has ever captured live, with the payment id retry_payment "
+        "account has ever captured live, with the payment id create_recurring_payment "
         "actually returned this run stamped into payload.payment.entity.id. "
         "Whether createRecurring's returned id is the id that later appears "
         "captured has never been observed live (docs/VERIFIED.md).",
     )
     _block(
         "correlation",
-        "RetryIndex -- executor.py's own record of the id retry_payment returned for this entity_id",
+        "RetryIndex -- executor.py's own record of the id create_recurring_payment returned for this entity_id",
     )
     _kv("amount", _rupees(amount))
 

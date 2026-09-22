@@ -171,12 +171,20 @@ class PolicyFacts:
     payment — known, and absent, like `promise_to_pay`. Not on FailureEvent: no
     subscription or mandate payload has ever been observed on this account
     (docs/VERIFIED.md), so its fields would have been invented. Production reads
-    it from its mandate store; the simulator builds one (windtunnel/world.py).
+    it from its mandate store; the simulator builds one (windtunnel/world.py)."""
 
-    # VERIFY: None cannot say "we could not tell". A FactStore that fails to
-    # find a mandate that exists hands the guards a one-time payment, and the
-    # mandate guards then have no jurisdiction. Establishing that a payment is
-    # not on a mandate is the FactStore's job, and nothing here can check it."""
+    mandate_unknown: bool = False
+    """True when the store could not establish whether this payment is on a
+    mandate at all — the third value `mandate` alone could not express.
+
+    Until docs/EVALUATION.md §10, 2026-09-22 a store that failed to find a
+    mandate that existed handed the guards `None`, which reads as a one-time
+    payment, and every mandate guard then had no jurisdiction: an unknown
+    became the permissive answer by default. `MandateStateGuard` now takes
+    jurisdiction over a retry whose mandate status is unknown and refuses it,
+    the same rule `dnd_listed = None` follows. `SqlFactStore` sets this for a
+    customer with no mandate row of either kind; the simulator and the arena
+    always know, so nothing they measure can move."""
 
     pre_debit_notice_sent_at: datetime | None = None
     """None means not yet sent — known-absent. The guard's job is then to

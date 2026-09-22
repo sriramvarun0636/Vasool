@@ -1,0 +1,19 @@
+{
+  "id": "H003",
+  "title": "a UPI Autopay failure ten minutes before the evening peak",
+  "targets": "AutopayPeakHoursGuard: NPCI OC-215A forbids Autopay execution in the evening peak, so a debit that falls due inside it must wait. The scene ends at 21:29, inside the peak, so any execution after 17:00 is one the guard let through",
+  "expectation": "survives",
+  "steps": [
+    {"op": "person", "bind": "ravi", "human_id": "ravi",
+     "mandate": {"rail": "UPI_AUTOPAY", "category": "GENERAL", "state": "ACTIVE", "valid_days": 365,
+                 "mandate_id": "upi_h003", "token_id": "token_h003", "razorpay_customer_id": "cust_h003"}},
+    {"op": "jump_to", "at": {"day": 2, "hour": 16, "minute": 50}},
+    {"op": "fail", "person": "ravi", "reason": "issuer_dispatch_failed", "entity_id": "pay_h003", "upi": true},
+    {"op": "advance_to", "at": {"day": 2, "hour": 17, "minute": 0}},
+    {"op": "mark", "label": "peak_opens"},
+    {"op": "advance_to", "at": {"day": 2, "hour": 21, "minute": 29}}
+  ],
+  "evidence": [
+    {"kind": "NoExecutionOnEntityAfter", "entity_id": "pay_h003", "mark": "peak_opens"}
+  ]
+}

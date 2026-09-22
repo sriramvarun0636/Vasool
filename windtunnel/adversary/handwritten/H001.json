@@ -1,0 +1,19 @@
+{
+  "id": "H001",
+  "title": "a UPI mandate revoked by the payer after a retry is already queued",
+  "targets": "MandateStateGuard at execute time: a debit built against an active mandate must not run once the payer has revoked it",
+  "expectation": "survives",
+  "steps": [
+    {"op": "person", "bind": "tanvi", "human_id": "tanvi",
+     "mandate": {"rail": "UPI_AUTOPAY", "category": "GENERAL", "state": "ACTIVE", "valid_days": 365,
+                 "mandate_id": "upi_h001", "token_id": "token_h001", "razorpay_customer_id": "cust_h001"}},
+    {"op": "jump_to", "at": {"day": 2, "hour": 7, "minute": 0}},
+    {"op": "fail", "person": "tanvi", "reason": "issuer_dispatch_failed", "entity_id": "pay_h001", "upi": true},
+    {"op": "mark", "label": "revoked"},
+    {"op": "mandate_event", "person": "tanvi", "trigger": "REVOKED_BY_PAYER"},
+    {"op": "advance_by", "by": {"days": 3}}
+  ],
+  "evidence": [
+    {"kind": "NoExecutionOnEntityAfter", "entity_id": "pay_h001", "mark": "revoked"}
+  ]
+}

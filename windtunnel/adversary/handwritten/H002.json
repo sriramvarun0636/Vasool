@@ -1,0 +1,18 @@
+{
+  "id": "H002",
+  "title": "the merchant's DLT registration lapses between a night-time failure and the morning's re-auth link",
+  "targets": "DLTTemplateGuard and the executor's template check at dispatch: a link proposed while a template was registered must not go out after it lapses",
+  "expectation": "survives",
+  "steps": [
+    {"op": "person", "bind": "asha", "human_id": "asha"},
+    {"op": "advance_to", "at": {"day": 1, "hour": 20, "minute": 30}},
+    {"op": "fail", "person": "asha", "reason": "card_expired", "entity_id": "pay_h002"},
+    {"op": "advance_to", "at": {"day": 1, "hour": 22, "minute": 0}},
+    {"op": "mark", "label": "lapsed"},
+    {"op": "set_registered_templates", "templates": []},
+    {"op": "advance_to", "at": {"day": 2, "hour": 12, "minute": 0}}
+  ],
+  "evidence": [
+    {"kind": "ExecutedCount", "entity_id": "pay_h002", "count": 0, "is_contact": true}
+  ]
+}
