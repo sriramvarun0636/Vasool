@@ -15,15 +15,18 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
 <style>
 /* ============================================================================
    THE EPISODE THEATRE
 
    A sibling of docs/index.html and deliberately built from the same tokens:
-   same ink, same panel, same Newsreader/Plex pairing, same band tags, same
-   provenance mode. A reader arriving from the dashboard should not feel they
-   have left the building.
+   same ink, same panel, same IBM Plex Sans / Plex Mono pairing, same band
+   tags, same provenance mode. A reader arriving from the dashboard should not
+   feel they have left the building. The 2026-09-22 restyle moved both volumes
+   off a serif display face together, for the reason recorded there: one
+   superfamily, the sans writing and the mono measuring, no ambient light, and
+   a panel spent only on a drawing or a control.
 
    What is different is the job. The dashboard reports a hundred thousand runs;
    this page shows exactly one, slowly enough to watch. So the centrepiece is
@@ -46,42 +49,48 @@
 
 :root{
   /* --- shared with docs/index.html; do not drift ------------------------ */
-  --ink:#0B1221;
-  --panel:#121B30;
-  --hairline:rgba(255,255,255,.08);
-  --signal-blue:#2D68E6;
-  --compliant-green:#00C96D;
-  --violation-red:#D13B3B;
-  --caution-amber:#F4C430;
-  --paper:#EDEAE0;
-  --font-display:'Newsreader',Georgia,'Times New Roman',serif;
+  --ink:#06090F;
+  --panel:#0D1220;
+  --hairline:rgba(255,255,255,.065);
+  --signal-blue:#3D6FF7;
+  --compliant-green:#35C98A;
+  --violation-red:#F0555A;
+  --caution-amber:#FFB224;
+  --paper:#F2F4F8;
+  --font-display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  --viz-axis:rgba(255,255,255,.22);
-  --viz-muted:#898781;
-  --status-good:#0ca30c;
-  --status-warning:#fab219;
+  --font-figure:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --viz-axis:rgba(255,255,255,.2);
+  --viz-muted:#7C879B;
+  --status-good:#35C98A;
+  --status-warning:#FFB224;
 
   /* --- local ------------------------------------------------------------ */
-  --ink-lift:#0E1729;
-  --panel-lift:#16203A;
-  --hairline-firm:rgba(255,255,255,.17);
-  --body-text:#E2E8F0;
-  --dim:#94A3B8;
-  --dimmer:#64748B;
-  --na:#5A688A;
-  --blue-lift:#4A7DEE;
+  --ink-lift:#0A0E17;
+  --panel-lift:#141B2D;
+  --hairline-firm:rgba(255,255,255,.13);
+  --body-text:#C8D1E1;
+  --dim:#8C99B0;
+  --dimmer:#5D6B85;
+  --na:#4C5875;
+  --blue-lift:#7098FF;
+  --radius:8px;
+  --radius-sm:6px;
+  /* the dashboard's surface rule, to the letter: a flat step off the ground
+     and a hairline, no gradient and no drop shadow */
+  --panel-border:1px solid var(--hairline);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--ink);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{background:var(--ink);color:var(--body-text);font-family:var(--font-body);
-  font-size:15.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
+  font-size:15.5px;line-height:1.6;letter-spacing:-.006em;-webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;display:flex;min-height:100vh;
   /* The spine is fixed, so the column beside it is inset here rather than by a
      margin on the column, which would pin the page to the left edge. */
   padding-left:72px}
-:focus-visible{outline:2px solid var(--blue-lift);outline-offset:3px;border-radius:2px}
+:focus-visible{outline:2px solid var(--blue-lift);outline-offset:3px;border-radius:4px}
 code{font-family:var(--font-mono);font-size:.88em;color:#B9C4DA}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -90,23 +99,23 @@ code{font-family:var(--font-mono);font-size:.88em;color:#B9C4DA}
 .shell{display:none}
 
 /* ---------- provenance mode (the dashboard's control, same behaviour) ---- */
-.prov-toggle{display:inline-flex;align-items:center;gap:9px;padding:7px 12px;border-radius:4px;
-  cursor:pointer;background:none;border:1px solid var(--hairline-firm);
+.prov-toggle{display:inline-flex;align-items:center;gap:9px;padding:7px 12px;
+  border-radius:var(--radius-sm);cursor:pointer;background:none;border:1px solid var(--hairline-firm);
   color:var(--paper);font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;
   transition:border-color .18s,background .18s}
 .prov-toggle:hover{border-color:var(--dim)}
-.prov-toggle[aria-pressed="true"]{border-color:var(--signal-blue);background:rgba(45,104,230,.18)}
+.prov-toggle[aria-pressed="true"]{border-color:var(--signal-blue);background:rgba(61,111,247,.2)}
 .prov-dot{width:8px;height:8px;border-radius:50%;background:var(--viz-muted);flex:none}
 .prov-toggle[aria-pressed="true"] .prov-dot{background:var(--signal-blue)}
-.prov-banner{display:none;border:1px solid rgba(45,104,230,.4);background:rgba(45,104,230,.08);
-  border-radius:6px;padding:17px 21px;margin:28px 0 0;font-size:14.5px;line-height:1.7;
+.prov-banner{display:none;border:1px solid rgba(61,111,247,.4);background:rgba(61,111,247,.08);
+  border-radius:var(--radius);padding:17px 21px;margin:28px 0 0;font-size:14.5px;line-height:1.7;
   color:var(--paper)}
 body.provenance .prov-banner{display:block}
 .prov-path{display:none!important;font-family:var(--font-mono);font-size:10px;line-height:1.5;
   color:var(--signal-blue);word-break:break-all;margin-top:5px;letter-spacing:.01em;
   flex-basis:100%}
 body.provenance .prov-path{display:block!important}
-body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset:3px;
+body.provenance [data-src]{outline:1px dashed rgba(61,111,247,.5);outline-offset:3px;
   border-radius:2px}
 @media(max-width:640px){.prov-toggle .pt-label{display:none}}
 
@@ -116,24 +125,38 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
    the report card should not have to work out that they are still in the same
    building: same 72px rail, same 48px gutter, same 1200px measure. The marks
    are T for the top and I/II/III for the three acts. */
-#spine{width:72px;border-right:1px solid var(--hairline);display:flex;flex-direction:column;
-  align-items:center;padding:96px 0 40px;position:fixed;height:100vh;z-index:60;
-  background:var(--ink)}
-.spine-mark{position:relative;font-family:var(--font-display);font-size:14px;color:var(--dimmer);
-  text-decoration:none;min-width:28px;height:28px;padding:0 6px;
-  display:flex;align-items:center;justify-content:center;margin:2px 0;border-radius:14px;
+#spine{width:72px;gap:6px;border-right:1px solid var(--hairline);display:flex;flex-direction:column;
+  align-items:center;padding:104px 0 40px;position:fixed;height:100vh;z-index:60;
+  background:transparent;
+  /* `left` is not optional here. Without it a fixed element keeps its static
+     position, which for the body's first flex child is x=72 -- the far side of
+     the 72px `body` already reserves -- so the rail sat on top of the column
+     and painted over the first character of every line. `.topbar` has assumed
+     `left:72px` since it was written, which is the same geometry said twice. */
+  left:0}
+/* The letter, in the mono, at index size -- the dashboard's rail exactly,
+   and for its reason: the letter is what the exhibit is called, so the rail
+   says it rather than standing a bare dot in for it. */
+.spine-mark{position:relative;font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.06em;color:var(--dimmer);text-decoration:none;width:26px;height:22px;
+  display:flex;align-items:center;justify-content:center;border-radius:3px;
   transition:color .18s ease,background-color .18s ease}
-.spine-mark:hover{color:var(--paper)}
+.spine-mark:hover{color:var(--paper);background:rgba(255,255,255,.05)}
 .spine-mark:focus-visible{outline:2px solid var(--signal-blue);outline-offset:2px}
-.spine-mark.is-here{color:var(--ink);background:var(--paper)}
-.spine-mark::after{content:attr(data-label);position:absolute;left:40px;top:50%;
-  transform:translate(-4px,-50%);white-space:nowrap;font-family:var(--font-body);font-size:12.5px;
+.spine-mark.is-here{color:var(--signal-blue)}
+.spine-mark.is-here::before{content:'';position:absolute;left:-9px;top:50%;width:5px;height:1px;
+  background:var(--signal-blue);transform:translateY(-50%)}
+.spine-mark::after{content:attr(data-label);position:absolute;left:34px;top:50%;
+  transform:translate(-4px,-50%);white-space:nowrap;font-family:var(--font-body);font-size:12px;
+  font-weight:500;letter-spacing:-.005em;
   color:var(--paper);background:var(--panel-lift);border:1px solid var(--hairline-firm);
-  border-radius:4px;padding:5px 10px;opacity:0;pointer-events:none;
+  border-radius:var(--radius-sm);
+  padding:5px 10px;opacity:0;pointer-events:none;
   transition:opacity .16s ease,transform .16s ease}
 .spine-mark:hover::after,.spine-mark:focus-visible::after{opacity:1;transform:translate(0,-50%)}
 .spine-progress{margin-top:auto;width:1px;height:84px;background:var(--hairline-firm);overflow:hidden}
-.spine-progress-fill{width:100%;height:0%;background:var(--paper);transition:height .12s linear}
+.spine-progress-fill{width:100%;height:0%;transition:height .12s linear;
+  background:var(--signal-blue)}
 
 #content{margin:0 auto;padding:88px 56px 48px;flex-grow:1;max-width:1320px;
   /* Without this a flex item's min-width resolves to `auto`, so the container
@@ -153,19 +176,20 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 /* ---------- masthead: the report card's, with this volume current --------
    Fixed and full-bleed from the spine to the window's edge, and the mark set
    at the wordmark's cap height and on its baseline, exactly as there. */
-.topbar{position:fixed;top:0;left:72px;right:0;z-index:50;background:rgba(11,18,33,.86);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hairline)}
+.topbar{position:fixed;top:0;left:72px;right:0;z-index:50;background:rgba(6,9,15,.72);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--hairline)}
 .topbar .bar{display:flex;align-items:center;gap:22px;flex-wrap:wrap;max-width:1320px;
-  margin:0 auto;padding:15px 56px}
+  margin:0 auto;padding:13px 56px}
 .lockup{display:inline-flex;align-items:baseline;gap:10px;text-decoration:none;color:var(--paper)}
-.lockup img{display:block;width:26px;height:26px;flex:none;transform:translateY(3px)}
-.wordmark{font-family:var(--font-display);font-size:25px;font-weight:600;letter-spacing:-.01em;
-  line-height:1;font-variation-settings:"opsz" 36;color:var(--paper)}
+.lockup img{display:block;width:22px;height:22px;flex:none;transform:translateY(2px)}
+.wordmark{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.028em;
+  line-height:1;color:var(--paper)}
 .volumes{display:inline-flex;gap:20px;margin-left:10px}
 .volumes a{position:relative;font-size:13.5px;text-decoration:none;color:var(--dim);padding:4px 0;
   transition:color .16s}
 .volumes a:hover,.volumes a[aria-current="page"]{color:var(--paper)}
-.volumes a[aria-current="page"]::after{content:'';position:absolute;left:0;right:0;bottom:-17px;
+.volumes a[aria-current="page"]::after{content:'';position:absolute;left:0;right:0;bottom:-15px;
   height:2px;background:var(--signal-blue)}
 .topbar .spacer{flex:1 1 auto}
 .toplink{font-size:13.5px;color:var(--dim);text-decoration:none;transition:color .16s}
@@ -175,22 +199,25 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 /* The dashboard has one page and needs no selector; this one has six
    episodes, so the control lives in the content column rather than in a
    masthead the dashboard does not have. */
-.picker{border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
-  padding:14px 0;margin-bottom:44px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.picker .plabel{font-size:13.5px;color:var(--dimmer);flex:0 0 auto}
-.tablist{display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+/* Six episodes, so the control is a segmented bar rather than a row of loose
+   words: one surface, the tabs inset into it, the current one lifted. */
+.picker{padding:6px;margin-bottom:38px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border:var(--panel-border);border-radius:var(--radius);background:var(--panel)}
+.picker .plabel{font-size:11px;font-family:var(--font-mono);letter-spacing:.11em;
+  text-transform:uppercase;color:var(--dimmer);flex:0 0 auto;padding-left:12px}
+.tablist{display:flex;gap:3px;flex-wrap:wrap;min-width:0}
 .tab{flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:var(--font-body);
-  font-size:13.5px;color:var(--dim);display:inline-flex;align-items:baseline;gap:8px;
-  background:none;border:1px solid transparent;border-radius:4px;padding:6px 11px;
+  font-size:13px;font-weight:500;letter-spacing:-.012em;color:var(--dim);
+  display:inline-flex;align-items:baseline;gap:8px;
+  background:none;border:1px solid transparent;border-radius:var(--radius-sm);padding:7px 12px;
   transition:color .16s,border-color .16s,background-color .16s}
-.tab .rail{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);letter-spacing:.02em}
-.tab[aria-selected="true"] .rail{color:#9DBBFF}
-.tab:hover{color:#CBD5E1;border-color:var(--hairline)}
-.tab[aria-selected="true"]{color:var(--paper);border-color:var(--signal-blue);
-  background:rgba(45,104,230,.16)}
+.tab .rail{font-family:var(--font-mono);font-size:10px;color:var(--dimmer);letter-spacing:.02em}
+.tab[aria-selected="true"] .rail{color:#A9C2FF}
+.tab:hover{color:#D6DEEC;background:rgba(255,255,255,.04)}
+.tab[aria-selected="true"]{color:#fff;border-color:var(--signal-blue);background:var(--signal-blue)}
 
 /* ---------- hero --------------------------------------------------------- */
-.hero{padding:0 0 8px;display:grid;gap:clamp(30px,4vw,52px);
+.hero{padding:0 0 8px;display:grid;gap:clamp(28px,3.2vw,44px);
   grid-template-columns:minmax(0,1.32fr) minmax(310px,.68fr);align-items:start}
 .hero>.hero-main{min-width:0}
 .hero>.wait,.hero>.facts-line,.hero>.prov-banner{grid-column:1 / -1}
@@ -198,29 +225,36 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
   .hero{grid-template-columns:minmax(0,1fr)}
   .hero>.glance{grid-column:1}
 }
-.kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--dimmer);margin-bottom:22px}
-.kicker .sep{color:var(--hairline-firm);margin:0 9px}
-.verdict{font-family:var(--font-display);font-weight:600;
-  font-size:clamp(38px,7vw,74px);line-height:1.02;letter-spacing:-.015em;
-  font-variation-settings:"opsz" 60;max-width:16ch;text-wrap:balance}
-.verdict .join{font-weight:400;color:var(--dimmer);font-size:.62em;letter-spacing:0}
+/* A slug line, as on the dashboard: which record, which episode, ruled off
+   from the verdict under it. */
+.kicker{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:22px;padding-bottom:14px;
+  border-bottom:1px solid var(--hairline-firm)}
+.kicker .sep{color:var(--na);margin:0 10px}
+/* The verdict keeps its colour, which is the ruling and not decoration, and
+   loses the serif and about a fifth of its size: at 74px in a display serif it
+   read as a pull quote rather than as the state of a payment. */
+.verdict{font-family:var(--font-display);font-weight:700;
+  font-size:clamp(32px,5.4vw,58px);line-height:1.04;letter-spacing:-.038em;
+  max-width:16ch;text-wrap:balance}
+.verdict .join{font-weight:500;color:var(--dimmer);font-size:.6em;letter-spacing:-.02em}
 .v-defer{color:var(--caution-amber)} .v-allow{color:var(--compliant-green)}
 .v-block{color:var(--violation-red)} .v-escalate{color:var(--signal-blue)}
 .v-recover{color:var(--compliant-green)}
-.dek{margin-top:20px;font-size:17.5px;line-height:1.56;color:var(--dim);max-width:60ch}
+.dek{margin-top:22px;font-size:17px;line-height:1.55;letter-spacing:-.012em;
+  color:var(--dim);max-width:60ch}
 .dek b{color:var(--paper);font-weight:500}
 .dek .clause{color:var(--caution-amber);font-weight:500}
 .dek code{font-size:.9em}
 
 .hero-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
-.cta{display:inline-flex;align-items:center;gap:10px;cursor:pointer;
-  font-size:14px;font-weight:500;border-radius:4px;padding:11px 18px;
-  border:1px solid var(--hairline-firm);background:none;color:var(--paper);
-  text-decoration:none;transition:.16s}
-.cta:hover{border-color:var(--dim)}
-.cta.primary{color:#fff}
-.cta.primary{background:var(--signal-blue);border-color:var(--signal-blue)}
+.cta{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+  font-size:14px;font-weight:500;letter-spacing:-.012em;border-radius:var(--radius-sm);
+  padding:11px 17px;border:1px solid var(--hairline-firm);background:rgba(255,255,255,.03);
+  color:var(--paper);text-decoration:none;
+  transition:background-color .16s,border-color .16s}
+.cta:hover{border-color:var(--dim);background:rgba(255,255,255,.06)}
+.cta.primary{color:#fff;background:var(--signal-blue);border-color:var(--signal-blue)}
 .cta.primary:hover{background:var(--blue-lift);border-color:var(--blue-lift)}
 .cta .glyph{font-size:10px;line-height:1}
 
@@ -236,9 +270,9 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
    It is the page's only decorative-looking object and it is not decorative:
    every tick is one verdict, and the amber one is the reason the episode has
    a story. Clicking a row runs that ruling on the board. */
-.glance{border:1px solid var(--hairline-firm);border-radius:6px;background:var(--panel);
-  overflow:hidden;backdrop-filter:blur(2px)}
-.glance .gh{padding:13px 16px;border-bottom:1px solid var(--hairline);background:var(--ink-lift);
+.glance{border:var(--panel-border);border-radius:var(--radius);background:var(--panel);
+  overflow:hidden}
+.glance .gh{padding:13px 16px;border-bottom:1px solid var(--hairline);
   font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
   color:var(--dimmer)}
 .glance .grow2{all:unset;display:block;box-sizing:border-box;width:100%;cursor:pointer;
@@ -252,11 +286,11 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .bars{display:flex;gap:3px;align-items:flex-end;height:26px}
 .bars i{flex:1 1 0;min-width:2px;border-radius:1px;display:block;
   transform-origin:bottom;transition:height .34s cubic-bezier(.2,.8,.2,1),background-color .2s}
-.bars i.b-na{height:7px;background:rgba(90,104,138,.5)}
-.bars i.b-allow{height:14px;background:rgba(0,201,109,.55)}
-.bars i.b-defer{height:26px;background:var(--caution-amber);box-shadow:0 0 9px rgba(244,196,48,.55)}
-.bars i.b-escalate{height:26px;background:var(--signal-blue);box-shadow:0 0 9px rgba(45,104,230,.6)}
-.bars i.b-block{height:26px;background:var(--violation-red);box-shadow:0 0 9px rgba(209,59,59,.6)}
+.bars i.b-na{height:7px;background:rgba(76,88,117,.6)}
+.bars i.b-allow{height:14px;background:rgba(53,201,138,.5)}
+.bars i.b-defer{height:26px;background:var(--caution-amber);box-shadow:0 0 9px rgba(255,178,36,.55)}
+.bars i.b-escalate{height:26px;background:var(--signal-blue);box-shadow:0 0 9px rgba(61,111,247,.6)}
+.bars i.b-block{height:26px;background:var(--violation-red);box-shadow:0 0 9px rgba(240,85,90,.6)}
 .glance .gseal{display:flex;flex-direction:column;gap:8px}
 .glance .ghash{font-family:var(--font-mono);font-size:10px;color:var(--dim);
   word-break:break-all;letter-spacing:.02em}
@@ -267,9 +301,10 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 /* ---------- the wait -------------------------------------------------- */
 /* The one thing worth remembering about this episode is that a machine which
    could have sent the message at 19:30 did not, and waited twelve hours and
-   thirty-nine minutes because a rule said so. That belongs at hero scale, in
-   the display face, with the clause that caused it underneath -- not as the
-   third of four stat boxes. Every number in it is read from the ledger. */
+   thirty-nine minutes because a rule said so. That belongs at hero scale, set
+   in the figure face because it is a measurement, with the clause that caused
+   it underneath -- not as the third of four stat boxes. Every number in it is
+   read from the ledger. */
 .wait{border-top:1px solid var(--hairline-firm);border-bottom:1px solid var(--hairline);
   padding:26px 0 24px;position:relative}
 .wait .wl{font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
@@ -283,13 +318,13 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .wait .anchor.to{text-align:right}
 .wait .rail2{position:relative;height:56px;display:flex;align-items:center}
 .wait .rail2::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;
-  background:linear-gradient(90deg,var(--caution-amber),rgba(244,196,48,.28));border-radius:1px}
+  background:linear-gradient(90deg,var(--caution-amber),rgba(255,178,36,.28));border-radius:1px}
 .wait .rail2 .cap{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
-  background:var(--caution-amber);transform:translateY(-50%);box-shadow:0 0 12px rgba(244,196,48,.7)}
+  background:var(--caution-amber);transform:translateY(-50%);box-shadow:0 0 12px rgba(255,178,36,.7)}
 .wait .rail2 .cap.a{left:-1px} .wait .rail2 .cap.b{right:-1px}
 .wait .span{position:relative;margin:0 auto;padding:0 20px;background:var(--ink);
-  font-family:var(--font-display);font-size:clamp(30px,4.4vw,46px);font-weight:600;
-  line-height:1;color:var(--caution-amber);font-variation-settings:"opsz" 40;
+  font-family:var(--font-figure);font-size:clamp(25px,3.6vw,38px);font-weight:600;
+  letter-spacing:-.05em;line-height:1;color:var(--caution-amber);
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .wait .why{margin-top:20px;font-family:var(--font-mono);font-size:11.5px;line-height:1.75;
   color:var(--dim);max-width:84ch}
@@ -316,7 +351,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .facts-line b.obs{color:var(--compliant-green)}
 .facts-line span:not(.prov-path) span::before{content:none}
 .tile .tv{font-family:var(--font-display);font-size:31px;font-weight:600;line-height:1.04;
-  color:var(--paper);font-variation-settings:"opsz" 40;font-variant-numeric:tabular-nums}
+  color:var(--paper);font-variant-numeric:tabular-nums}
 .tile .tv.word{font-family:var(--font-mono);font-size:13.5px;font-weight:500;letter-spacing:.12em;
   padding:7px 0 8px}
 .tile .tl{font-family:var(--font-mono);font-size:10.5px;color:var(--dimmer);margin-top:9px;
@@ -325,21 +360,22 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 /* ---------- act scaffolding ---------------------------------------------- */
 /* Exhibit scaffolding, identical to the dashboard's. Volume two of the same
    document: the report card runs A-I, this one runs T1-T3. */
-.exhibit{margin-bottom:96px;margin-top:112px;position:relative;scroll-margin-top:88px}
+.exhibit{margin-bottom:84px;margin-top:88px;position:relative;scroll-margin-top:88px}
 /* §2a claims hold whatever the simulator does; the mark is solid for them
    and hollow for anything that depends on it, as on the report card. */
-.band-tag{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-mono);
-  font-size:11.5px;letter-spacing:.03em;color:var(--dim);margin-bottom:14px}
-.band-tag::before{content:'';width:8px;height:8px;flex:none;border:1.5px solid var(--dimmer)}
-.band-independent .band-tag{color:#3FCB74}
-.band-independent .band-tag::before{background:#3FCB74;border-color:#3FCB74}
-.band-dependent .band-tag{color:var(--status-warning)}
+.band-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);
+  font-size:10.5px;letter-spacing:.04em;color:var(--dim);margin-bottom:16px;
+  padding:5px 10px 5px 8px;border-radius:3px;border:1px solid var(--hairline)}
+.band-tag::before{content:'';width:7px;height:7px;flex:none;border-radius:2px;
+  border:1.5px solid var(--dimmer)}
+.band-independent .band-tag{color:var(--compliant-green);border-color:rgba(53,201,138,.32)}
+.band-independent .band-tag::before{background:var(--compliant-green);border-color:var(--compliant-green)}
+.band-dependent .band-tag{color:var(--status-warning);border-color:rgba(255,178,36,.32)}
 .band-dependent .band-tag::before{border-color:var(--status-warning)}
-.exhibit-title{display:block;font-family:var(--font-mono);font-size:12.5px;font-weight:500;
-  letter-spacing:.14em;color:var(--dimmer);line-height:1.2;margin-bottom:26px;text-wrap:balance}
-.ex-name{font-family:var(--font-display);font-size:clamp(28px,3.4vw,40px);font-weight:500;
-  letter-spacing:-.012em;line-height:1.12;font-variation-settings:"opsz" 48;color:var(--paper);
-  margin-left:4px}
+.exhibit-title{display:block;font-family:var(--font-mono);font-size:11px;font-weight:500;
+  letter-spacing:.16em;color:var(--dimmer);line-height:1.2;margin-bottom:24px;text-wrap:balance}
+.ex-name{font-family:var(--font-display);font-size:clamp(27px,3vw,37px);font-weight:600;
+  letter-spacing:-.032em;line-height:1.1;color:var(--paper)}
 .standfirst{font-size:15.5px;line-height:1.68;color:var(--dim);max-width:74ch}
 .standfirst b{color:var(--paper);font-weight:500}
 .standfirst em{font-style:italic;color:#B9C4DA}
@@ -348,7 +384,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .footnote b{color:var(--paper);font-weight:500}
 
 /* ---------- THE BOARD: every guard, ruling ------------------------------- */
-.board{margin-top:26px;border:1px solid var(--hairline-firm);border-radius:6px;
+.board{margin-top:26px;border:var(--panel-border);border-radius:var(--radius);
   background:var(--panel);overflow:hidden}
 
 .transport{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
@@ -379,8 +415,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .slate .vv{font-family:var(--font-mono);font-size:13px;color:var(--paper);word-break:break-word}
 .slate .when{color:var(--caution-amber)}
 .slate .verdict-cell{margin-left:auto;text-align:right}
-.slate .big{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1;
-  font-variation-settings:"opsz" 40;transition:opacity .3s}
+.slate .big{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1;transition:opacity .3s}
 .slate .big.pending{opacity:.16;color:var(--dimmer)}
 
 /* the day strip lives in the slate: it is what makes "why 08:09" legible */
@@ -409,8 +444,8 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .chipd{display:inline-flex;align-items:center;padding:4px 9px;border-radius:3px;
   font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:.12em;
   border:1px solid transparent}
-.chipd.c-allow{color:var(--compliant-green);background:rgba(0,201,109,.09);
-  border-color:rgba(0,201,109,.3)}
+.chipd.c-allow{color:var(--compliant-green);background:rgba(53,201,138,.09);
+  border-color:rgba(53,201,138,.3)}
 .chipd.c-na{color:var(--na);background:none;border-color:rgba(90,104,138,.45);border-style:dashed}
 .chipd.c-defer{color:#231A00;background:var(--caution-amber);border-color:var(--caution-amber)}
 .chipd.c-block{color:#fff;background:var(--violation-red);border-color:var(--violation-red)}
@@ -423,7 +458,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .grow.pending{opacity:.12;transform:translateY(3px)}
 .grow.pending .call{visibility:hidden}
 .grow.settled{opacity:1;transform:none}
-.grow.just{background:rgba(45,104,230,.14)}
+.grow.just{background:rgba(61,111,247,.14)}
 .grow{transition:background-color .28s ease,opacity .26s ease,transform .26s cubic-bezier(.2,.8,.2,1)}
 .grow.loud{box-shadow:inset 3px 0 0 currentColor}
 .grow.loud.is-defer{color:var(--caution-amber)}
@@ -455,7 +490,7 @@ body.provenance [data-src]{outline:1px dashed rgba(45,104,230,.5);outline-offset
 .compare>summary{cursor:pointer;font-family:var(--font-mono);font-size:11.5px;color:var(--dim);
   letter-spacing:.05em;padding:8px 0}
 .compare>summary:hover{color:var(--paper)}
-.scroller{margin-top:12px;overflow-x:auto;border:1px solid var(--hairline);border-radius:6px}
+.scroller{margin-top:12px;overflow-x:auto;border:1px solid var(--hairline);border-radius:var(--radius)}
 table.chain{border-collapse:collapse;width:100%;min-width:620px;background:var(--panel)}
 table.chain caption{text-align:left;padding:13px 15px;font-family:var(--font-mono);font-size:10.5px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer);
@@ -474,7 +509,7 @@ table.chain tbody th .st{display:block;font-family:var(--font-mono);font-size:9.
   color:var(--dimmer);line-height:1.5;margin-top:4px}
 table.chain td .dc{font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.11em}
 tr.dim th .gn{color:var(--na)} tr.dim th .st{color:#2E3A54}
-tr.moved{background:rgba(45,104,230,.085)}
+tr.moved{background:rgba(61,111,247,.085)}
 tr.moved th{background:var(--panel-lift);box-shadow:inset 2px 0 0 var(--signal-blue)}
 table.chain tfoot th,table.chain tfoot td{border-top:1px solid var(--hairline-firm);border-bottom:0;
   background:rgba(255,255,255,.022);font-family:var(--font-mono);font-size:11px;
@@ -511,8 +546,7 @@ table.chain tfoot th{position:sticky;left:0;background:#141C31}
 
 .recap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
   border:1px solid var(--hairline);border-radius:5px;background:var(--panel);padding:13px 16px}
-.recap .rv{font-family:var(--font-display);font-size:21px;font-weight:600;line-height:1;
-  font-variation-settings:"opsz" 30}
+.recap .rv{font-family:var(--font-display);font-size:21px;font-weight:600;line-height:1}
 .recap .rt{font-family:var(--font-mono);font-size:11.5px;color:var(--dim);line-height:1.6;min-width:0}
 .recap .rt b{color:var(--paper);font-weight:500}
 .recap .jump{margin-left:auto;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;
@@ -546,7 +580,7 @@ table.chain tfoot th{position:sticky;left:0;background:#141C31}
 .links{margin-top:26px}
 .node{border:1px solid var(--hairline);border-radius:5px;background:var(--panel);
   transition:border-color .16s,box-shadow .16s}
-.node.sel{border-color:var(--signal-blue);box-shadow:0 0 0 1px rgba(45,104,230,.32)}
+.node.sel{border-color:var(--signal-blue);box-shadow:0 0 0 1px rgba(61,111,247,.32)}
 .node>button{all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;padding:14px 16px}
 .node>button:hover .rid{color:var(--blue-lift)}
 .node .l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:9px}
@@ -557,15 +591,15 @@ table.chain tfoot th{position:sticky;left:0;background:#141C31}
   word-break:break-all}
 .node .hs b{color:var(--dim);font-weight:400}
 .node.broken{border-color:var(--violation-red);
-  box-shadow:0 0 0 1px rgba(209,59,59,.3),0 0 22px rgba(209,59,59,.14)}
+  box-shadow:0 0 0 1px rgba(240,85,90,.3),0 0 22px rgba(240,85,90,.14)}
 .node.broken .rid{color:var(--violation-red)}
 .node.broken .l1::after{content:'seal broken';font-family:var(--font-mono);font-size:9px;
   letter-spacing:.15em;text-transform:uppercase;color:#fff;background:var(--violation-red);
   border-radius:2px;padding:3px 6px;order:9}
-.node.tainted{border-style:dashed;border-color:rgba(209,59,59,.4);opacity:.62}
+.node.tainted{border-style:dashed;border-color:rgba(240,85,90,.4);opacity:.62}
 .node.tainted .l1::after{content:'unverifiable';font-family:var(--font-mono);font-size:9px;
   letter-spacing:.15em;text-transform:uppercase;color:var(--violation-red);
-  border:1px dashed rgba(209,59,59,.55);border-radius:2px;padding:2px 6px;order:9}
+  border:1px dashed rgba(240,85,90,.55);border-radius:2px;padding:2px 6px;order:9}
 .tie{display:flex;align-items:center;gap:11px;padding:8px 0 8px 19px;font-family:var(--font-mono);
   font-size:10.5px;color:var(--dimmer);letter-spacing:.05em;transition:color .2s}
 .tie .el{color:var(--hairline-firm);font-size:15px}
@@ -578,7 +612,7 @@ table.chain tfoot th{position:sticky;left:0;background:#141C31}
 .verifier-box{background:var(--panel);border:1px solid var(--hairline);padding:32px;
   border-radius:2px;font-family:var(--font-mono);position:relative;margin-top:32px}
 .verifier-box h3{font-family:var(--font-display);font-size:20px;font-weight:600;
-  margin-bottom:16px;font-variation-settings:"opsz" 30}
+  margin-bottom:16px}
 .verifier-box .lede2{margin-bottom:24px;color:#94A3B8;font-family:var(--font-body);
   font-size:14px;line-height:1.62;max-width:72ch}
 .verifier-box .lede2 b{color:var(--paper);font-weight:500}
@@ -591,7 +625,7 @@ table.chain tfoot th{position:sticky;left:0;background:#141C31}
 
 /* The stamp the dashboard uses for a failed claim. A forged receipt earns it. */
 .rubber-stamp{position:absolute;top:24px;right:24px;font-family:var(--font-display);
-  font-size:22px;font-weight:600;color:rgba(209,59,59,.95);border:4px solid rgba(209,59,59,.95);
+  font-size:22px;font-weight:600;color:rgba(240,85,90,.95);border:4px solid rgba(240,85,90,.95);
   padding:8px 16px;text-transform:uppercase;letter-spacing:2px;transform:rotate(-15deg);
   z-index:10;pointer-events:none;mix-blend-mode:screen}
 textarea.bytes{display:block;font-family:var(--font-mono);font-size:11px;line-height:1.9;width:100%;
@@ -614,23 +648,24 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
   transition:color .18s,background-color .18s}
 .hexline .grp span.on{color:var(--compliant-green)}
 .hexline .grp span.off{color:#fff;background:var(--violation-red);border-radius:2px;
-  box-shadow:0 0 10px rgba(209,59,59,.45)}
+  box-shadow:0 0 10px rgba(240,85,90,.45)}
 .hexrow.sealed .hexline{color:var(--paper)}
 .hexrow.sealed .grp span{color:#B9C4DA}
 .state{margin-top:24px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px}
 .state .word{font-family:var(--font-display);font-size:clamp(28px,4.2vw,40px);font-weight:600;
-  line-height:1;font-variation-settings:"opsz" 40}
+  line-height:1}
 .state .word.ok{color:var(--compliant-green)} .state .word.bad{color:var(--violation-red)}
 .state .said{font-size:14px;color:var(--dim);max-width:60ch;line-height:1.62}
 .state .said b{color:var(--paper);font-weight:500}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
 .btn{font-family:var(--font-body);font-size:13.5px;font-weight:500;
-  background:none;border:1px solid var(--hairline-firm);border-radius:4px;color:var(--paper);
+  background:rgba(255,255,255,.03);border:1px solid var(--hairline-firm);
+  border-radius:var(--radius-sm);color:var(--paper);
   padding:10px 16px;cursor:pointer;transition:.16s}
 .btn:hover:not([disabled]){border-color:var(--dim)}
 .btn.p{background:var(--signal-blue);border-color:var(--signal-blue);color:#fff}
 .btn.p:hover{background:var(--blue-lift);border-color:var(--blue-lift)}
-.btn.danger{border-color:rgba(209,59,59,.55);color:#F2A9A9}
+.btn.danger{border-color:rgba(240,85,90,.55);color:#FFB2B5}
 .btn.danger:hover{border-color:var(--violation-red);color:#fff}
 .btn[disabled]{opacity:.38;cursor:not-allowed}
 
@@ -673,6 +708,17 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
 }
 
 /* ---------- motion ------------------------------------------------------- */
+/* On a phone the masthead wraps to two rows and a fixed element that grows
+   taller than the padding reserved for it lands on top of the first thing on
+   the page -- here, the episode picker. The bar stops being fixed and takes
+   its own space in the flow, exactly as on the report card. */
+@media(max-width:680px){
+  .topbar{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+    margin:0 -16px 8px}
+  .topbar .bar{padding:12px 16px;row-gap:10px}
+  .volumes a[aria-current="page"]::after{bottom:-8px}
+  #content{padding-top:0}
+}
 @media(prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
   html{scroll-behavior:auto}
@@ -683,7 +729,8 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
 /* ---------- print. Readers save PDFs; a dark ground prints as a slab. ----- */
 @media print{
   :root{--ink:#fff;--ink-lift:#fff;--panel:#fff;--panel-lift:#fff;--paper:#111;--body-text:#111;
-    --dim:#444;--dimmer:#666;--hairline:rgba(0,0,0,.16);--hairline-firm:rgba(0,0,0,.28)}
+    --dim:#444;--dimmer:#666;--hairline:rgba(0,0,0,.16);--hairline-firm:rgba(0,0,0,.28);
+    --panel-border:1px solid rgba(0,0,0,.28)}
   body{background:#fff;color:#111}
   #spine,.prov-toggle,.transport,.hero-acts,.copy,.acts,.recap .jump,.picker{display:none!important}
   #content{margin-left:0;padding:0}
@@ -1416,7 +1463,7 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
       segs.forEach(function (s) {
         put(svg, sv("rect", { x: x(s[0]), y: y - bandH / 2,
           width: Math.max(1, x(s[1]) - x(s[0])), height: bandH,
-          fill: "rgba(244,196,48,.26)", stroke: "rgba(244,196,48,.62)", rx: 2 }));
+          fill: "rgba(255,178,36,.26)", stroke: "rgba(255,178,36,.62)", rx: 2 }));
       });
       /* Labelled inside its widest segment: an unlabelled amber band is just a
          second track, and the span is the only number this figure carries. */
@@ -1447,11 +1494,11 @@ textarea.bytes.dirty{border-color:var(--violation-red)}
     marks.forEach(function (m) {
       var here = m.cycles.indexOf(current) >= 0;
       var hx = x(m.hour);
-      var colour = here ? "#EDEAE0" : "#5A688A";
+      var colour = here ? "#F2F4F8" : "#4C5875";
       put(svg, sv("line", { x1: hx, y1: y - 20, x2: hx, y2: y + bandH / 2,
         stroke: colour, "stroke-width": here ? 2 : 1 }));
       put(svg, sv("circle", { cx: hx, cy: y, r: here ? 4.5 : 3, fill: colour,
-        stroke: "#121B30", "stroke-width": 1.5 }));
+        stroke: "#0D1220", "stroke-width": 1.5 }));
       put(svg, svText({ x: hx, y: y - 25, fill: colour, "font-size": "10.5",
         "font-family": "IBM Plex Mono, monospace",
         "text-anchor": m.hour > 21 ? "end" : m.hour < 3 ? "start" : "middle" }, hhmm(m.at)));

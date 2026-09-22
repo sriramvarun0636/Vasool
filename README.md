@@ -43,7 +43,7 @@
 </p>
 
 <a href="https://sriramvarun0636.github.io/Vasool">
-  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool report card: Rs 44.25 Cr recovered in the development cohort with zero safety violations in 1,000 seeds; the holdout's Rs 69.60 Cr, evaluated on 2026-08-29 against an earlier agent, is reported beside it and not added. Beside the headline, the record read off the artifacts: the safety predicate held on 1,000 of 1,000 seeds, pass^100 of 1.00, 21 of 23 attacks survived with 2 open, no registered criterion fired, re-run ledgers identical, and a chain of 15 guards of which 11 cite a statute." onerror="this.style.display='none'">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool report card: ₹110.92 Cr recovered across 2,000 seeded universes with 0 safety violations in 1,000 seeds. ₹66.68 Cr of that is the sealed holdout, evaluated once and added because one agent produced both cohorts; every other figure on the page is the development cohort. Beside the headline, the record read off the artifacts: the §2a safety predicate held on 1,000 of 1,000 seeds, pass^100 of 1.00, 22 of 23 attacks survived the registered criterion with 1 open and named, no registered criterion fired of the 7 evaluated, re-run ledgers identical byte for byte, and a chain of 15 guards of which 11 cite a statute." onerror="this.style.display='none'">
 </a>
 
 <sub><i>The top of <a href="https://sriramvarun0636.github.io/Vasool">the live dashboard</a> &mdash;
