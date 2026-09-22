@@ -595,7 +595,7 @@ The single most important section, and it is [in the protocol](docs/EVALUATION.m
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
 - **The `[guess]` fraction is itself a headline result**: §4 states it, the dashboard carries it in the record beside the headline, and tests tie both to the tags in the simulator's source.
 
-Every amendment to the protocol after registration — sixty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — sixty-seven of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 
