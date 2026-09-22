@@ -45,7 +45,7 @@
 </p>
 
 <a href="https://sriramvarun0636.github.io/Vasool">
-  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool report card: ₹40.97 Cr recovered in the development cohort with 0 safety violations in 1,000 seeds. Beneath it, falsification criterion F6 has fired — 5 of 8 recovery comparisons fail to survive a ±50% move of the outcome model — so the recovery figures are presented as what this simulator produced, not findings. The fresh holdout's ₹66.68 Cr describes an earlier agent and is not added. Beside the headline, the record read off the artifacts: the §2a safety predicate held on 1,000 of 1,000 seeds, pass^100 of 1.00, 23 of 24 attacks survived the registered criterion with 1 open and named, 1 registered criterion fired of the 7 evaluated, re-run ledgers identical byte for byte, and a chain of 15 guards of which 11 cite a statute." onerror="this.style.display='none'">
+  <img src="docs/assets/dashboard.png" width="100%" alt="The Vasool report card: ₹40.97 Cr recovered in the development cohort with 0 safety violations in 1,000 seeds. Beneath it, falsification criterion F6 has fired — 5 of 8 recovery comparisons fail to survive a ±50% move of the outcome model — so the recovery figures are presented as what this simulator produced, not findings. The fresh holdout's ₹66.68 Cr describes an earlier agent and is not added. Beside the headline, the record read off the artifacts: the §2a safety predicate held on 1,000 of 1,000 seeds, pass^100 of 1.00, 23 of 24 attacks survived the registered criterion with 1 open and named, 1 registered criterion fired of the 7 evaluated, 10 of the 11 outcome-model parameters tagged as guesses, re-run ledgers identical byte for byte, and a chain of 15 guards of which 11 cite a statute." onerror="this.style.display='none'">
 </a>
 
 <sub><i>The top of <a href="https://sriramvarun0636.github.io/Vasool">the live dashboard</a> &mdash;
@@ -234,7 +234,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,242 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,244 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | 23 adversarial attacks scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `REPEATS=1 CELL=payment_failed/gateway make shadow` | the rules classifier against the LLM, replayed from the committed cassettes, rewriting `out/shadow/` |
@@ -588,14 +588,14 @@ Four attacks — A15, A16, A18, A19 — **were** open and are now closed. A queu
 
 The single most important section, and it is [in the protocol](docs/EVALUATION.md) rather than here:
 
-- **Not** that Vasool would recover 49% of *your* failed payments. It measures a model, and the model is mine.
-- **Eight of the nine outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
+- **Not** that Vasool would recover 43% of *your* failed payments. It measures a model, and the model is mine.
+- **Ten of the eleven outcome parameters are `[guess]`** — my judgement, tagged as such in the simulator's own source, where a parameter with no provenance tag fails a test. Nobody publishes conditional retry-success probabilities at this granularity, and inventing a citation would have been the first dishonest sentence in the repository.
 - **Nine of ten Razorpay failure reasons are `_SIMULATED`, and the UPI vocabulary is cited, not observed.** Razorpay test mode reproduces exactly one failure reason — `payment_failed` — regardless of which documented "error scenario" card you use; that finding, and everything else learned live, is in [`docs/VERIFIED.md`](docs/VERIFIED.md). Every fact now carries one of three tiers: **1** Razorpay reason observed live, **70** hand-built from documentation — nine card reasons and Razorpay's 61 UPI Autopay reasons — and **225** UPI codes transcribed from NPCI's public specification — of which **92** fit the five failure classes and **133** do not, each with its reason, the most consequential being thirty codes that mean money may already have moved ([`docs/taxonomy.md` §11](docs/taxonomy.md)). None of the 225 has been seen arriving through Razorpay, whose documentation names no field that could carry one; they classify a failure only through a port a Razorpay merchant never feeds.
 - **Subscriptions were unavailable pre-activation**, so the failed-mandate loop is stub-only.
 - **The LLM comparison covers all 12 cells but only at k=1.** One answer per cell measures whether it was right, not whether the model would repeat it — so consistency reports `—` corpus-wide and is measured at depth on one cell only. Free-tier quota, not a design choice: 20 requests a day against a 12-cell corpus.
-- **The `[guess]` fraction is itself a headline result** and appears on the dashboard as prominently as the recovery rate.
+- **The `[guess]` fraction is itself a headline result**: §4 states it, the dashboard carries it in the record beside the headline, and tests tie both to the tags in the simulator's source.
 
-Every amendment to the protocol after registration — sixty-five of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
+Every amendment to the protocol after registration — sixty-six of them — is logged in §10 with a date, a reason, and a **POST-HOC** flag stating whether it was made with the relevant output already visible. Two rows were re-marked `No → Yes` when the standard was tightened retroactively, including one that had been disclosing honestly before there was a rule requiring it to.
 
 ---
 

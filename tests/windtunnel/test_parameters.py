@@ -55,7 +55,7 @@ def _rows(section: str, next_section: str) -> list[list[str]]:
 def _section_4_table() -> dict[str, tuple[float, str]]:
     """§4's registered parameters: label -> (value, provenance tag)."""
     registered = {}
-    for label, value, provenance in _rows("## 4. The outcome model", "**Eight of the nine"):
+    for label, value, provenance in _rows("## 4. The outcome model", "**Ten of the eleven"):
         number = float(re.search(r"\*\*([\d.]+)", value).group(1))
         tag = re.search(r"\[(\w+)\]", provenance).group(1)
         registered[label] = (number, tag)
@@ -116,17 +116,19 @@ class TestSection4Correspondence:
         """§4 calls the outcome model's guess fraction "itself a headline
         result" and the report card prints it as prominently as the recovery
         rate. It counts the whole outcome model — the eight registered rows
-        plus retry_success_unpriced_class, added under §10 — so adding a
-        parameter by amendment moves it, and a parameter added without moving
-        it fails here rather than quietly making the claim false."""
+        plus every parameter §10 has added since, retry_success_unpriced_class
+        and the two UPI Autopay rates — so adding a parameter by amendment
+        moves it, and a parameter added without moving it fails here rather
+        than quietly making the claim false."""
         guesses = [p for p in OUTCOME_PARAMETERS.values() if p.provenance is Provenance.GUESS]
         assert (len(guesses), len(OUTCOME_PARAMETERS)) == _registered_guess_fraction()
 
     def test_the_world_parameters_are_not_inside_that_fraction(self):
-        """§10's world-shape parameters are guesses too, and there are twelve
-        of them. The document scopes its headline fraction to the outcome
-        model in as many words; if the report card ever prints 8/9 over the
-        full registry it will be printing 20/21 and calling it 8/9."""
+        """§10's world-shape parameters are guesses too. The document scopes
+        its headline fraction to the outcome model in as many words, so a report
+        card that counted the full registry would print a different fraction
+        under the same name. (This docstring used to carry both counts; they
+        went stale twice, so it no longer does.)"""
         _, total = _registered_guess_fraction()
         assert total == len(OUTCOME_PARAMETERS) < len(OUTCOME_PARAMETERS) + len(WORLD_PARAMETERS)
 

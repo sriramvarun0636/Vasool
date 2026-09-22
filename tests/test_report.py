@@ -137,6 +137,9 @@ class TestTraceDiscipline:
             if artifact == "chain":
                 assert path in {"count", "statutes"}, f"chain has no {path!r}"
                 continue
+            if artifact == "model":
+                assert path in {"guessed", "total"}, f"the outcome model has no {path!r}"
+                continue
             source = files[artifact]
             if not source.exists():
                 continue
@@ -364,6 +367,50 @@ class TestReadmeDoesNotDrift:
             f"README prints \u20b9{stale} Cr, which no manifest produces. "
             f"Manifest figures are {sorted(allowed)}."
         )
+
+    def test_a_whole_number_recovery_rate_is_still_true(self, report, readme):
+        """A rate written without decimals still has to be one the manifest supports.
+
+        The percentage check above reads figures with two decimals, so "would
+        recover 49% of *your* failed payments" sat in the limits section for
+        four re-runs after Vasool stopped recovering 49% of anything. Any
+        "recover N%" is read here against every arm's rate, rounded.
+        """
+        rates = {round(a["recovery_rate_mean"] * 100) for a in report["per_arm"].values()}
+        for claimed in re.findall(r"\brecover\w*\s+(\d{1,3})% of", readme):
+            assert int(claimed) in rates, (
+                f"README says an arm recovers {claimed}%; the manifest's rates round to {sorted(rates)}"
+            )
+
+    def test_the_guess_fraction_is_quoted_as_section_4_states_it(self, readme):
+        """README and the dashboard both carry §4's guess fraction.
+
+        tests/windtunnel/test_parameters.py holds §4's fraction to the tags in
+        the simulator's source; nothing held the other copies to §4, and on
+        2026-09-22 README and the dashboard were both found still saying
+        "eight of the nine" six days after it became 10/11. README's sentence
+        is read here, and the dashboard's figure is the renderer's own count.
+        """
+        words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+                 "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+                 "seventeen", "eighteen", "nineteen", "twenty"]
+        protocol = (REPO_ROOT / "docs" / "EVALUATION.md").read_text()
+        match = re.search(r"fraction in the outcome model — (\d+)/(\d+) —", protocol)
+        assert match, "§4 no longer states a guess fraction"
+        guessed, total = (words[int(g)] for g in match.groups())
+        phrase = f"{guessed} of the {total} outcome parameters are"
+        assert phrase in readme.lower(), f"README.md does not say \"{phrase.capitalize()}…\", as §4 does"
+
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_report_model", REPO_ROOT / "tools" / "report.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        model = module.outcome_model()
+        assert (model["guessed"], model["total"]) == tuple(int(g) for g in match.groups()), (
+            f"the dashboard would print {model['guessed']} / {model['total']}; §4 says {match.group(1)}/{match.group(2)}"
+        )
+        template = (REPO_ROOT / "tools" / "templates" / "report.html.j2").read_text()
+        assert "of the nine outcome parameters" not in template.lower(), "the template types the fraction again"
 
     def test_every_criterion_verdict_matches_the_manifest(self, report, readme):
         """The falsification table says, per criterion, whether it fired.

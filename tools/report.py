@@ -64,6 +64,26 @@ def guard_chain() -> dict:
     }
 
 
+def outcome_model() -> dict:
+    """The outcome model's `[guess]` fraction, counted from the parameters' own tags.
+
+    §4 calls it "itself a headline result" and requires it to appear "in the
+    report card as prominently as the recovery rate". Until 2026-09-22 the page
+    carried it only as a sentence typed into the sensitivity exhibit, which
+    still said "eight of the nine" six days after §10's 2026-09-16 row moved
+    the fraction to 10/11. It is counted here from `OUTCOME_PARAMETERS` — the
+    registry tests/windtunnel/test_parameters.py holds §4's own figure to — so
+    the page, the protocol and the code cannot disagree about it.
+    """
+    from windtunnel.parameters import OUTCOME_PARAMETERS, Provenance
+
+    return {
+        "guessed": sum(p.provenance is Provenance.GUESS for p in OUTCOME_PARAMETERS.values()),
+        "total": len(OUTCOME_PARAMETERS),
+        "tags": {name: p.provenance.value for name, p in OUTCOME_PARAMETERS.items()},
+    }
+
+
 def build_report(json_path: pathlib.Path, out_path: pathlib.Path) -> None:
     if not json_path.exists():
         print(f"error: {json_path} not found. run 'make sweeps' first.", file=sys.stderr)
@@ -351,6 +371,7 @@ and it is unreachable from all {len(g['acting_roots'])} execution roots.
         redteam_json=json.dumps(redteam_data),
         holdout_json=json.dumps(holdout_data),
         chain_json=json.dumps(guard_chain()),
+        model_json=json.dumps(outcome_model()),
         logo_svg=logo_svg,
         hero_scope=hero_scope,
         airgap_svg=airgap_svg,
