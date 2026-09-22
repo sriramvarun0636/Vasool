@@ -230,30 +230,48 @@ notes is observed coming back with it on a real webhook.
 
 ## DECISION: `payment.captured` settles a retry episode via RetryIndex, not a notes tag
 
-`createRecurring` (`RazorpayClient.retry_payment`) has no `notes` parameter
-Session 0A ever observed, so a SILENT_RETRY/TIMED_RETRY has nothing to tag
-the way `_link` tags a Payment Link. What it does have is Razorpay's own
-response to the call: `retry_payment` returns the id of the payment it just
-created, and `vasool/actions/executor.py::RazorpayExecutor._retry` now
-records that id against the entity_id that asked for it, in its own
-in-memory `RetryIndex`. `vasool/events/settlement.py::entity_id_from_payment_captured`
+`createRecurring` (then `RazorpayClient.retry_payment`) has no `notes`
+parameter Session 0A ever observed, so a SILENT_RETRY/TIMED_RETRY had nothing
+to tag the way `_link` tags a Payment Link. What it does have is Razorpay's own
+response to the call: the debit returns the id of the payment it just created,
+and `vasool/actions/executor.py::RazorpayExecutor._retry` records that id
+against the entity_id that asked for it, in its own `RetryIndex`.
+`vasool/events/settlement.py::entity_id_from_payment_captured`
 reads a later `payment.captured`'s payment id back through that index — our
 own record coming back, not a guessed join key.
 
-**RetryIndex is process-local, on purpose and stated plainly, not silently.**
-Nothing in this codebase durably stores the action plane's own call history
-yet: `ExecutionJournal` beside it has exactly the same property, `EventStore`
-is scoped to *received* webhooks only, and the transition log deliberately
-never carries Razorpay-shaped data (see `vasool/ledger/receipts.py`'s
-docstring on why). So a process restart between a retry firing and its
-`payment.captured` arriving loses the mapping — that capture won't be
-recognised as ours, and the episode stays in AWAITING rather than reaching
-RECOVERED through this path. Not silently wrong; a real, accepted gap.
+**Updated 2026-09-15 — the call does take `notes`; the index is still the
+path.** The premise above is what Session 0A could see, not what the API does:
+0A never reached `createRecurring` at all. *Create Subsequent Payments*
+documents an optional `notes`, and `RazorpayClient.create_recurring_payment` —
+which replaced `retry_payment`, see below — stamps `vasool_entity_id` on it
+exactly as `_link` stamps a payment link. It is not read on the way back yet.
+The response id stays the settlement path because it is the rail's own answer
+to "what did you just create", whereas whether a payment entity carries its
+`notes` back on a webhook is unobserved — the same VERIFY the Payment Link tag
+carries above (`docs/EVALUATION.md` §10, 2026-09-15).
+
+**Updated 2026-09-22 — the index survives a restart.** As first written this
+was a real, accepted gap, stated plainly rather than silently: nothing durably
+stored the action plane's own call history, so a process restart between a
+retry firing and its `payment.captured` arriving lost the mapping — that
+capture was not recognised as ours, and the episode stayed in AWAITING rather
+than reaching RECOVERED through this path.
+`vasool/actions/retry_store.py::SqlRetryIndex` now persists it, with WAL and
+`synchronous=FULL` read back as the event store does. It lives in the action
+plane, in a database of its own, because the transition log deliberately never
+carries Razorpay-shaped data (see `vasool/ledger/receipts.py`'s docstring on
+why) and a payment id the rail minted is that data;
+`vasool/runtime/composition.py::build` refuses to start if the executor and the
+runtime hold different indexes. The simulator keeps the in-memory index:
+nothing in windtunnel restarts a process. `ExecutionJournal` beside it is still
+in memory, and `EventStore` is still scoped to *received* webhooks only
+(`docs/EVALUATION.md` §10, 2026-09-22).
 
 # VERIFY: whether `createRecurring`'s synchronous response id is the same id
 that later appears on `payload.payment.entity.id` of a `payment.captured`
-webhook has never been observed live. `RazorpayClient.retry_payment`'s own
-VERIFY note already flags that this call was never exercised at all — Session
+webhook has never been observed live. `RazorpayClient.create_recurring_payment`'s
+own VERIFY note already flags that this call was never exercised at all — Session
 0A never activated the merchant account, so the token-based recharge path it
 wraps (subscriptions / e-mandates) was never reachable to test. A payment
 entity's id being stable across its own lifecycle is standard Razorpay

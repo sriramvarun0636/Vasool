@@ -514,8 +514,9 @@ Listing these is more useful than pretending otherwise.
    (`payment_link.paid`, correlated via the `notes.vasool_entity_id` it
    tagged), and a SILENT_RETRY/TIMED_RETRY captured as the same payment
    `createRecurring` created (`payment.captured`, correlated via the
-   executor's own RetryIndex — process-local, so a restart between the retry
-   firing and its capture arriving loses that particular join). **Not
+   executor's own RetryIndex — persisted since 2026-09-22, so a restart
+   between the retry firing and its capture arriving no longer loses that
+   join). **Not
    caught:** a link-intervention episode paid out-of-band through any *other*
    channel — a customer who pays directly rather than through the link we
    sent carries no `vasool_entity_id` anywhere and is invisible to us,

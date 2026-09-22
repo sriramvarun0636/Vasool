@@ -234,7 +234,7 @@ git status --short
 
 | Command | What it does |
 | :--- | :--- |
-| `pytest` | 2,348 tests — the same run CI makes on every push, from a fresh clone with no secrets |
+| `pytest` | 2,351 tests — the same run CI makes on every push, from a fresh clone with no secrets |
 | `make demo` | one recovery episode, narrated, replayed from the payloads on disk |
 | `make redteam` | every registered adversarial attack scored against the registered survival criterion, rewriting `out/adversary/redteam.json` |
 | `make generate` | §2.6's adversary generator: replays the recorded proposals, compiles, runs and scores them, and writes `out/adversary/generated.json`. `RECORD=1` spends the free tier toward the registered hundred |
@@ -616,7 +616,7 @@ Every amendment to the protocol after registration — sixty-eight of them — i
 | :--- | :--- |
 | [`POSTMORTEM.md`](POSTMORTEM.md) | **Thirteen incidents, in detail.** Four of them are cases where the system was silent about being wrong and an artifact caught it; the seventh is the one nothing caught until after v1.0 was tagged; the ninth is a rule encoded wrongly and tested well; the tenth is a double debit every record the agent keeps would have shown as one; the twelfth is a prediction made before a run, which broke and was right to. Start here. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The five planes, the air gap as a property of the type graph, the five invariants, and the structural debt it has paid off, kept as a record |
-| [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and the 36 places the code flags its own uncertainty |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | All fifteen guards, what each rests on, and every place the code flags its own uncertainty |
 | [`vasool/diagnosis/`](vasool/diagnosis/) | The failure taxonomy, the deterministic classifier, the LLM shadow (which never touches a ledger), Razorpay's 61 UPI Autopay failure reasons, and NPCI's 225 UPI codes, each mapped to it |
 | [`data/cited_payloads/`](data/cited_payloads/) | The third provenance tier: NPCI's UPI response codes, transcribed verbatim, each file pinned to the SHA-256 of the specification it cites |
 | [`vasool/policy/`](vasool/policy/) | Fifteen pure-function guards, the state machine, the transition log |
@@ -630,6 +630,7 @@ Every amendment to the protocol after registration — sixty-eight of them — i
 | [`docs/EVALUATION.md`](docs/EVALUATION.md) | The pre-registered protocol. Append-only. |
 | [`docs/taxonomy.md`](docs/taxonomy.md) | Why each failure class gets the intervention it gets, §9's known limits, §11: what NPCI's vocabulary says the five classes miss, and §12: the 61 reasons a Razorpay merchant is actually sent |
 | [`docs/VERIFIED.md`](docs/VERIFIED.md) | Everything learned from the live account, including what did not work |
+| [`docs/VASOOL-design-spec.md`](docs/VASOOL-design-spec.md) | The plan as written before the build, kept unrevised — history, not documentation |
 
 ---
 

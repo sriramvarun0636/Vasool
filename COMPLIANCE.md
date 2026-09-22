@@ -68,10 +68,14 @@ than it is.
 
 The working agreement for this project is that an unverified regulatory
 threshold gets a `# VERIFY:` comment in the code rather than a confident
-assertion. **There are 36 of them** — two closed on 2026-09-15 by RBI's E-mandate
-Framework, 2026, three opened by the mandate work, and on the UPI failure path
-three opened and one closed with the call it described. The ones that bear on
-compliance directly:
+assertion. **There are 34 of them** — two closed on 2026-09-15 by RBI's E-mandate
+Framework, 2026, three opened by the mandate work, on the UPI failure path three
+opened and one closed with the call it described, and two closed on 2026-09-22:
+`SqlFactStore` can now say it could not establish whether a payment sits on a
+mandate, and the retry index survives a restart, so neither gap is tolerated any
+more (`docs/EVALUATION.md` §10, 2026-09-22). The number is held to the code by
+`tests/test_verify_markers.py`, because it had already gone stale once. The ones
+that bear on compliance directly:
 
 - **`ContactWindowGuard` — "¶55" is unconfirmed.** The paragraph number comes
   from the design spec's research and was never checked against the current

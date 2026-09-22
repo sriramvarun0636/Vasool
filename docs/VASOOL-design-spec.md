@@ -5,6 +5,18 @@
 
 ---
 
+> **This is the plan as written before the build, kept unrevised.** It is here
+> as a record of what was intended, not as a description of what exists, and
+> its figures are the plan's: it says thirteen guards (there are fifteen, in
+> [`COMPLIANCE.md`](../COMPLIANCE.md)) and eighteen attacks (there are
+> twenty-four, 23 of which survive). Where it and the code disagree, the code
+> is right and this document is history. The one thing edited since is a mock
+> report card whose numbers were invented; real ones replaced it. For what the
+> system actually does, start at [`README.md`](../README.md); for what was
+> measured and when, [`docs/EVALUATION.md`](EVALUATION.md).
+
+---
+
 ## 0. THE THESIS (memorise this — it's your whole pitch)
 
 > Razorpay shipped Agent Studio. Merchants can now build agents that move real money.
