@@ -365,6 +365,40 @@ class TestReadmeDoesNotDrift:
             f"Manifest figures are {sorted(allowed)}."
         )
 
+    def test_every_criterion_verdict_matches_the_manifest(self, report, readme):
+        """The falsification table says, per criterion, whether it fired.
+
+        On 2026-09-22 §7's grid fired F6, and the README went on saying "did
+        not fire — 4 of 8" in two places while every other test here passed:
+        the rupee and percentage checks read figures, and a verdict is a word.
+        A criterion reported as silent after it fired is the worst sentence
+        this document could carry, so each row's verdict is read against the
+        manifest's own `fired`, and F6's count against its own tally.
+        """
+        rows = dict(re.findall(r"^\| \*\*(F\d)\*\* \|[^|]*\|[^|]*\| (.*?) \|$", readme, re.M))
+        assert len(rows) == 7, f"the falsification table has {len(rows)} rows, not seven"
+        for key, verdict in report["falsification"].items():
+            fid = key.split("_", 1)[0]
+            cell = re.sub(r"[*_`]", "", rows[fid]).lower()
+            if verdict.get("fired") is True:
+                assert not cell.startswith("did not fire") and "fired" in cell, (
+                    f"{fid} fired in the manifest; README's row says: {rows[fid][:80]}"
+                )
+            elif verdict.get("fired") is False:
+                assert cell.startswith("did not fire"), (
+                    f"{fid} did not fire in the manifest; README's row says: {rows[fid][:80]}"
+                )
+        f6 = report["falsification"].get("F6_conclusions_are_model_artifacts", {})
+        if isinstance(f6.get("flipped_count"), int) and f6.get("denominator"):
+            tally = f"{f6['flipped_count']} of {len(f6['denominator'])}"
+            assert tally in re.sub(r"[*_`]", "", rows["F6"]), (
+                f"README's F6 row does not state the manifest's tally, {tally}"
+            )
+            if f6.get("fired"):
+                assert "F6 did not fire" not in readme.replace("*", ""), (
+                    "README says F6 did not fire; the manifest says it fired"
+                )
+
 
 class TestTheReadmeQuotesRealOutput:
     """README.md prints a `make demo` transcript and says it is real output.
@@ -460,7 +494,8 @@ class TestIncidentCountDoesNotDrift:
     """
 
     WORDS = {"five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-             "eleven": 11, "twelve": 12}
+             "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+             "fifteen": 15, "sixteen": 16}
     CLAIMS = {
         "POSTMORTEM.md": [
             re.compile(r"^(\w+) incidents\.", re.M),

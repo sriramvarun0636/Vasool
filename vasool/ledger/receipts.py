@@ -155,6 +155,19 @@ class Outcome(StrEnum):
     §2a scans for withdrawals as a stated fact rather than as "a BLOCKED that
     happens to have no proposal"."""
 
+    MONEY_MAY_HAVE_ARRIVED = "money_may_have_arrived"
+    """A01: the episode stopped because the rail shows a payment on this
+    customer that this agent did not make, matching this episode's amount
+    inside the window.
+
+    Distinct from RECOVERED, and the distinction is the whole design. RECOVERED
+    states that this episode's money arrived and carries the amount; this
+    states that it *may* have, on an amount match that is evidence rather than
+    a join key — a second purchase at the same price produces the same match.
+    Filing it as RECOVERED would let the headline count money nothing
+    correlated, and would let §2a's scans read a stop as a settlement
+    (docs/EVALUATION.md §10, 2026-09-21)."""
+
     CLOCK_SKEW = "clock_skew"
     """A18: the episode was escalated because the event's timestamp was too
     far ahead to believe, before any proposal existed. Distinct from
@@ -167,6 +180,7 @@ _CLOSURE_OUTCOME: dict[Closure, Outcome] = {
     Closure.CONSENT_WITHDRAWN: Outcome.CONSENT_WITHDRAWN,
     Closure.SETTLED: Outcome.RECOVERED,
     Closure.CLOCK_SKEW: Outcome.CLOCK_SKEW,
+    Closure.MONEY_MAY_HAVE_ARRIVED: Outcome.MONEY_MAY_HAVE_ARRIVED,
 }
 """What a closure is called in the ledger.
 

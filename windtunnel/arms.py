@@ -81,6 +81,23 @@ class Arm:
     rules: RuleTable
     chain: tuple[Guard, ...] = GUARD_CHAIN
     resolve: Resolver = evaluate_all
+    reconciles: bool = True
+    """Whether this arm stops when the rail shows the money arrived elsewhere.
+
+    Reconciliation is **policy**, not a guard: docs/taxonomy.md §7's hard stop
+    on out-of-band success is a rule about what the agent should do, and §5.1
+    and §5.2 are arms with no policy at all — retry everything, then maybe send
+    a link. An arm that had no taxonomy but still knew when to stop would not
+    be the strawman §5 defines, and the comparison would credit the taxonomy
+    with something the baseline had too.
+
+    This is the seam re-run #4 got wrong in the other direction, where
+    rail-keyed classification reached every arm and diluted every ablation
+    (§10, 2026-09-17). Registered explicitly this time, before the run: `False`
+    for `naive_retry` and `retry_plus_contact`, `True` for everything that
+    carries §4's table (§10, 2026-09-21).
+    """
+
     upi_rule: Callable[[Rule], Rule] = unchanged
     """What this arm does to docs/taxonomy.md §12's rule for a UPI failure.
 
@@ -214,6 +231,7 @@ VASOOL = Arm(
 BASELINES: tuple[Arm, ...] = (
     Arm(
         name="naive_retry",
+        reconciles=False,
         kind=ArmKind.BASELINE,
         rationale=(
             "§5.1 — the strawman worth beating: retry everything on 5m/30m/4h "
@@ -228,6 +246,7 @@ BASELINES: tuple[Arm, ...] = (
     ),
     Arm(
         name="retry_plus_contact",
+        reconciles=False,
         kind=ArmKind.BASELINE,
         rationale=(
             "§5.2 — the realistic incumbent, and **the baseline that matters**: "

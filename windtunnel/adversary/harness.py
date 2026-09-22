@@ -43,7 +43,9 @@ class Result:
 
 
 def run_attack(attack: Attack) -> Result:
-    arena = Arena()
+    # Most attacks script a world; A27 needs one built differently, because
+    # what it probes is a deployment's wiring rather than a sequence of events.
+    arena = attack.arena() if attack.arena is not None else Arena()
     attack.run(arena)  # return value deliberately discarded — see module docstring
     survival = judge(arena, attack_id=attack.id, evidence=attack.evidence)
     return Result(

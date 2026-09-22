@@ -11,79 +11,81 @@
 </style>
 <rect width="900" height="432" fill="#0d1117"/>
 <text x="190" y="18" class="ttl">Paired difference vs Vasool — recovery rate, 1,000 seeds</text>
-<line x1="216.3" y1="50" x2="216.3" y2="390" class="grid"/>
-<text x="216.3" y="408" text-anchor="middle" class="tick">-20pp</text>
-<line x1="289.6" y1="50" x2="289.6" y2="390" class="grid"/>
-<text x="289.6" y="408" text-anchor="middle" class="tick">-15pp</text>
-<line x1="362.9" y1="50" x2="362.9" y2="390" class="grid"/>
-<text x="362.9" y="408" text-anchor="middle" class="tick">-10pp</text>
-<line x1="436.2" y1="50" x2="436.2" y2="390" class="grid"/>
-<text x="436.2" y="408" text-anchor="middle" class="tick">-5pp</text>
-<line x1="509.5" y1="50" x2="509.5" y2="390" class="grid"/>
-<text x="509.5" y="408" text-anchor="middle" class="tick">0pp</text>
-<line x1="582.7" y1="50" x2="582.7" y2="390" class="grid"/>
-<text x="582.7" y="408" text-anchor="middle" class="tick">+5pp</text>
-<line x1="656.0" y1="50" x2="656.0" y2="390" class="grid"/>
-<text x="656.0" y="408" text-anchor="middle" class="tick">+10pp</text>
-<line x1="729.3" y1="50" x2="729.3" y2="390" class="grid"/>
-<text x="729.3" y="408" text-anchor="middle" class="tick">+15pp</text>
-<line x1="509.5" y1="50" x2="509.5" y2="390" class="zero"/>
-<text x="499.5" y="40" text-anchor="end" class="sub">&#8592; Vasool recovers less</text>
-<text x="519.5" y="40" text-anchor="start" class="sub">Vasool recovers more &#8594;</text>
+<line x1="199.9" y1="50" x2="199.9" y2="390" class="grid"/>
+<text x="199.9" y="408" text-anchor="middle" class="tick">-25pp</text>
+<line x1="267.3" y1="50" x2="267.3" y2="390" class="grid"/>
+<text x="267.3" y="408" text-anchor="middle" class="tick">-20pp</text>
+<line x1="334.7" y1="50" x2="334.7" y2="390" class="grid"/>
+<text x="334.7" y="408" text-anchor="middle" class="tick">-15pp</text>
+<line x1="402.2" y1="50" x2="402.2" y2="390" class="grid"/>
+<text x="402.2" y="408" text-anchor="middle" class="tick">-10pp</text>
+<line x1="469.6" y1="50" x2="469.6" y2="390" class="grid"/>
+<text x="469.6" y="408" text-anchor="middle" class="tick">-5pp</text>
+<line x1="537.0" y1="50" x2="537.0" y2="390" class="grid"/>
+<text x="537.0" y="408" text-anchor="middle" class="tick">0pp</text>
+<line x1="604.4" y1="50" x2="604.4" y2="390" class="grid"/>
+<text x="604.4" y="408" text-anchor="middle" class="tick">+5pp</text>
+<line x1="671.9" y1="50" x2="671.9" y2="390" class="grid"/>
+<text x="671.9" y="408" text-anchor="middle" class="tick">+10pp</text>
+<line x1="739.3" y1="50" x2="739.3" y2="390" class="grid"/>
+<text x="739.3" y="408" text-anchor="middle" class="tick">+15pp</text>
+<line x1="537.0" y1="50" x2="537.0" y2="390" class="zero"/>
+<text x="527.0" y="40" text-anchor="end" class="sub">&#8592; Vasool recovers less</text>
+<text x="547.0" y="40" text-anchor="start" class="sub">Vasool recovers more &#8594;</text>
 <style>.c0{stroke:#e66767;fill:#e66767}</style>
 <text x="172" y="79.0" text-anchor="end" class="lbl">retry_plus_contact</text>
 <text x="172" y="92.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="240.17" y1="78.0" x2="245.97" y2="78.0" class="c0" stroke-width="2" stroke-linecap="round"/>
-<circle cx="243.06" cy="78.0" r="5.5" class="c0 ring" stroke-width="2"/>
-<text x="808" y="82.0" class="val c0" stroke="none">-18.17pp</text>
-<!-- retry_plus_contact: -18.173pp [-18.370, -17.974] -->
+<line x1="240.17" y1="78.0" x2="245.50" y2="78.0" class="c0" stroke-width="2" stroke-linecap="round"/>
+<circle cx="242.86" cy="78.0" r="5.5" class="c0 ring" stroke-width="2"/>
+<text x="808" y="82.0" class="val c0" stroke="none">-21.81pp</text>
+<!-- retry_plus_contact: -21.812pp [-22.012, -21.616] -->
 <style>.c1{stroke:#e66767;fill:#e66767}</style>
 <text x="172" y="119.0" text-anchor="end" class="lbl">vasool_ungated</text>
 <text x="172" y="132.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="404.34" y1="118.0" x2="407.24" y2="118.0" class="c1" stroke-width="2" stroke-linecap="round"/>
-<circle cx="405.79" cy="118.0" r="5.5" class="c1 ring" stroke-width="2"/>
-<text x="808" y="122.0" class="val c1" stroke="none">-7.07pp</text>
-<!-- vasool_ungated: -7.072pp [-7.171, -6.973] -->
-<style>.c2{stroke:#3987e5;fill:#3987e5}</style>
-<text x="172" y="159.0" text-anchor="end" class="lbl">A4</text>
-<text x="172" y="172.0" text-anchor="end" class="sub">includes zero</text>
-<line x1="509.45" y1="158.0" x2="509.45" y2="158.0" class="c2" stroke-width="2" stroke-linecap="round"/>
-<circle cx="509.45" cy="158.0" r="5.5" class="c2 ring" stroke-width="2"/>
-<text x="808" y="162.0" class="val c2" stroke="none">+0.00pp</text>
-<!-- A4: +0.000pp [+0.000, +0.000] -->
+<line x1="444.44" y1="118.0" x2="446.97" y2="118.0" class="c1" stroke-width="2" stroke-linecap="round"/>
+<circle cx="445.71" cy="118.0" r="5.5" class="c1 ring" stroke-width="2"/>
+<text x="808" y="122.0" class="val c1" stroke="none">-6.77pp</text>
+<!-- vasool_ungated: -6.770pp [-6.865, -6.677] -->
+<style>.c2{stroke:#e66767;fill:#e66767}</style>
+<text x="172" y="159.0" text-anchor="end" class="lbl">naive_retry</text>
+<text x="172" y="172.0" text-anchor="end" class="sub">excludes zero</text>
+<line x1="497.59" y1="158.0" x2="502.57" y2="158.0" class="c2" stroke-width="2" stroke-linecap="round"/>
+<circle cx="500.10" cy="158.0" r="5.5" class="c2 ring" stroke-width="2"/>
+<text x="808" y="162.0" class="val c2" stroke="none">-2.74pp</text>
+<!-- naive_retry: -2.737pp [-2.923, -2.554] -->
 <style>.c3{stroke:#3987e5;fill:#3987e5}</style>
-<text x="172" y="199.0" text-anchor="end" class="lbl">A3</text>
-<text x="172" y="212.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="512.70" y1="198.0" x2="514.53" y2="198.0" class="c3" stroke-width="2" stroke-linecap="round"/>
-<circle cx="513.62" cy="198.0" r="5.5" class="c3 ring" stroke-width="2"/>
-<text x="808" y="202.0" class="val c3" stroke="none">+0.28pp</text>
-<!-- A3: +0.285pp [+0.222, +0.346] -->
+<text x="172" y="199.0" text-anchor="end" class="lbl">A4</text>
+<text x="172" y="212.0" text-anchor="end" class="sub">includes zero</text>
+<line x1="537.01" y1="198.0" x2="537.01" y2="198.0" class="c3" stroke-width="2" stroke-linecap="round"/>
+<circle cx="537.01" cy="198.0" r="5.5" class="c3 ring" stroke-width="2"/>
+<text x="808" y="202.0" class="val c3" stroke="none">+0.00pp</text>
+<!-- A4: +0.000pp [+0.000, +0.000] -->
 <style>.c4{stroke:#3987e5;fill:#3987e5}</style>
-<text x="172" y="239.0" text-anchor="end" class="lbl">naive_retry</text>
+<text x="172" y="239.0" text-anchor="end" class="lbl">A3</text>
 <text x="172" y="252.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="519.90" y1="238.0" x2="525.34" y2="238.0" class="c4" stroke-width="2" stroke-linecap="round"/>
-<circle cx="522.68" cy="238.0" r="5.5" class="c4 ring" stroke-width="2"/>
-<text x="808" y="242.0" class="val c4" stroke="none">+0.90pp</text>
-<!-- naive_retry: +0.902pp [+0.713, +1.084] -->
+<line x1="540.23" y1="238.0" x2="541.91" y2="238.0" class="c4" stroke-width="2" stroke-linecap="round"/>
+<circle cx="541.08" cy="238.0" r="5.5" class="c4 ring" stroke-width="2"/>
+<text x="808" y="242.0" class="val c4" stroke="none">+0.30pp</text>
+<!-- A3: +0.302pp [+0.239, +0.363] -->
 <style>.c5{stroke:#3987e5;fill:#3987e5}</style>
 <text x="172" y="279.0" text-anchor="end" class="lbl">A1</text>
 <text x="172" y="292.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="568.10" y1="278.0" x2="572.40" y2="278.0" class="c5" stroke-width="2" stroke-linecap="round"/>
-<circle cx="570.25" cy="278.0" r="5.5" class="c5 ring" stroke-width="2"/>
-<text x="808" y="282.0" class="val c5" stroke="none">+4.15pp</text>
-<!-- A1: +4.148pp [+4.001, +4.294] -->
+<line x1="548.53" y1="278.0" x2="552.42" y2="278.0" class="c5" stroke-width="2" stroke-linecap="round"/>
+<circle cx="550.47" cy="278.0" r="5.5" class="c5 ring" stroke-width="2"/>
+<text x="808" y="282.0" class="val c5" stroke="none">+1.00pp</text>
+<!-- A1: +0.998pp [+0.854, +1.142] -->
 <style>.c6{stroke:#3987e5;fill:#3987e5}</style>
 <text x="172" y="319.0" text-anchor="end" class="lbl">A2</text>
 <text x="172" y="332.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="572.54" y1="318.0" x2="574.69" y2="318.0" class="c6" stroke-width="2" stroke-linecap="round"/>
-<circle cx="573.60" cy="318.0" r="5.5" class="c6 ring" stroke-width="2"/>
-<text x="808" y="322.0" class="val c6" stroke="none">+4.38pp</text>
-<!-- A2: +4.376pp [+4.304, +4.451] -->
+<line x1="552.75" y1="318.0" x2="554.97" y2="318.0" class="c6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="553.85" cy="318.0" r="5.5" class="c6 ring" stroke-width="2"/>
+<text x="808" y="322.0" class="val c6" stroke="none">+1.25pp</text>
+<!-- A2: +1.249pp [+1.167, +1.332] -->
 <style>.c7{stroke:#3987e5;fill:#3987e5}</style>
 <text x="172" y="359.0" text-anchor="end" class="lbl">A5</text>
 <text x="172" y="372.0" text-anchor="end" class="sub">excludes zero</text>
-<line x1="738.19" y1="358.0" x2="741.83" y2="358.0" class="c7" stroke-width="2" stroke-linecap="round"/>
-<circle cx="740.00" cy="358.0" r="5.5" class="c7 ring" stroke-width="2"/>
-<text x="808" y="362.0" class="val c7" stroke="none">+15.73pp</text>
-<!-- A5: +15.728pp [+15.604, +15.853] -->
+<line x1="738.55" y1="358.0" x2="741.83" y2="358.0" class="c7" stroke-width="2" stroke-linecap="round"/>
+<circle cx="740.18" cy="358.0" r="5.5" class="c7 ring" stroke-width="2"/>
+<text x="808" y="362.0" class="val c7" stroke="none">+15.07pp</text>
+<!-- A5: +15.065pp [+14.945, +15.188] -->
 </svg>

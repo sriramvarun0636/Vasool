@@ -75,6 +75,8 @@ from vasool.policy.facts import (
 from vasool.policy.machine import ExecutionResult, PolicyMachine
 from vasool.policy.transitions import Transition
 from windtunnel import payloads
+from vasool.actions.reconcile import NullSettlementLookup
+from windtunnel.runner import SimulatedSettlementLookup
 from windtunnel.adversary.criterion import Dispatch
 from windtunnel.universe import EPOCH
 from windtunnel.world import MERCHANT_ID
@@ -466,7 +468,13 @@ class Arena:
     """The same calendar anchor the wind tunnel uses, so an attack's
     timestamps read against the same September as every other artefact."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, reconciles: bool = True) -> None:
+        """`reconciles=False` is the shipped default of a deployment that has
+        wired no settlement lookup — which is every deployment until a merchant
+        decides to give the agent read access to their payment stream. A01 is
+        closed only for those that have; A27 is the same attack against those
+        that have not, and it is registered to fail."""
+        self._reconciles = reconciles
         self.clock = VirtualClock(self.EPOCH)
         self.facts = ArenaFacts(merchant=MerchantPolicy(merchant_id=MERCHANT_ID))
         self._razorpay = SimulatedRazorpay()
@@ -484,8 +492,17 @@ class Arena:
             status=_StatusCheck(self.facts, documented),
         )
         self.executor = WatchedExecutor(inner=self._inner, facts=self.facts, clock=self.clock)
+        # What the merchant's account shows. An attack that pays out of band
+        # records the payment here, and the agent may consult it exactly as a
+        # deployment with a wired lookup would — which is the whole of A01's
+        # fix and the only way the attack can be scored against it.
+        self.settlement = SimulatedSettlementLookup()
         self.machine = PolicyMachine(
-            clock=self.clock, facts=self.facts, executor=self.executor
+            clock=self.clock,
+            facts=self.facts,
+            executor=self.executor,
+            settlement=self.settlement if self._reconciles else NullSettlementLookup(),
+            ours=lambda: self._inner.retry_index.payment_ids(),
         )
         self.store = EventStore(":memory:")
         self._client = TestClient(
@@ -768,9 +785,18 @@ class Arena:
         the settlement correlated, which is the fact A01 rests on.
         """
         script = self.facts.scripts[entity_id]
+        payment_id = SimulatedRazorpay._id("pay_oob_", entity_id)
+        # The money is in the merchant's account from this moment, whether or
+        # not any webhook correlates it — which is exactly A01's point.
+        self.settlement.record(
+            customer_id=script.person.customer_id,
+            payment_id=payment_id,
+            amount_paise=script.amount_paise,
+            at=self.clock.now(),
+        )
         self.deliver(
             payloads.capture_body(
-                payment_id=SimulatedRazorpay._id("pay_oob_", entity_id),
+                payment_id=payment_id,
                 amount_paise=script.amount_paise,
             ),
             event_id=self._event_id_for(f"{entity_id}|out_of_band"),

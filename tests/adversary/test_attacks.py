@@ -40,9 +40,10 @@ def results():
 
 class TestTheRegistry:
     def test_the_count_is_what_was_registered(self):
-        """Twenty-two, then A26 on 2026-09-15 (docs/EVALUATION.md §10). The
-        gaps — A17, A21, A25 — were registered and cut, and are not reused."""
-        assert len(ATTACKS) == 23
+        """Twenty-two, then A26 on 2026-09-15 and A27 on 2026-09-21
+        (docs/EVALUATION.md §10). The gaps — A17, A21, A25 — were registered
+        and cut, and are not reused."""
+        assert len(ATTACKS) == 24
         assert not {"A17", "A21", "A25"} & {a.id for a in ATTACKS}
 
     def test_every_id_is_unique(self):
@@ -140,12 +141,15 @@ class TestOutcomes:
         `test_each_attack_matches_its_registered_expectation`, so a regression
         turns this suite red from the other direction.
 
-        A01 is what is left: an out-of-band payment carries neither join key,
-        so `settle_from_webhook` declines to attribute it and the agent goes on
-        chasing money the merchant already has (docs/taxonomy.md §9.10).
+        A01 came off on 2026-09-21, when reconciliation gave the agent a way
+        to notice money it had not collected. **A27 replaced it deliberately**:
+        the same attack against a deployment that has wired no settlement
+        lookup, which is the shipped default. A red team in which everything
+        survives cannot demonstrate that it detects anything, and "a capability,
+        off by default" is the honest description of what shipped.
         """
         by_id = {r.attack.id: r for r in results}
-        for attack_id in ("A01",):
+        for attack_id in ("A27",):
             assert not by_id[attack_id].survival.survived, attack_id
 
     def test_every_failure_names_the_clause_it_failed(self, results):

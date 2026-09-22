@@ -720,6 +720,16 @@ class Attack:
     evidence: tuple[Evidence, ...]
     run: Callable[[Any], None]
 
+    arena: Callable[[], Any] | None = None
+    """How to build the world this attack runs in, when the default will not do.
+
+    Typed as a factory returning `Any` for the same reason `run` takes `Any`:
+    this module scores a Scene and must not learn what produced it. Used by
+    A27, which is A01 against a deployment that has wired no settlement
+    lookup — the shipped default — and is therefore the one attack that has to
+    be run against a differently-built agent rather than a differently-scripted
+    world (docs/EVALUATION.md §10, 2026-09-21)."""
+
 
 # ---------------------------------------------------------------------------
 # the only thing that produces a verdict

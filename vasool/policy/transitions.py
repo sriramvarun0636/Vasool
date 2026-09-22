@@ -52,6 +52,17 @@ class Closure(StrEnum):
     """A18: the event's timestamp was too far ahead to believe, so nothing
     was ever scheduled from it — see PolicyMachine.MAX_CLOCK_SKEW."""
 
+    MONEY_MAY_HAVE_ARRIVED = "MONEY_MAY_HAVE_ARRIVED"
+    """A01: the rail shows a payment on this customer that this agent did not
+    make, for this episode's amount, inside the window — so the episode stops
+    and a person decides (docs/EVALUATION.md §10, 2026-09-21).
+
+    Deliberately **not** `SETTLED`. `SETTLED` states that the money arrived and
+    carries the amount; this states that it *may* have, on the strength of an
+    amount match that is evidence rather than a join key. A ledger that
+    recorded the two the same way would let §2a's scans read an escalation as a
+    recovery, and would let the headline count money nothing correlated."""
+
 
 @dataclass(frozen=True, slots=True)
 class Transition:

@@ -95,6 +95,30 @@ def a01_out_of_band_mid_ladder(arena: Arena) -> None:
     arena.advance_by(timedelta(hours=6))
 
 
+def a27_out_of_band_with_no_lookup_wired(arena: Arena) -> None:
+    """A01 again, against the agent as it ships.
+
+    Reconciliation closes A01 only where a merchant has given the agent read
+    access to their payment stream. `NullSettlementLookup` is the default and
+    answers nothing, so a deployment that has wired no lookup behaves exactly
+    as every deployment did before 2026-09-21: the out-of-band payment carries
+    no join key, nothing correlates it, and the ladder goes on.
+
+    Registered FAILS, and it is the only attack in this suite that does. That
+    is deliberate — a red team where everything survives cannot demonstrate
+    that it can detect anything, and the honest statement of what was shipped
+    is "a capability, off by default" rather than "A01 is fixed".
+    """
+    alice = arena.person("alice")
+    arena.advance_to(arena.ist(hour=10))
+    arena.fail(alice, "gateway_technical_error", entity_id="pay_a27")
+    arena.advance_by(timedelta(minutes=6))
+    arena.fail_last_retry("pay_a27")
+    arena.mark("money_arrived")
+    arena.pay_out_of_band("pay_a27")
+    arena.advance_by(timedelta(hours=6))
+
+
 def a02_link_paid_closes_the_episode(arena: Arena) -> None:
     """The control for A01: the settlement path that *does* have a join key.
 
@@ -593,8 +617,11 @@ ATTACKS: tuple[Attack, ...] = (
         id="A01",
         title="out-of-band payment mid-ladder",
         targets="double collection: §7's hard stop on out-of-band success",
-        source="docs/taxonomy.md §9.9 and §9.10; design spec §9 A07",
-        expectation=FAILS,
+        source="docs/taxonomy.md §9.9 and §9.10; design spec §9 A07. "
+               "Registered FAILS; closed and re-registered 2026-09-21 when "
+               "reconciliation gave the agent a way to notice money it did not "
+               "collect (docs/EVALUATION.md §10)",
+        expectation=SURVIVES,
         evidence=(NoExecutionOnEntityAfter("pay_a01", mark="money_arrived"),),
         run=a01_out_of_band_mid_ladder,
     ),
@@ -860,5 +887,17 @@ ATTACKS: tuple[Attack, ...] = (
             ReceiptCount("pay_a26", Outcome.RECOVERED, 1),
         ),
         run=a26_lost_debit_response,
+    ),
+    Attack(
+        id="A27",
+        title="out-of-band payment, with no settlement lookup wired",
+        targets="what A01's fix does *not* cover: the shipped default",
+        source="docs/EVALUATION.md §10, 2026-09-21 — reconciliation is a port "
+               "with a null adapter, so A01 is closed for a deployment that "
+               "wires a lookup and open for one that does not",
+        expectation=FAILS,
+        evidence=(NoExecutionOnEntityAfter("pay_a27", mark="money_arrived"),),
+        run=a27_out_of_band_with_no_lookup_wired,
+        arena=lambda: Arena(reconciles=False),
     ),
 )

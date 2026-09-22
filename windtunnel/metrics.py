@@ -631,7 +631,23 @@ def measure(
         time_to_recovery_median_hours=statistics.median(ttr) if ttr else None,
         time_to_recovery_p90_hours=_percentile(ttr, 0.9),
         escalated=len(
-            {r.entity_id for r in receipts if r.outcome in (Outcome.ESCALATED, Outcome.CLOCK_SKEW)}
+            {
+                r.entity_id
+                for r in receipts
+                if r.outcome
+                in (
+                    Outcome.ESCALATED,
+                    Outcome.CLOCK_SKEW,
+                    # An episode stopped because the rail shows the money may
+                    # already have arrived is handed to a person exactly as the
+                    # other two are; the Outcome stays distinct so the ledger
+                    # says *why*, but the partition counts it where it belongs.
+                    # Left out, it fell into `awaiting` — which is computed as
+                    # the residual and therefore still summed, so nothing here
+                    # could have caught it (docs/EVALUATION.md §10, 2026-09-21).
+                    Outcome.MONEY_MAY_HAVE_ARRIVED,
+                )
+            }
         ),
         blocked=len(
             {

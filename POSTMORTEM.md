@@ -1,6 +1,6 @@
 # POSTMORTEM — what broke, and how I got out
 
-Twelve incidents. Each one is recorded somewhere else in this repository as well —
+Thirteen incidents. Each one is recorded somewhere else in this repository as well —
 in `docs/EVALUATION.md` §10's append-only amendment log, in `docs/taxonomy.md`
 §9's known limits, or in `docs/VERIFIED.md` — and the cross-reference is given
 so that nothing here rests on my summary of it.
@@ -606,7 +606,52 @@ out. The value runs the other way: an expectation written in advance is what
 turned a 0.065pp movement that would have been read as the compliance cost of
 counting humans into a population shift that is not a cost at all.
 
-## The pattern across all twelve
+### INC-013 — The terminal state that hid in a residual
+
+**Symptom.** Re-run #9, 2026-09-21, measuring what closing attack A01 cost.
+Vasool's recovered episodes fell by 12,904 and `awaiting` rose by 13,388, while
+`escalated` moved by 52. Every registered expectation for the run had held,
+§2a was clean on 1,000 of 1,000 seeds, the closure partition summed, and the
+number that should have moved — episodes handed to a person — had not.
+
+**Investigation.** Reconciliation stops an episode and escalates it, and the
+receipt it writes carries a new outcome, `MONEY_MAY_HAVE_ARRIVED`, so that the
+ledger says *why* it stopped rather than filing it under a reason that means
+something else. `windtunnel/metrics.py` counts `escalated` as the entities
+whose receipts carry `Outcome.ESCALATED` or `Outcome.CLOCK_SKEW`. The new
+outcome was in neither list, so 17,723 episodes that had reached a terminal
+state and been handed to a human were counted in none of the four terminal
+buckets.
+
+**Root cause, and why nothing caught it.** `awaiting` is not counted. It is
+computed as `episodes − recovered − blocked − escalated − exhausted`, which is
+the right way to express "still in flight when the horizon ended" and has one
+property nobody had said out loud: **the partition sums by construction**. The
+test that checks it sums passes whatever is missing, because what is missing
+lands in the residual. A terminal state that no bucket claims is therefore
+invisible to every check in the repository — it appears as an episode still
+running, which is the most innocuous thing it could possibly look like.
+
+The receipt was right throughout. The ledger recorded the stop, its reason and
+its clause; §2a's scans were unaffected. What was wrong was one metric's
+membership test, in the module whose own docstring insists that every §2a claim
+is a ledger scan precisely so the simulator cannot mark its own homework.
+
+**Fix.** The escalated bucket counts the new outcome, beside `CLOCK_SKEW` which
+is the same shape — a distinct ledger reason that is nonetheless an escalation.
+The Outcome stays distinct, because a reader of the ledger should be able to
+tell "a guard escalated this" from "the money may already have arrived". The
+comment at the call site now names the trap for the next person adding an
+outcome.
+
+**What it cost.** Twenty-five minutes of compute and one wrong intermediate
+reading, caught before publication because the number was compared against what
+the change was *supposed* to do. The general lesson is about residuals: a
+quantity defined as "everything else" absorbs every error silently, so a bucket
+added anywhere must be added to the partition in the same commit — and a test
+that a partition sums is not evidence that the partition is right.
+
+## The pattern across all thirteen
 
 Four of these — INC-002, INC-003, INC-004, INC-006 — share a shape: **the system
 was silent about being wrong.** No exception, no failing test, no violated
@@ -625,6 +670,12 @@ was not silent — eight tests failed loudly — it was simply never run anywher
 it could fail. An apparatus that runs only on the machine that built it
 measures that machine. So the clean clone is part of the apparatus now: CI runs
 the suite from one on every push, with nothing configured.
+
+INC-013 belongs with the four at the top — the system was silent about being
+wrong — and it is the sharpest of them, because the silence was structural
+rather than accidental: a residual cannot report what it is absorbing. It is
+also the only one of the thirteen that this apparatus introduced itself, while
+closing an attack, which is worth recording beside the rest.
 
 INC-012 is the newest exception, and it is the apparatus working rather than
 failing: nothing was wrong with the code, and the only thing that caught the
@@ -651,7 +702,7 @@ existed only at the rail, so an attack now counts there — the survival
 criterion's first check that does not ask the agent what it did.
 
 That is the argument this project is actually making. Not that the agent is
-correct — I have twelve incidents here that say otherwise, and two known
+correct — I have thirteen incidents here that say otherwise, and two known
 adversarial failures still open in the README. The argument is that **the
 apparatus is built so that being wrong is discoverable**, and the evidence for
 that is the list above: it is long, it is specific, and most of it was found by

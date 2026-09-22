@@ -157,8 +157,28 @@ in its prose is computed from the artifact it describes.
 
 ## Known structural debt
 
-None open. The entries below are kept as closed rather than deleted, because
-each is the reason something exists that a reader will otherwise wonder about.
+**One open**, recorded below. The closed entries are kept rather than deleted,
+because each is the reason something exists that a reader will otherwise
+wonder about.
+
+**Open 2026-09-21 — one writer, one machine.** `vasool/policy/sql_store.py` is
+the fact store a deployment reads, and it is SQLite. That is a deliberate
+choice with a stated reason (`docs/EVALUATION.md` §10, 2026-09-21): CI runs
+this repository's whole suite from a fresh clone **with nothing configured**,
+which is the property INC-007 exists to protect, and a Postgres adapter could
+not be exercised there without a service. An unexercised persistence layer
+described as production-ready is the unverified claim this project refuses to
+make. The cost is that two writers against one database are not supported.
+
+What makes the *shape* right in the meantime is ownership rather than locking.
+`vasool/policy/partition.py` assigns each human to exactly one worker by a hash
+of `identity_id`, `vasool/runtime/driver.py` passes that predicate into
+`PolicyMachine.tick`, and a driver started as worker 2 of N logs that the
+partition is correct while the store is not shared. `IdempotencyGuard`'s
+check-then-act — the weaker of the two idempotency layers, since
+`EventStore.append` is race-free by construction — is therefore unreachable
+rather than guarded against, and moving to Postgres is a row lock plus a
+connection string, not a redesign.
 
 **Closed 2026-09-16 — the dashboard in an f-string.** `tools/report.py` held
 2,341 lines of HTML, CSS and JavaScript inside one Python f-string, with 503
@@ -198,6 +218,7 @@ tree from the one beside it. §10, 2026-09-14; `POSTMORTEM.md` INC-007.
 | Path | Contents |
 |---|---|
 | `vasool/events/` | Webhook receiver, HMAC verification, dedupe, settlement correlation, the three provenance tiers, and the port a rail's own failure code would arrive through |
+| `vasool/runtime/` | The composition root — the only module permitted to read the environment, and the one that refuses to start on an absent, public or short pepper — and the driver that calls `tick()` for the episodes this worker owns |
 | `vasool/diagnosis/` | The failure taxonomy, the deterministic classifier, `Proposal` construction, the LLM shadow, Razorpay's 61 UPI Autopay failure reasons and NPCI's UPI codes, each mapped to the taxonomy, and the rules a UPI failure gets |
 | `vasool/policy/` | Fifteen guards, the state machine, the transition log |
 | `vasool/mandate/` | The e-mandate lifecycle — six states, and transitions that each cite the clause permitting them, quoted from eleven documents, ten of them pinned by SHA-256, and the rule by which a failed debit's reason moves the record. `PolicyFacts.is_mandate` reads its record |

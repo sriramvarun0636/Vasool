@@ -56,6 +56,11 @@ from vasool.policy.episode import (
     InMemoryEpisodeStore,
     State,
 )
+from vasool.actions.reconcile import (
+    NullSettlementLookup,
+    SettlementLookup,
+    reconcile,
+)
 from vasool.policy.facts import FactStore, GuardContext
 from vasool.policy.guards.base import Guard
 from vasool.policy.registry import GUARD_CHAIN, evaluate_all
@@ -214,6 +219,8 @@ class PolicyMachine:
         rules: dict[tuple[str, str], Rule] = RULES,
         upi_rule: Callable[[Rule], Rule] = unchanged,
         resolve: Callable[[GuardContext, tuple[Guard, ...]], ChainResult] = evaluate_all,
+        settlement: SettlementLookup = NullSettlementLookup(),
+        ours: Callable[[], frozenset[str]] = frozenset,
     ) -> None:
         """`rules`, `upi_rule` and `resolve` exist for one caller: the wind
         tunnel's evaluator (EVALUATION.md §5 and §8).
@@ -252,6 +259,12 @@ class PolicyMachine:
         self.transitions = transitions if transitions is not None else InMemoryTransitionLog()
         self._chain = chain
         self._rules = rules
+        self._settlement = settlement
+        # What the agent itself originated, asked for rather than held: the
+        # policy plane knows nothing about Razorpay ids, and the action plane's
+        # RetryIndex is where they live (vasool/actions/executor.py). A
+        # callable keeps the direction of that dependency intact.
+        self._ours = ours
         self._upi_rule = upi_rule
         self._resolve = resolve
         self._queue: list[ScheduledItem] = []
@@ -391,17 +404,75 @@ class PolicyMachine:
         )
 
     # -- the tick ---------------------------------------------------------
-    def tick(self) -> None:
-        """Gate and act on everything now due."""
+    def tick(self, *, owned: Callable[[str], bool] | None = None) -> int:
+        """Gate and act on everything now due. Returns how many items were gated.
+
+        `owned` is the partition, and it is the caller's rather than this
+        machine's: `vasool/runtime/driver.py` passes the predicate that says
+        which humans this worker holds, so two workers never gate one person's
+        episodes and `IdempotencyGuard`'s check-then-act cannot race (§10,
+        2026-09-17). It is keyed on the *customer*, not the episode, because
+        that is the unit the cap and the promise couple across episodes.
+
+        **The default is everything**, which is what every caller before this
+        did and what the simulator still does — so a run under `owned=None`
+        gates exactly the items, in exactly the order, that it gated before
+        this parameter existed (§10, 2026-09-21).
+        """
         now = self._clock.now()
         due = [item for item in self._queue if item.proposal.execute_at <= now]
+        if owned is not None:
+            due = [item for item in due if owned(item.proposal.customer_id)]
         for item in due:
             self._gate(item, now)
+        return len(due)
+
+    def _money_may_have_arrived(
+        self, episode: Episode, item: ScheduledItem, now: datetime
+    ) -> bool:
+        """Stop the episode if the rail shows this customer paid another way.
+
+        Attack A01: an out-of-band payment carries no join key, so nothing
+        correlates it and the agent goes on chasing money the merchant already
+        has (docs/taxonomy.md §9.10). Asked here, before the chain, because a
+        guard ruling on whether an action is *permitted* is answering the wrong
+        question when the reason to stop is that the debt is gone.
+
+        **It escalates; it never recovers.** An amount match on the same
+        customer inside the window is evidence that this should stop, not proof
+        of what settled — a second purchase at the same price collides with it.
+        Marking the episode RECOVERED would put a settlement in the ledger that
+        no join key supports (docs/EVALUATION.md §10, 2026-09-21).
+
+        Returns whether the episode was stopped, so `_gate` can leave the item
+        alone if it was not.
+        """
+        found = reconcile(
+            self._settlement,
+            customer_id=episode.customer_id,
+            amount_paise=item.proposal.amount_paise,
+            failed_at=episode.opened_at,
+            now=now,
+            ours=self._ours(),
+        )
+        if not found.should_halt:
+            return False
+        self._queue.remove(item)
+        self._to(
+            episode,
+            State.ESCALATED,
+            f"reconciliation: {found.detail}",
+            closure=Closure.MONEY_MAY_HAVE_ARRIVED,
+        )
+        return True
 
     def _gate(self, item: ScheduledItem, now: datetime) -> None:
         episode = self.episodes.get(item.proposal.entity_id)
         if episode is None or episode.is_terminal:
             self._queue.remove(item)
+            return
+
+        if self._money_may_have_arrived(episode, item, now):
             return
 
         ctx = self._context(item, episode, now)

@@ -545,6 +545,29 @@ Listing these is more useful than pretending otherwise.
     counted as recovered in any arm, so every arm is undercounted by the same
     mechanism and the paired comparisons are unaffected.
 
+    **Closed on 2026-09-21, and only for a deployment that opts in**
+    (`EVALUATION.md` §10). Nothing above stops being true — the webhook still
+    carries no join key and the receiver still correctly declines to attribute
+    it. What changed is that the agent can now *ask*: `vasool/actions/
+    reconcile.py` is a port whose implementation reports what the rail captured
+    for this customer since the failure, the agent subtracts every payment id
+    it originated, and an amount match inside the registered window stops the
+    episode and hands it to a person. It is never recorded as recovered,
+    because an amount match is evidence and not a join key — a second purchase
+    at the same price collides with it exactly, and §9.9's whole point is that
+    matching on amount and customer is what this system refuses to do for
+    *attribution*. Stopping is a weaker claim than settling, and it is the one
+    the evidence supports.
+
+    Two limits travel with the fix. The port's default adapter answers nothing,
+    so a deployment that has not wired a real lookup behaves exactly as this
+    entry describes — that is attack **A27**, registered FAILS. And in the
+    evaluated universe every out-of-band payment is for one episode's own
+    amount, drawn from a continuous distribution, so the collision the design
+    accepts never actually occurs there: 201 of 201 halts across five seeds
+    were on episodes that genuinely had been paid. That is a property of the
+    universe, not evidence about a real book.
+
     Closing this needs an attributable signal that does not exist today. The
     honest options are a merchant-side reconciliation feed, or correlating on
     the original `order_id` — which §9.9 rules out as a guessed join key, and

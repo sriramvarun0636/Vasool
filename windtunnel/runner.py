@@ -53,6 +53,7 @@ from vasool.clock import VirtualClock
 from vasool.diagnosis import upi
 from vasool.diagnosis.proposal import Proposal, template_ids
 from vasool.diagnosis.taxonomy import RULES, Rule, lookup
+from vasool.actions.reconcile import Candidate, NullSettlementLookup
 from vasool.events.settlement import settle_from_webhook
 from vasool.ledger.receipts import CallJournal, Receipt, build_from_transitions
 from vasool.ledger.tracing import trace_id_for
@@ -365,6 +366,37 @@ class SimulatedStatusCheck:
         )
 
 
+class SimulatedSettlementLookup:
+    """What the rail would tell a merchant asking "what has this customer paid?"
+
+    The simulator knows exactly which episodes were settled out of band —
+    `Runner._apply_out_of_band` records every one — so this answers from that
+    record rather than inventing a search. What it deliberately does **not**
+    do is answer with the entity id: a real merchant querying their payments
+    gets payments, and the whole of attack A01 is that nothing joins one back
+    to an episode. So a `Candidate` carries the payment id, the amount and the
+    time, and the reconciliation has to decide on those alone (§10,
+    2026-09-21).
+
+    Payments are reported to the customer who made them, not to the episode,
+    which is why a second episode of the same customer at the same price sees
+    the same candidate — the collision the design accepts and escalates on.
+    """
+
+    def __init__(self) -> None:
+        self._by_customer: dict[str, list[Candidate]] = {}
+
+    def record(self, *, customer_id: str, payment_id: str, amount_paise: int, at: datetime) -> None:
+        self._by_customer.setdefault(customer_id, []).append(
+            Candidate(payment_id=payment_id, amount_paise=amount_paise, captured_at=at)
+        )
+
+    def captured_since(self, *, customer_id: str, since: datetime) -> tuple[Candidate, ...]:
+        return tuple(
+            c for c in self._by_customer.get(customer_id, ()) if c.captured_at >= since
+        )
+
+
 @dataclass
 class ObservingExecutor:
     """The real RazorpayExecutor, with the world watching.
@@ -528,6 +560,11 @@ class Runner:
             clock=self.clock,
             rules=self.arm.rules,
         )
+        # Every arm's world contains out-of-band payments; only an arm with a
+        # taxonomy is given the means to notice them (windtunnel/arms.py's
+        # `reconciles`). The lookup itself is built either way so the world
+        # records the same events for every arm.
+        self.settlement = SimulatedSettlementLookup()
         self.machine = PolicyMachine(
             clock=self.clock,
             facts=self.world,
@@ -536,6 +573,8 @@ class Runner:
             rules=self.arm.rules,
             upi_rule=self.arm.upi_rule,
             resolve=self.arm.resolve,
+            settlement=self.settlement if self.arm.reconciles else NullSettlementLookup(),
+            ours=lambda: self._inner.retry_index.payment_ids(),
         )
         self._out_of_band: list[OutOfBandOccurrence] = []
         self._settled: list[tuple[str, str]] = []
@@ -649,8 +688,19 @@ class Runner:
         if state is None or state in {State.RECOVERED, State.BLOCKED, State.ESCALATED, State.EXHAUSTED}:
             return
 
+        payment_id = SimulatedRazorpay._id("pay_oob_", event.entity_id)
+        # The merchant's account now shows this payment, whoever collected it.
+        # Recorded before the webhook is delivered, because that is the order a
+        # real account sees them in: the money is there whether or not any
+        # webhook correlates.
+        self.settlement.record(
+            customer_id=event.customer_id,
+            payment_id=payment_id,
+            amount_paise=event.episode.amount_paise,
+            at=event.at,
+        )
         body = payloads.capture_body(
-            payment_id=SimulatedRazorpay._id("pay_oob_", event.entity_id),
+            payment_id=payment_id,
             amount_paise=event.episode.amount_paise,
         )
         correlated = settle_from_webhook(

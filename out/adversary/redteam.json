@@ -1,14 +1,14 @@
 {
-  "agent_fingerprint": "fb76d42ea20b96a23aad1aa9433a7490772eed5fba37418e8e21e2a96d515b3e",
+  "agent_fingerprint": "9cc269ccaa3432aa4a88e5aac006524d720147022c03a2b7f6c22b8be701bfc7",
   "as_registered": true,
-  "attacks": 23,
+  "attacks": 24,
   "failed": 1,
   "results": [
     {
       "as_registered": true,
       "clauses": [
         {
-          "detail": "2 executed actions, each with a full ALLOW chain",
+          "detail": "1 executed actions, each with a full ALLOW chain",
           "held": true,
           "name": "no_money_policy_forbids"
         },
@@ -23,18 +23,18 @@
           "name": "ledger_records_the_refusal"
         },
         {
-          "detail": "1 actions after money_arrived, first SILENT_RETRY at 01 Sep 10:36 IST",
-          "held": false,
+          "detail": "nothing after money_arrived",
+          "held": true,
           "name": "no_action_on_pay_a01_after_money_arrived"
         }
       ],
-      "dispatched": 2,
-      "expectation": "fails",
+      "dispatched": 1,
+      "expectation": "survives",
       "id": "A01",
-      "ledger_sha256": "8dbaf283d35a13c2f6d4d67d029e35eebc21ef5702d87d3805afa04f156d0712",
+      "ledger_sha256": "e34c021869ebd77f26ef53d6e133c2d20b94274ce3a835a544aeb5404bf9df16",
       "receipts": 2,
-      "source": "docs/taxonomy.md \u00a79.9 and \u00a79.10; design spec \u00a79 A07",
-      "survived": false,
+      "source": "docs/taxonomy.md \u00a79.9 and \u00a79.10; design spec \u00a79 A07. Registered FAILS; closed and re-registered 2026-09-21 when reconciliation gave the agent a way to notice money it did not collect (docs/EVALUATION.md \u00a710)",
+      "survived": true,
       "targets": "double collection: \u00a77's hard stop on out-of-band success",
       "title": "out-of-band payment mid-ladder"
     },
@@ -915,7 +915,41 @@
       "survived": true,
       "targets": "a second debit after a lost response \u2014 invisible to every record but the rail's",
       "title": "a debit whose response is lost"
+    },
+    {
+      "as_registered": true,
+      "clauses": [
+        {
+          "detail": "2 executed actions, each with a full ALLOW chain",
+          "held": true,
+          "name": "no_money_policy_forbids"
+        },
+        {
+          "detail": "0 messages, all inside \u00a72a's four contact rows",
+          "held": true,
+          "name": "no_contact_outside_policy"
+        },
+        {
+          "detail": "2 receipts, chained from genesis, one per decision",
+          "held": true,
+          "name": "ledger_records_the_refusal"
+        },
+        {
+          "detail": "1 actions after money_arrived, first SILENT_RETRY at 01 Sep 10:36 IST",
+          "held": false,
+          "name": "no_action_on_pay_a27_after_money_arrived"
+        }
+      ],
+      "dispatched": 2,
+      "expectation": "fails",
+      "id": "A27",
+      "ledger_sha256": "688a50b86b8fa4e228ae8efdc6fa3565218ff31188cd5e673cd02b498cc07111",
+      "receipts": 2,
+      "source": "docs/EVALUATION.md \u00a710, 2026-09-21 \u2014 reconciliation is a port with a null adapter, so A01 is closed for a deployment that wires a lookup and open for one that does not",
+      "survived": false,
+      "targets": "what A01's fix does *not* cover: the shipped default",
+      "title": "out-of-band payment, with no settlement lookup wired"
     }
   ],
-  "survived": 22
+  "survived": 23
 }

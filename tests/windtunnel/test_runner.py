@@ -21,6 +21,7 @@ from vasool.policy.guards.contact_window import (
 from vasool.diagnosis.rules import IST
 from vasool.diagnosis.taxonomy import FailureClass
 from vasool.ledger.receipts import Outcome, verify_chain
+from windtunnel.arms import arm_named
 from windtunnel.runner import run_seed
 from windtunnel.universe import CUSTOMER_COUNT
 
@@ -167,11 +168,26 @@ class TestOutOfBandIsStructurallyInvisible:
         paired differences are unaffected."""
         assert {channel for _entity, channel in run.settled} <= {"RETRY_CAPTURE", "LINK_PAID"}
 
-    def test_the_agent_goes_on_acting_after_money_has_already_arrived(self, run):
-        """The exposure itself. The count depends on §4's 0.02 guess; the
-        fraction of occurrences that see a later action is agent behaviour.
-        Both are recorded for the evaluator to report separately."""
-        assert len(run.actions_after_out_of_band()) > 0
+    def test_the_agent_stops_once_the_rail_shows_the_money(self, run):
+        """The exposure, closed on 2026-09-21 (attack A01).
+
+        This test asserted the opposite until then — that the agent goes on
+        acting — because nothing correlated an out-of-band payment and nothing
+        could. Reconciliation gives it a way to notice: the rail is asked what
+        this customer paid, the agent's own payment ids are subtracted, and an
+        amount match inside the window stops the episode and hands it to a
+        person. The assertion is flipped rather than deleted so that a
+        regression reads as one.
+        """
+        assert run.actions_after_out_of_band() == ()
+
+    def test_the_exposure_is_still_reachable_for_an_arm_that_cannot_see_it(self):
+        """The counter has to keep working, or a future regression would read
+        as a clean sheet. §5.1's baseline has no taxonomy and so no
+        reconciliation (windtunnel/arms.py), and on the same seed it still acts
+        after the money has arrived."""
+        naive = run_seed(0, pepper=PEPPER, arm=arm_named("naive_retry"))
+        assert len(naive.actions_after_out_of_band()) > 0
 
 
 class TestTheSafetyPredicateHolds:

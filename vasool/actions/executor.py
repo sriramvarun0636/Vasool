@@ -137,6 +137,20 @@ class RetryIndex:
     def entity_id_for(self, payment_id: str) -> str | None:
         return self._by_payment_id.get(payment_id)
 
+    def payment_ids(self) -> frozenset[str]:
+        """Every payment this agent originated, as far as this process knows.
+
+        Read by the reconciliation (`vasool/actions/reconcile.py`) to subtract
+        the agent's own retries from what the rail reports: without it, a retry
+        of ours that succeeded would come back as evidence that somebody paid
+        out of band, and would halt the episode it had just recovered. The
+        docstring above applies here too — a process restart loses the mapping,
+        and the consequence is the conservative one: an id we no longer
+        recognise is treated as not ours, so the episode stops and a person
+        looks at it.
+        """
+        return frozenset(self._by_payment_id)
+
 
 def _medium_for(channel: Channel) -> str:
     if channel is Channel.WHATSAPP:
