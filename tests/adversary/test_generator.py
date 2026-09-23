@@ -316,7 +316,7 @@ class TestTheProposer:
             propose.request_for("p", model="m", n=100)
 
     def test_the_prompt_is_deterministic(self):
-        kwargs = dict(grammar_json="{}", registered_attacks="A01", guard_source="# guards")
+        kwargs = dict(grammar_json="{}", worked_example="{}", registered_attacks="A01", guard_source="# guards")
         assert propose.build_prompt(**kwargs) == propose.build_prompt(**kwargs)
 
     @pytest.mark.parametrize("text, expected", [

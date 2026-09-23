@@ -57,6 +57,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 CASSETTE_DIR = REPO_ROOT / "data" / "cassettes" / "adversary"
 OUT_PATH = REPO_ROOT / "out" / "adversary" / "generated.json"
 GUARD_DIR = REPO_ROOT / "vasool" / "policy" / "guards"
+HANDWRITTEN_DIR = REPO_ROOT / "windtunnel" / "adversary" / "handwritten"
 
 
 def guard_source() -> str:
@@ -74,9 +75,22 @@ def registered_summary() -> str:
     return "\n".join(f"{attack.id} · {attack.title} — {attack.targets}" for attack in ATTACKS)
 
 
+def worked_example() -> str:
+    """H001, as it is written on disk, for the prompt to show.
+
+    §10, 2026-09-23. It is read from the file the gate compiles and runs rather
+    than retyped here, so the example the model copies cannot drift from a
+    document the compiler accepts — the drift that cost the first six
+    proposals. H001 shows all three constructions the grammar's table left to
+    guesswork: `targets` as one sentence, steps keyed `op`, evidence as a list.
+    """
+    return (HANDWRITTEN_DIR / "H001.json").read_text().strip()
+
+
 def the_prompt() -> str:
     return proposer.build_prompt(
         grammar_json=json.dumps(grammar.describe(), indent=1, sort_keys=True),
+        worked_example=worked_example(),
         registered_attacks=registered_summary(),
         guard_source=guard_source(),
     )
@@ -196,7 +210,15 @@ def main(argv: list[str], *, api_key: str | None) -> int:
     args = parser.parse_args(argv)
 
     store = CassetteStore(args.cassettes)
-    print(f"cassettes: {store.count()} of {proposer.BUDGET} on disk in {args.cassettes}")
+    # §10, 2026-09-23: how many are on disk is not how many count. A cassette is
+    # addressed by the prompt that produced it, so the six recorded before the
+    # prompt was repaired answer a question no longer being asked. Reporting
+    # them as progress would read as "6 of 100 done" when the budget is at zero.
+    prompt = the_prompt()
+    answering = sum(1 for n in range(proposer.BUDGET)
+                    if store.has(proposer.request_for(prompt, model=PINNED_MODEL, n=n)))
+    print(f"cassettes: {answering} of {proposer.BUDGET} answering this prompt"
+          f" ({store.count()} on disk in {args.cassettes})")
     if args.record:
         print(f"GEMINI_API_KEY configured: {bool(api_key)}")
         if not api_key:

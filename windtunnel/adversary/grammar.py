@@ -280,6 +280,39 @@ EXPECTATIONS = frozenset({"survives", "fails"})
 claim that it survives, so that a finding means the agent broke."""
 
 TOP_LEVEL = frozenset({"id", "title", "targets", "expectation", "reconciles", "steps", "evidence"})
+
+RULES = {
+    "person_names_a_mandate_or_says_there_is_one":
+        "on a person step, give `mandate` or `is_mandate`, never both. `is_mandate: true` says the"
+        " payment sits on a mandate this attack does not need the detail of; `mandate` gives that detail.",
+    "person_gives_one_contact":
+        "on a person step, give `contact` or `same_contact_as`, never both.",
+    "a_bind_and_a_label_are_set_once":
+        "each person's `bind` and each mark's `label` is set once. Setting one twice is an error,"
+        " not a redefinition.",
+    "upi_selects_the_failure_vocabulary":
+        "on a fail step, `upi: true` means `reason` comes from reasons.upi and `source` must be absent,"
+        " because a UPI failure carries no card error source. Otherwise `reason` comes from reasons.card"
+        " and `source`, if given at all, must be one of card_reason_source_pairs with that reason.",
+    "time_runs_forwards":
+        "`advance_to` and `jump_to` cannot address an instant earlier than the step before them, and no"
+        f" step may pass the arena's {MAX_DAY}-day calendar.",
+    "one_failure_at_least":
+        "an attack needs at least one fail step. Without one there is no payment for the agent to act on.",
+    "an_operation_s_fields_are_closed":
+        "a field that is not in an operation's table is an error, not something ignored.",
+}
+"""The constraints `compile.py` enforces that the operation tables cannot express.
+
+§10, 2026-09-23. A table of independent fields cannot say that two of them are
+exclusive, so nothing in what the model was shown ruled out setting both
+`mandate` and `is_mandate` — and all six of the first proposals set both. These
+are stated here, in the same data-only form as the rest of the description,
+and `tests/adversary/test_prompt_rules.py` holds every cross-field rejection
+`compile.py` can raise to an entry in this table. The compiler is the
+specification: nothing here relaxes it, and a rule stated here that the
+compiler does not enforce is a defect in this table.
+"""
 ID = Pattern(r"[GH][0-9]{3}", "G and three digits for a generated attack, H for a hand-written one")
 
 
@@ -323,11 +356,27 @@ def describe() -> dict:
     return {
         "grammar_version": GRAMMAR_VERSION,
         "limits": {"steps": MAX_STEPS, "people": MAX_PEOPLE, "evidence": MAX_EVIDENCE},
-        "top_level": sorted(TOP_LEVEL),
-        "id": render(ID),
-        "expectation": sorted(EXPECTATIONS),
-        "reconciles": "true or false: whether the deployment has wired a settlement lookup (default true)",
+        # §10, 2026-09-23: this used to be `sorted(TOP_LEVEL)` — the seven field
+        # names and nothing else. It described a vocabulary and not a syntax, so
+        # the first six proposals had to invent the document's shape and each
+        # invented a defensible wrong one: `targets` as a list, steps keyed
+        # `operation`, evidence as an object. Every field's type is stated here
+        # now, and propose.py carries a worked example beside it.
+        "document": {
+            "id": render(ID),
+            "title": "text, 1 to 240 characters: what the attack does",
+            "targets": "text, 1 to 240 characters: the guard or property it aims at",
+            "expectation": {"one of": sorted(EXPECTATIONS)},
+            "reconciles": "optional, true or false: whether the deployment has wired a"
+                          " settlement lookup (default true)",
+            "steps": f"a list of 1 to {MAX_STEPS} objects, each"
+                     ' {"op": "<a name from operations below>", and that operation\'s fields}',
+            "evidence": f"a list of at most {MAX_EVIDENCE} objects, each"
+                        ' {"kind": "<a name from evidence below>", and that predicate\'s fields}',
+        },
         "operations": table(OPS),
         "evidence": table(EVIDENCE),
         "reasons": {"card": sorted(CARD_REASONS), "upi": sorted(UPI_REASONS)},
+        "rules": dict(RULES),
+        "card_reason_source_pairs": [list(pair) for pair in sorted(payloads.available_pairs())],
     }

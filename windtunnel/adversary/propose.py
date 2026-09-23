@@ -64,13 +64,31 @@ Notes on the evidence vocabulary:
   set a mark and end the scene, and use NoExecutionOnEntityAfter.
 - Evidence may only name entity ids a fail step opened and marks a mark step set.
 
+The grammar's "document" section gives the type of every top-level field, and
+one complete attack is shown below it so the shape is not in doubt: "targets"
+is one sentence and not a list, every step is keyed "op", and "evidence" is a
+list of objects keyed "kind". Its "rules" section gives the constraints the
+tables cannot show — which fields exclude each other, and what "upi": true
+does to the rest of a fail step. Follow both exactly. A proposal that does not
+compile is spent for nothing, and the budget is fixed.
+
 Reply with the JSON object only."""
 
 
-def build_prompt(*, grammar_json: str, registered_attacks: str, guard_source: str) -> str:
+EXAMPLE_HEADING = "=== A COMPLETE ATTACK, FOR SHAPE ONLY ==="
+"""The heading tests/adversary/test_prompt_example.py finds the example by.
+
+§10, 2026-09-23. The example is in the prompt because a grammar rendered as a
+table of field names does not say how a document is written, and six proposals
+were spent discovering that one field at a time. It is marked *for shape only*
+because it is a registered attack: copying it produces nothing novel.
+"""
+
+
+def build_prompt(*, grammar_json: str, worked_example: str, registered_attacks: str, guard_source: str) -> str:
     """The whole prompt, assembled in a fixed order from text the caller rendered.
 
-    Deterministic: the same three inputs always give the same prompt, so the
+    Deterministic: the same four inputs always give the same prompt, so the
     same request always addresses the same cassette. Which proposal of the
     hundred this is lives in the request's repeat index, not in the text.
     """
@@ -78,6 +96,11 @@ def build_prompt(*, grammar_json: str, registered_attacks: str, guard_source: st
         INSTRUCTIONS,
         "=== THE GRAMMAR (JSON) ===",
         grammar_json,
+        EXAMPLE_HEADING,
+        # Fenced, because that is the form the reply is read in: extract_json
+        # takes the first fenced block, so an example the prompt shows this way
+        # is an example parsed exactly as the model's own answer will be.
+        f"```json\n{worked_example}\n```",
         "=== REGISTERED ATTACKS (already covered) ===",
         registered_attacks,
         "=== THE GUARDS (source) ===",

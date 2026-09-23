@@ -46,11 +46,14 @@ looks it up there.
 
 Razorpay's documented `createRecurring` also takes a merchant `notes` field
 (*Create Subsequent Payments*, read 2026-09-15), and the documented debiter
-stamps `vasool_entity_id` on it exactly as `_link` stamps a payment link — the
-way to a join key that survives a restart, which RetryIndex does not. It is
-not read here yet: no `payment.captured` for a recurring payment has been
-seen, so whether the payment entity carries its `notes` back is unobserved
-(docs/EVALUATION.md §10, 2026-09-15).
+stamps `vasool_entity_id` on it exactly as `_link` stamps a payment link — a
+join key carried by the rail's own record of the payment rather than by
+anything this system keeps. Surviving a restart was the difference between the
+two until 2026-09-22, when `vasool/actions/retry_store.py` made the index
+durable; what is left of it is that the notes tag needs nothing of ours to
+survive at all. It is not read here yet: no `payment.captured` for a recurring
+payment has been seen, so whether the payment entity carries its `notes` back
+is unobserved (docs/EVALUATION.md §10, 2026-09-15 and 2026-09-23).
 
 # VERIFY: whether `createRecurring`'s synchronous response id is the same id
 that later appears on `payload.payment.entity.id` of a `payment.captured`
